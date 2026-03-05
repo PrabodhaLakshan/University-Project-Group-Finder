@@ -4,6 +4,15 @@ import { useState } from "react";
 import SectionCard from "./SectionCard";
 import EmptyAddCard from "./EmptyAddCard";
 
+const inputCls =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100";
+
+const btnPrimary =
+  "rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400";
+
+const btnGhost =
+  "rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100";
+
 export default function MobileSection({
   mobile,
   onSave,
@@ -15,7 +24,7 @@ export default function MobileSection({
   const [draft, setDraft] = useState(mobile || "");
 
   return (
-    <SectionCard title="Mobile Number" hint="Optional, for easier contact.">
+    <SectionCard title="Mobile Number" hint="Optional — makes it easier for teammates to reach you." accent="indigo">
       {!mobile && !editing ? (
         <EmptyAddCard text="Add your mobile number." onAdd={() => setEditing(true)} />
       ) : editing ? (
@@ -24,7 +33,8 @@ export default function MobileSection({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="07XXXXXXXX"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-blue-500/40"
+            type="tel"
+            className={inputCls}
           />
           <div className="flex gap-2">
             <button
@@ -33,7 +43,7 @@ export default function MobileSection({
                 onSave(draft.trim());
                 setEditing(false);
               }}
-              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+              className={btnPrimary}
             >
               Save
             </button>
@@ -43,19 +53,22 @@ export default function MobileSection({
                 setDraft(mobile || "");
                 setEditing(false);
               }}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10"
+              className={btnGhost}
             >
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-          <p className="text-sm text-white/80">{mobile}</p>
+        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="text-lg">📱</span>
+            <span className="text-sm font-medium text-slate-800">{mobile}</span>
+          </div>
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="mt-3 text-xs text-blue-300 hover:text-blue-200"
+            className="text-xs font-medium text-blue-600 hover:text-blue-700"
           >
             Edit
           </button>

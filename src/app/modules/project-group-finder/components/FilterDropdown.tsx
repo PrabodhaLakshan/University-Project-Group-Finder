@@ -25,16 +25,19 @@ export default function FilterDropdown({
   disabled = false,
 }: Props) {
   const id = React.useId();
+  const hasValue = value !== "";
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
+      {/* Label */}
       <label
         htmlFor={id}
-        className="text-sm font-medium text-white/80"
+        className="block text-sm font-semibold text-slate-700"
       >
         {label}
       </label>
 
+      {/* Select wrapper */}
       <div className="relative">
         <select
           id={id}
@@ -42,29 +45,31 @@ export default function FilterDropdown({
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(name, e.target.value)}
-          className="
-            w-full appearance-none
-            rounded-xl border border-white/10
-            bg-white/5 px-4 py-3 pr-10
-            text-white outline-none
-            transition
-            focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20
-            disabled:cursor-not-allowed disabled:opacity-60
-          "
+          className={[
+            "w-full appearance-none rounded-xl border px-4 py-3 pr-10",
+            "text-sm outline-none transition-all duration-150",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            hasValue
+              ? "border-blue-300 bg-blue-50 text-blue-900 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
+          ].join(" ")}
         >
-          <option value="" className="bg-slate-900">
+          <option value="" className="text-slate-400">
             {placeholder}
           </option>
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value} className="bg-slate-900">
+            <option key={opt.value} value={opt.value} className="text-slate-900 bg-white">
               {opt.label}
             </option>
           ))}
         </select>
 
-        {/* chevron */}
+        {/* Chevron icon */}
         <svg
-          className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/60"
+          className={[
+            "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors",
+            hasValue ? "text-blue-500" : "text-slate-400",
+          ].join(" ")}
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"

@@ -1,8 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base (LIGHT) */
+  --background: #f7f8fa;
+  --foreground: #0f1420;
+
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-2: #f1f5f9; /* slate-100 vibe */
+  --border: #e2e8f0;
+
+  /* Text */
+  --muted: #667085;
+
+  /* Brand tokens (logo) */
+  --brand-primary: 47 107 255;   /* #2F6BFF */
+  --brand-purple:  91 63 255;    /* #5B3FFF */
+  --brand-accent:  255 107 0;    /* #FF6B00 */
+  --brand-success: 34 197 94;    /* #22C55E */
+
+  /* Focus ring */
+  --focus: rgba(47, 107, 255, 0.25);
+}
+
+.dark {
+  /* Base (DARK) — only when you add class="dark" */
+  --background: #0b1020;
+  --foreground: #f3f6ff;
+
+  --surface: #121a2e;
+  --surface-2: #0f172a;
+  --border: #22304a;
+
+  --muted: #a8b0c2;
+
+  --focus: rgba(79, 140, 255, 0.25);
 }
 
 @theme inline {
@@ -12,12 +44,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ✅ Remove this to avoid auto-dark switching */
+/* @media (prefers-color-scheme: dark) { ... } */
 
 body {
   background: var(--background);

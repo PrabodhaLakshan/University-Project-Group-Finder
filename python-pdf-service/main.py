@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
+from utils.verifier import verify_pdf_against_template
 
 app = FastAPI(title="PDF Verification Service", version="1.0")
 
@@ -14,19 +15,15 @@ def health():
 
 @app.post("/verify")
 def verify(req: VerifyRequest):
-    # 1) Download PDF
-    r = requests.get(req.pdf_url, timeout=30)
-    r.raise_for_status()
-    pdf_bytes = r.content
+    try:
+        r = requests.get(req.pdf_url, timeout=40)
+        r.raise_for_status()
+        pdf_bytes = r.content
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to download PDF: {e}")
 
-    # 2) TODO: here you will do template checks + extraction
-    # For now return mock to test pipeline
-    return {
-        "verified": True,
-        "score": 80,
-        "reasons": [],
-        "extractedMarks": [
-            {"moduleCode": "ITPM", "moduleName": "IT Project Management", "marks": 85, "grade": "A", "semesterTag": "Y2S2"},
-            {"moduleCode": "SE", "moduleName": "Software Engineering", "marks": 78, "grade": "A-", "semesterTag": "Y2S2"},
-        ],
-    }
+    try:
+        result = verify_pdf_against_template(pdf_bytes, template_version=req.template_version)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Verification engine error: {e}")

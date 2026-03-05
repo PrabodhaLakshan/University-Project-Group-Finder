@@ -4,6 +4,16 @@ import { useState } from "react";
 import SectionCard from "./SectionCard";
 import EmptyAddCard from "./EmptyAddCard";
 
+/* Shared light input style */
+const inputCls =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:cursor-not-allowed";
+
+const btnPrimary =
+  "rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1";
+
+const btnGhost =
+  "rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100";
+
 export default function BioSection({
   bio,
   onSave,
@@ -15,7 +25,7 @@ export default function BioSection({
   const [draft, setDraft] = useState(bio || "");
 
   return (
-    <SectionCard title="Bio" hint="Write a short intro like a portfolio.">
+    <SectionCard title="Bio" hint="Write a short intro — think of it as your portfolio summary.">
       {!bio && !editing ? (
         <EmptyAddCard text="Add a short bio about yourself." onAdd={() => setEditing(true)} />
       ) : editing ? (
@@ -24,8 +34,8 @@ export default function BioSection({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={4}
-            placeholder="Example: I'm a 2nd-year IT student focusing on web development..."
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-blue-500/40"
+            placeholder="I'm a 2nd-year IT student focusing on web development and machine learning..."
+            className={inputCls}
           />
           <div className="flex gap-2">
             <button
@@ -34,7 +44,7 @@ export default function BioSection({
                 onSave(draft.trim());
                 setEditing(false);
               }}
-              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
+              className={btnPrimary}
             >
               Save
             </button>
@@ -44,21 +54,21 @@ export default function BioSection({
                 setDraft(bio || "");
                 setEditing(false);
               }}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/80 hover:bg-white/10"
+              className={btnGhost}
             >
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-          <p className="text-sm text-white/80 whitespace-pre-wrap">{bio}</p>
+        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{bio}</p>
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="mt-3 text-xs text-blue-300 hover:text-blue-200"
+            className="mt-3 text-xs font-medium text-blue-600 hover:text-blue-700"
           >
-            Edit
+            ✏️ Edit bio
           </button>
         </div>
       )}
