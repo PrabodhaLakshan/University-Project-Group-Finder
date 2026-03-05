@@ -16,9 +16,11 @@ const btnGhost =
 
 export default function BioSection({
   bio,
+  isEditing,
   onSave,
 }: {
   bio?: string;
+  isEditing: boolean;
   onSave: (bio: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -27,7 +29,11 @@ export default function BioSection({
   return (
     <SectionCard title="Bio" hint="Write a short intro — think of it as your portfolio summary.">
       {!bio && !editing ? (
-        <EmptyAddCard text="Add a short bio about yourself." onAdd={() => setEditing(true)} />
+        isEditing ? (
+          <EmptyAddCard text="Add a short bio about yourself." onAdd={() => setEditing(true)} />
+        ) : (
+          <p className="text-sm text-slate-400 italic">No bio added yet.</p>
+        )
       ) : editing ? (
         <div className="space-y-3">
           <textarea
@@ -63,13 +69,15 @@ export default function BioSection({
       ) : (
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
           <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{bio}</p>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="mt-3 text-xs font-medium text-blue-600 hover:text-blue-700"
-          >
-            ✏️ Edit bio
-          </button>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="mt-3 text-xs font-medium text-blue-600 hover:text-blue-700"
+            >
+              ✏️ Edit bio
+            </button>
+          )}
         </div>
       )}
     </SectionCard>

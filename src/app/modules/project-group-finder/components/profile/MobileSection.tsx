@@ -15,9 +15,11 @@ const btnGhost =
 
 export default function MobileSection({
   mobile,
+  isEditing,
   onSave,
 }: {
   mobile?: string;
+  isEditing: boolean;
   onSave: (mobile: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -26,7 +28,11 @@ export default function MobileSection({
   return (
     <SectionCard title="Mobile Number" hint="Optional — makes it easier for teammates to reach you." accent="indigo">
       {!mobile && !editing ? (
-        <EmptyAddCard text="Add your mobile number." onAdd={() => setEditing(true)} />
+        isEditing ? (
+          <EmptyAddCard text="Add your mobile number." onAdd={() => setEditing(true)} />
+        ) : (
+          <p className="text-sm text-slate-400 italic">No mobile number added.</p>
+        )
       ) : editing ? (
         <div className="space-y-3">
           <input
@@ -65,13 +71,15 @@ export default function MobileSection({
             <span className="text-lg">📱</span>
             <span className="text-sm font-medium text-slate-800">{mobile}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="text-xs font-medium text-blue-600 hover:text-blue-700"
-          >
-            Edit
-          </button>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-xs font-medium text-blue-600 hover:text-blue-700"
+            >
+              Edit
+            </button>
+          )}
         </div>
       )}
     </SectionCard>

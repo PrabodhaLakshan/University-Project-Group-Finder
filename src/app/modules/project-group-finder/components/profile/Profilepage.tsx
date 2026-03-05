@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import type { StudentProfile, Mark } from "@/app/modules/project-group-finder/types";
 import { getToken } from "@/lib/auth";
 
@@ -10,6 +10,8 @@ import MobileSection from "./MobileSection";
 import LinksSection from "./LinksSection";
 import ProjectsSection from "./ProjectsSection";
 import ResultSheetSection from "./ResultSheetSection";
+import GroupStatusSection from "./GroupStatusSection";
+import type { ProfileProject, GroupStatus } from "@/app/modules/project-group-finder/types";
 
 function StatBox({
   label,
@@ -53,6 +55,7 @@ export default function ProfilePage() {
     mobile: "",
     githubUrl: "",
     linkedinUrl: "",
+    groupStatus: "NO_GROUP" as GroupStatus,
     projects: [],
     resultSheet: {
       status: "EMPTY",
@@ -61,12 +64,14 @@ export default function ProfilePage() {
     },
   });
 
-  const [showMore, setShowMore] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
+  // ── Load profile + projects + saved marks from DB on mount ───────────────
   useEffect(() => {
-    async function fetchMe() {
+    async function fetchProfile() {
       try {
         const token = getToken();
         if (!token) {
@@ -74,22 +79,67 @@ export default function ProfilePage() {
           setLoading(false);
           return;
         }
-        const res = await fetch("/api/me", {
+
+        // Step 1: get userId from /api/me
+        const meRes = await fetch("/api/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) {
+        if (!meRes.ok) {
           setError("Failed to load your profile. Please log in again.");
           setLoading(false);
           return;
         }
-        const data = await res.json();
-        const user = data.user;
+        const meData = await meRes.json();
+        const user = meData.user;
+        const userId = user.id as string;
+
+        // Step 2: fetch profile fields, projects and saved marks in parallel
+        const [profileRes, projectsRes, resultsRes] = await Promise.all([
+          fetch(`/api/project-group-finder/profile?userId=${userId}`),
+          fetch(`/api/project-group-finder/projects?userId=${userId}`),
+          fetch(`/api/project-group-finder/results?userId=${userId}`),
+        ]);
+
+        const profileData = profileRes.ok ? await profileRes.json() : null;
+
+        // Map DB projects rows → ProfileProject shape
+        const dbProjects: ProfileProject[] = projectsRes.ok
+          ? (await projectsRes.json()).map((p: any) => ({
+            id: p.id,
+            name: p.title,
+            description: p.description ?? "No description",
+            tech: [],                          // DB doesn't store tech separately
+            repoUrl: p.github_url ?? undefined,
+            liveUrl: p.live_url ?? undefined,
+            imageUrl: p.image_path ?? undefined,
+            updatedAt: p.created_at
+              ? new Date(p.created_at).toLocaleDateString()
+              : undefined,
+          }))
+          : [];
+
+        // Load saved published marks
+        const savedMarks: Mark[] = resultsRes.ok ? await resultsRes.json() : [];
+
         setProfile((p) => ({
           ...p,
-          id: user.id ?? "",
+          id: userId,
           fullName: user.name ?? "",
           studentId: user.student_id ?? "",
           email: user.email ?? "",
+          bio: profileData?.bio ?? "",
+          mobile: profileData?.mobile_no ?? "",
+          githubUrl: profileData?.github_url ?? "",
+          linkedinUrl: profileData?.linkedin_url ?? "",
+          groupStatus: (profileData?.group_status as GroupStatus) ?? "NO_GROUP",
+          projects: dbProjects,
+          resultSheet: {
+            ...p.resultSheet,
+            publishedMarks: savedMarks,
+            // If there are saved marks, show the sheet as VERIFIED
+            status: savedMarks.length > 0 ? "VERIFIED" : "EMPTY",
+            allMarks: savedMarks.length > 0 ? savedMarks : [],
+          },
         }));
       } catch {
         setError("Network error while loading profile.");
@@ -97,9 +147,135 @@ export default function ProfilePage() {
         setLoading(false);
       }
     }
-    fetchMe();
+    fetchProfile();
   }, []);
 
+  // ── Shared PUT helper ─────────────────────────────────────────────────────
+  const saveToDb = useCallback(
+    async (fields: {
+      bio?: string | null;
+      mobile_no?: string | null;
+      github_url?: string | null;
+      linkedin_url?: string | null;
+      group_status?: string | null;
+    }) => {
+      if (!profile.id) return;
+      setSaving(true);
+      try {
+        await fetch(
+          `/api/project-group-finder/profile?userId=${profile.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fields),
+          }
+        );
+      } finally {
+        setSaving(false);
+      }
+    },
+    [profile.id]
+  );
+
+  // ── Section save handlers (update local state + persist to DB) ────────────
+  async function saveBio(bio: string) {
+    setProfile((p) => ({ ...p, bio }));
+    await saveToDb({ bio });
+  }
+
+  async function saveMobile(mobile: string) {
+    setProfile((p) => ({ ...p, mobile }));
+    await saveToDb({ mobile_no: mobile || null });
+  }
+
+  async function saveLinks(data: { githubUrl?: string; linkedinUrl?: string }) {
+    setProfile((p) => ({ ...p, ...data }));
+    await saveToDb({
+      github_url: data.githubUrl || null,
+      linkedin_url: data.linkedinUrl || null,
+    });
+  }
+
+  async function saveGroupStatus(status: GroupStatus) {
+    setProfile((p) => ({ ...p, groupStatus: status }));
+    await saveToDb({ group_status: status });
+  }
+
+  // ── Add project — POST to API then update state ───────────────────────────
+  async function handleAddProject(proj: ProfileProject) {
+    if (!profile.id) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/project-group-finder/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: profile.id,
+          title: proj.name,
+          description: proj.description,
+          github_url: proj.repoUrl ?? null,
+          live_url: proj.liveUrl ?? null,
+          image_path: proj.imageUrl ?? null,
+        }),
+      });
+
+      if (!res.ok) {
+        alert("Failed to save project. Please try again.");
+        return;
+      }
+
+      const saved = await res.json();
+      // Use the DB-assigned id
+      const newProj: ProfileProject = { ...proj, id: saved.id };
+      setProfile((p) => ({ ...p, projects: [newProj, ...p.projects] }));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ── Remove project — DELETE via API then update state ─────────────────────
+  async function handleRemoveProject(id: string) {
+    if (!profile.id) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/project-group-finder/projects?projectId=${id}`, {
+        method: "DELETE",
+      });
+      setProfile((p) => ({
+        ...p,
+        projects: p.projects.filter((x) => x.id !== id),
+      }));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ── Save published marks to DB ────────────────────────────────────────────
+  async function handlePublishSave() {
+    if (!profile.id) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/project-group-finder/results/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: profile.id,
+          marks: profile.resultSheet.publishedMarks,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`✅ Saved ${data.saved} published marks to your profile.`);
+      } else {
+        alert("Failed to save marks. Please try again.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
   const publishedKeySet = useMemo(() => {
     return new Set(profile.resultSheet.publishedMarks.map(markKey));
   }, [profile.resultSheet.publishedMarks]);
@@ -132,123 +308,154 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-5xl px-4 py-8 lg:px-8">
 
       {/* Page title row */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">My Profile</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Manage your portfolio — add bio, projects, links and mark sheet.
-        </p>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">My Profile</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Manage your portfolio — add bio, projects, links and mark sheet.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Saving indicator */}
+          {saving && (
+            <span className="flex items-center gap-1.5 text-xs text-slate-500">
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              Saving…
+            </span>
+          )}
+
+          {/* Global Edit / Done toggle */}
+          <button
+            type="button"
+            onClick={() => setIsEditing((v) => !v)}
+            className={[
+              "flex-shrink-0 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-1",
+              isEditing
+                ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-400"
+                : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-400",
+            ].join(" ")}
+          >
+            {isEditing ? (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Done
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.414-6.414a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
+                </svg>
+                Edit Profile
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Header card */}
-      <ProfileHeaderCard
-        profile={profile}
-        showMore={showMore}
-        onToggle={() => setShowMore((s) => !s)}
-      />
+      <ProfileHeaderCard profile={profile} />
 
-      {/* Collapsed quick view banner */}
-      {!showMore ? (
-        <div className="mt-5 flex items-center justify-between rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4">
-          <div>
-            <p className="text-sm font-semibold text-blue-900">Portfolio mode</p>
-            <p className="mt-0.5 text-sm text-blue-600">
-              Click <span className="font-bold">Show more details</span> to add bio, links, projects and marks.
+      {/* Main layout — always visible */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+        {/* ── LEFT MAIN COLUMN ── */}
+        <div className="lg:col-span-2 space-y-6">
+          <BioSection
+            bio={profile.bio}
+            isEditing={isEditing}
+            onSave={saveBio}
+          />
+
+          <ProjectsSection
+            projects={profile.projects}
+            userId={profile.id}
+            isEditing={isEditing}
+            onAdd={handleAddProject}
+            onRemove={handleRemoveProject}
+          />
+
+          <ResultSheetSection
+            state={profile.resultSheet}
+            publishedKeySet={publishedKeySet}
+            isEditing={isEditing}
+            setState={(updater) =>
+              setProfile((p) => ({
+                ...p,
+                resultSheet:
+                  typeof updater === "function" ? updater(p.resultSheet) : updater,
+              }))
+            }
+            onTogglePublish={(mark, enabled) => {
+              setProfile((p) => {
+                const key = markKey(mark);
+                const next = enabled
+                  ? [...p.resultSheet.publishedMarks, mark]
+                  : p.resultSheet.publishedMarks.filter((m) => markKey(m) !== key);
+                return { ...p, resultSheet: { ...p.resultSheet, publishedMarks: next } };
+              });
+            }}
+            onPublishSave={handlePublishSave}
+          />
+        </div>
+
+        {/* ── RIGHT SIDEBAR COLUMN ── */}
+        <div className="space-y-5">
+          <MobileSection
+            mobile={profile.mobile}
+            isEditing={isEditing}
+            onSave={saveMobile}
+          />
+
+          <GroupStatusSection
+            status={profile.groupStatus}
+            isEditing={isEditing}
+            onSave={saveGroupStatus}
+          />
+
+          <LinksSection
+            githubUrl={profile.githubUrl}
+            linkedinUrl={profile.linkedinUrl}
+            isEditing={isEditing}
+            onSave={saveLinks}
+          />
+
+          {/* Quick Stats card */}
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="border-b border-slate-100 px-5 py-4">
+              <p className="text-sm font-bold text-slate-900">Quick Stats</p>
+            </div>
+            <div className="p-4 grid grid-cols-2 gap-3">
+              <StatBox label="Projects" value={profile.projects.length} icon="📁" accent />
+              <StatBox label="Published" value={profile.resultSheet.publishedMarks.length} icon="📊" />
+              <StatBox
+                label="Modules"
+                value={profile.resultSheet.allMarks.length}
+                icon="📋"
+              />
+              <StatBox
+                label="Status"
+                value={profile.resultSheet.status === "EMPTY" ? "—" : profile.resultSheet.status}
+                icon={profile.resultSheet.status === "VERIFIED" ? "✅" : "⏳"}
+              />
+            </div>
+          </div>
+
+          {/* Tip card */}
+          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+            <p className="text-sm font-semibold text-amber-800">💡 Profile Tip</p>
+            <p className="mt-1.5 text-xs text-amber-700 leading-relaxed">
+              Keep your profile minimal and strong — only publish marks you are comfortable sharing. A verified mark sheet boosts your smart match score.
             </p>
           </div>
-          <span className="flex-shrink-0 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-blue-600">
-            Quick View
-          </span>
         </div>
-      ) : (
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-          {/* ── LEFT MAIN COLUMN ── */}
-          <div className="lg:col-span-2 space-y-6">
-            <BioSection
-              bio={profile.bio}
-              onSave={(bio) => setProfile((p) => ({ ...p, bio }))}
-            />
-
-            <ProjectsSection
-              projects={profile.projects}
-              onAdd={(proj) =>
-                setProfile((p) => ({ ...p, projects: [proj, ...p.projects] }))
-              }
-              onRemove={(id) =>
-                setProfile((p) => ({ ...p, projects: p.projects.filter((x) => x.id !== id) }))
-              }
-            />
-
-            <ResultSheetSection
-              state={profile.resultSheet}
-              publishedKeySet={publishedKeySet}
-              setState={(updater) =>
-                setProfile((p) => ({
-                  ...p,
-                  resultSheet:
-                    typeof updater === "function" ? updater(p.resultSheet) : updater,
-                }))
-              }
-              onTogglePublish={(mark, enabled) => {
-                setProfile((p) => {
-                  const key = markKey(mark);
-                  const next = enabled
-                    ? [...p.resultSheet.publishedMarks, mark]
-                    : p.resultSheet.publishedMarks.filter((m) => markKey(m) !== key);
-                  return { ...p, resultSheet: { ...p.resultSheet, publishedMarks: next } };
-                });
-              }}
-              onPublishSave={() => {
-                alert("Saved published marks (only selected marks will be stored in DB).");
-              }}
-            />
-          </div>
-
-          {/* ── RIGHT SIDEBAR COLUMN ── */}
-          <div className="space-y-5">
-            <MobileSection
-              mobile={profile.mobile}
-              onSave={(mobile) => setProfile((p) => ({ ...p, mobile }))}
-            />
-
-            <LinksSection
-              githubUrl={profile.githubUrl}
-              linkedinUrl={profile.linkedinUrl}
-              onSave={(data) => setProfile((p) => ({ ...p, ...data }))}
-            />
-
-            {/* Quick Stats card */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="border-b border-slate-100 px-5 py-4">
-                <p className="text-sm font-bold text-slate-900">Quick Stats</p>
-              </div>
-              <div className="p-4 grid grid-cols-2 gap-3">
-                <StatBox label="Projects" value={profile.projects.length} icon="📁" accent />
-                <StatBox label="Published" value={profile.resultSheet.publishedMarks.length} icon="📊" />
-                <StatBox
-                  label="Modules"
-                  value={profile.resultSheet.allMarks.length}
-                  icon="📋"
-                />
-                <StatBox
-                  label="Status"
-                  value={profile.resultSheet.status === "EMPTY" ? "—" : profile.resultSheet.status}
-                  icon={profile.resultSheet.status === "VERIFIED" ? "✅" : "⏳"}
-                />
-              </div>
-            </div>
-
-            {/* Tip card */}
-            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
-              <p className="text-sm font-semibold text-amber-800">💡 Profile Tip</p>
-              <p className="mt-1.5 text-xs text-amber-700 leading-relaxed">
-                Keep your profile minimal and strong — only publish marks you are comfortable sharing. A verified mark sheet boosts your smart match score.
-              </p>
-            </div>
-          </div>
-
-        </div>
-      )}
+      </div>
     </div>
   );
 }

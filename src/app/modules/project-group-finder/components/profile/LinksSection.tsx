@@ -33,10 +33,12 @@ function LinkRow({ icon, label, href }: { icon: string; label: string; href: str
 export default function LinksSection({
   githubUrl,
   linkedinUrl,
+  isEditing,
   onSave,
 }: {
   githubUrl?: string;
   linkedinUrl?: string;
+  isEditing: boolean;
   onSave: (data: { githubUrl?: string; linkedinUrl?: string }) => void;
 }) {
   const hasAny = !!githubUrl || !!linkedinUrl;
@@ -47,7 +49,11 @@ export default function LinksSection({
   return (
     <SectionCard title="Links" hint="Add your GitHub and LinkedIn profiles." accent="indigo">
       {!hasAny && !editing ? (
-        <EmptyAddCard text="Add GitHub / LinkedIn links." onAdd={() => setEditing(true)} />
+        isEditing ? (
+          <EmptyAddCard text="Add GitHub / LinkedIn links." onAdd={() => setEditing(true)} />
+        ) : (
+          <p className="text-sm text-slate-400 italic">No links added yet.</p>
+        )
       ) : editing ? (
         <div className="space-y-3">
           <div className="relative">
@@ -96,13 +102,15 @@ export default function LinksSection({
         <div className="space-y-2">
           {githubUrl && <LinkRow icon="🐙" label={githubUrl} href={githubUrl} />}
           {linkedinUrl && <LinkRow icon="💼" label={linkedinUrl} href={linkedinUrl} />}
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="mt-1 text-xs font-medium text-blue-600 hover:text-blue-700"
-          >
-            ✏️ Edit links
-          </button>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="mt-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+            >
+              ✏️ Edit links
+            </button>
+          )}
         </div>
       )}
     </SectionCard>

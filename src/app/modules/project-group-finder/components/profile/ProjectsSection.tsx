@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import SectionCard from "./SectionCard";
 import EmptyAddCard from "./EmptyAddCard";
 import type { ProfileProject } from "@/app/modules/project-group-finder/types";
@@ -16,61 +16,83 @@ function TechBadge({ label }: { label: string }) {
   );
 }
 
-function RepoCard({ p, onRemove }: { p: ProfileProject; onRemove: (id: string) => void }) {
+function RepoCard({
+  p,
+  isEditing,
+  onRemove,
+}: {
+  p: ProfileProject;
+  isEditing: boolean;
+  onRemove: (id: string) => void;
+}) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-base">📁</span>
-          <p className="font-semibold text-slate-900 truncate">{p.name}</p>
-        </div>
-        <button
-          onClick={() => onRemove(p.id)}
-          className="flex-shrink-0 rounded-lg border border-red-100 bg-red-50 px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-100 transition"
-        >
-          Remove
-        </button>
-      </div>
-
-      {p.description && (
-        <p className="mt-2 text-sm text-slate-600 leading-relaxed">{p.description}</p>
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md overflow-hidden">
+      {/* Project image */}
+      {p.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={p.imageUrl}
+          alt={p.name}
+          className="h-36 w-full object-cover"
+        />
       )}
 
-      {/* Tech badges */}
-      {p.tech.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {p.tech.map((t) => (
-            <TechBadge key={t} label={t} />
-          ))}
+      <div className="p-4">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-base">📁</span>
+            <p className="font-semibold text-slate-900 truncate">{p.name}</p>
+          </div>
+          {isEditing && (
+            <button
+              onClick={() => onRemove(p.id)}
+              className="flex-shrink-0 rounded-lg border border-red-100 bg-red-50 px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-100 transition"
+            >
+              Remove
+            </button>
+          )}
         </div>
-      )}
 
-      {/* Links + date */}
-      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
-        {p.repoUrl && (
-          <a
-            href={p.repoUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-blue-600 hover:text-blue-700"
-          >
-            🐙 Repo →
-          </a>
+        {p.description && (
+          <p className="mt-2 text-sm text-slate-600 leading-relaxed">{p.description}</p>
         )}
-        {p.liveUrl && (
-          <a
-            href={p.liveUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-indigo-600 hover:text-indigo-700"
-          >
-            🔗 Live →
-          </a>
+
+        {/* Tech badges */}
+        {p.tech.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {p.tech.map((t) => (
+              <TechBadge key={t} label={t} />
+            ))}
+          </div>
         )}
-        {p.updatedAt && (
-          <span className="ml-auto text-slate-400">Updated {p.updatedAt}</span>
-        )}
+
+        {/* Links + date */}
+        <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
+          {p.repoUrl && (
+            <a
+              href={p.repoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-blue-600 hover:text-blue-700"
+            >
+              🐙 Repo →
+            </a>
+          )}
+          {p.liveUrl && (
+            <a
+              href={p.liveUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-indigo-600 hover:text-indigo-700"
+            >
+              🔗 Live →
+            </a>
+          )}
+          {p.updatedAt && (
+            <span className="ml-auto text-slate-400">Updated {p.updatedAt}</span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -78,11 +100,15 @@ function RepoCard({ p, onRemove }: { p: ProfileProject; onRemove: (id: string) =
 
 export default function ProjectsSection({
   projects,
+  userId,
+  isEditing,
   onAdd,
   onRemove,
 }: {
   projects: ProfileProject[];
-  onAdd: (proj: ProfileProject) => void;
+  userId: string;
+  isEditing: boolean;
+  onAdd: (proj: ProfileProject) => Promise<void>;
   onRemove: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -91,21 +117,65 @@ export default function ProjectsSection({
   const [tech, setTech] = useState("Next.js, Prisma");
   const [repo, setRepo] = useState("");
   const [live, setLive] = useState("");
+  const [imageFile, setImageFile] = useState<File | undefined>(undefined);
+  const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
+  const [adding, setAdding] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const add = () => {
-    if (!name.trim()) return;
-    onAdd({
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      description: desc.trim() || "No description",
-      tech: tech.split(",").map((x) => x.trim()).filter(Boolean),
-      repoUrl: repo.trim() || undefined,
-      liveUrl: live.trim() || undefined,
-      updatedAt: "just now",
-    });
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  function resetForm() {
     setName(""); setDesc(""); setTech("Next.js, Prisma"); setRepo(""); setLive("");
-    setOpen(false);
-  };
+    setImageFile(undefined); setImagePreview(undefined);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function add() {
+    if (!name.trim()) return;
+    setAdding(true);
+    try {
+      let imageUrl: string | undefined = undefined;
+
+      // Upload image to Supabase if a file was selected
+      if (imageFile && userId) {
+        const fd = new FormData();
+        fd.append("file", imageFile);
+        fd.append("userId", userId);
+        const uploadRes = await fetch("/api/project-group-finder/projects/upload-image", {
+          method: "POST",
+          body: fd,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          imageUrl = uploadData.url;
+        }
+        // If upload fails, continue without image (don't block project creation)
+      }
+
+      await onAdd({
+        id: crypto.randomUUID(),   // placeholder — Profilepage replaces with DB id
+        name: name.trim(),
+        description: desc.trim() || "No description",
+        tech: tech.split(",").map((x) => x.trim()).filter(Boolean),
+        repoUrl: repo.trim() || undefined,
+        liveUrl: live.trim() || undefined,
+        imageUrl,
+        updatedAt: "just now",
+      });
+
+      resetForm();
+      setOpen(false);
+    } finally {
+      setAdding(false);
+    }
+  }
 
   return (
     <SectionCard
@@ -135,22 +205,68 @@ export default function ProjectsSection({
             <input value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="Repo URL (optional)" className={inputCls} />
             <input value={live} onChange={(e) => setLive(e.target.value)} placeholder="Live URL (optional)" className={inputCls} />
           </div>
+
+          {/* Image upload */}
+          <div>
+            <p className="mb-1.5 text-xs font-semibold text-slate-600">Project Image (optional)</p>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
+            {imagePreview ? (
+              <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imagePreview} alt="Preview" className="h-36 w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => { setImagePreview(undefined); setImageFile(undefined); if (fileRef.current) fileRef.current.value = ""; }}
+                  className="absolute top-2 right-2 rounded-full bg-white/80 px-2 py-1 text-xs font-semibold text-red-500 shadow hover:bg-white"
+                >
+                  ✕ Remove
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="w-full rounded-xl border-2 border-dashed border-slate-300 bg-white py-5 text-sm text-slate-500 transition hover:border-blue-400 hover:text-blue-600"
+              >
+                🖼️ Click to upload project image
+              </button>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <button
               onClick={add}
-              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              disabled={adding || !name.trim()}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Add Project
+              {adding ? (
+                <>
+                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Saving…
+                </>
+              ) : (
+                "Add Project"
+              )}
             </button>
             <button
-              onClick={() => setOpen(false)}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              onClick={() => { setOpen(false); resetForm(); }}
+              disabled={adding}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
             >
               Cancel
             </button>
           </div>
         </div>
-      ) : projects.length > 0 ? (
+      ) : isEditing && projects.length > 0 ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -162,14 +278,18 @@ export default function ProjectsSection({
 
       {/* Empty state */}
       {projects.length === 0 && !open && (
-        <EmptyAddCard text="Add your first project." onAdd={() => setOpen(true)} />
+        isEditing ? (
+          <EmptyAddCard text="Add your first project." onAdd={() => setOpen(true)} />
+        ) : (
+          <p className="text-sm text-slate-400 italic">No projects added yet.</p>
+        )
       )}
 
       {/* Project list */}
       {projects.length > 0 && (
         <div className="space-y-3">
           {projects.map((p) => (
-            <RepoCard key={p.id} p={p} onRemove={onRemove} />
+            <RepoCard key={p.id} p={p} isEditing={isEditing} onRemove={onRemove} />
           ))}
         </div>
       )}

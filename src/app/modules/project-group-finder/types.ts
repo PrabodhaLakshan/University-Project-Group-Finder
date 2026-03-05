@@ -1,3 +1,5 @@
+export type GroupStatus = "NO_GROUP" | "PENDING" | "IN_GROUP";
+
 export type ProfileProject = {
   id: string;
   name: string;
@@ -5,6 +7,7 @@ export type ProfileProject = {
   tech: string[];          // ["Next.js","Prisma"]
   repoUrl?: string;
   liveUrl?: string;
+  imageUrl?: string;       // base64 data URL or remote URL
   updatedAt?: string;      // "2 days ago"
 };
 
@@ -33,6 +36,7 @@ export type StudentProfile = {
   bio?: string;
   mobile?: string;
   githubUrl?: string;
+  groupStatus: GroupStatus;
   linkedinUrl?: string;
 
   projects: ProfileProject[];

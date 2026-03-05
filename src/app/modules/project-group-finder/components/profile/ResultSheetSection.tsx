@@ -67,12 +67,14 @@ export default function ResultSheetSection({
   onTogglePublish,
   onPublishSave,
   setState,
+  isEditing,
 }: {
   state: ResultSheetState;
   publishedKeySet: Set<string>;
   onTogglePublish: (mark: Mark, enabled: boolean) => void;
   onPublishSave: () => void;
   setState: React.Dispatch<React.SetStateAction<ResultSheetState>>;
+  isEditing: boolean;
 }) {
   const fileRef = React.useRef<HTMLInputElement>(null);
   const hasMarks = state.allMarks.length > 0;
@@ -156,7 +158,11 @@ export default function ResultSheetSection({
       />
 
       {state.status === "EMPTY" ? (
-        <EmptyAddCard text="Upload your official mark sheet (PDF)." onAdd={openFilePicker} />
+        isEditing ? (
+          <EmptyAddCard text="Upload your official mark sheet (PDF)." onAdd={openFilePicker} />
+        ) : (
+          <p className="text-sm text-slate-400 italic">No mark sheet uploaded yet.</p>
+        )
       ) : (
         <div className="space-y-4">
           {/* File info bar */}
@@ -173,13 +179,15 @@ export default function ResultSheetSection({
                 )}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={openFilePicker}
-              className="flex-shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-blue-300 hover:text-blue-700"
-            >
-              ↑ Re-upload
-            </button>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={openFilePicker}
+                className="flex-shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-blue-300 hover:text-blue-700"
+              >
+                ↑ Re-upload
+              </button>
+            )}
           </div>
 
           {/* Marks table */}
@@ -239,8 +247,9 @@ export default function ResultSheetSection({
                                       <input
                                         type="checkbox"
                                         checked={checked}
-                                        onChange={(e) => onTogglePublish(m, e.target.checked)}
-                                        className="h-4 w-4 rounded accent-blue-600 cursor-pointer"
+                                        onChange={(e) => isEditing && onTogglePublish(m, e.target.checked)}
+                                        readOnly={!isEditing}
+                                        className={"h-4 w-4 rounded accent-blue-600 " + (isEditing ? "cursor-pointer" : "cursor-default opacity-60")}
                                       />
                                     </td>
                                     <td className="px-4 py-3">
@@ -271,14 +280,16 @@ export default function ResultSheetSection({
                   <span className="font-bold text-blue-700">{state.publishedMarks.length}</span>{" "}
                   <span className="text-slate-400">/ {state.allMarks.length}</span>
                 </p>
-                <button
-                  type="button"
-                  onClick={onPublishSave}
-                  disabled={state.publishedMarks.length === 0}
-                  className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Save Published Marks
-                </button>
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={onPublishSave}
+                    disabled={state.publishedMarks.length === 0}
+                    className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save Published Marks
+                  </button>
+                )}
               </div>
 
               <p className="text-xs text-slate-400">ℹ️ Only your selected marks are stored — full mark sheet stays private.</p>

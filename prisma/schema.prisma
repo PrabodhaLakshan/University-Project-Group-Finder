@@ -1,11 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
 datasource db {
   provider = "postgresql"
-   
 }
 
 model group_members {
@@ -65,13 +64,13 @@ model ratings {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model results {
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id     String?    @db.Uuid
-  gpa         Decimal?   @db.Decimal
-  is_verified Boolean?   @default(false)
-  created_at  DateTime?  @default(now()) @db.Timestamp(6)
-  users       users?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  subjects    subjects[]
+  id       String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id  String?    @db.Uuid
+  module   String?
+  grade    String?
+  semester String?
+  users    users?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  subjects subjects[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -100,12 +99,120 @@ model users {
   created_at                              DateTime?       @default(now()) @db.Timestamp(6)
   github_url                              String?
   linkedin_url                            String?
+  mobile_no                               String?         @db.VarChar(20)
   group_members                           group_members[]
   groups                                  groups[]
   invites_invites_receiver_idTousers      invites[]       @relation("invites_receiver_idTousers")
   invites_invites_sender_idTousers        invites[]       @relation("invites_sender_idTousers")
   messages                                messages[]
+  projects                                projects[]
   ratings_ratings_reviewed_user_idTousers ratings[]       @relation("ratings_reviewed_user_idTousers")
   ratings_ratings_reviewer_idTousers      ratings[]       @relation("ratings_reviewer_idTousers")
   results                                 results[]
+}
+
+model app_notifications {
+  id          String   @id
+  receiver_id String
+  sender_id   String?
+  type        String
+  title       String
+  message     String
+  is_read     Boolean  @default(false)
+  meta        Json?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([receiver_id, created_at(sort: Desc)], map: "idx_app_notifications_receiver_created")
+  @@index([receiver_id, is_read], map: "idx_app_notifications_receiver_unread")
+}
+
+model projects {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  title       String    @db.VarChar(120)
+  description String?
+  github_url  String?
+  live_url    String?
+  image_path  String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model uniMartMessage {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content    String
+  senderId   String   @db.Uuid
+  receiverId String   @db.Uuid
+  productId  String?  @db.Uuid
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model uniMartOrder {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId       String   @db.Uuid
+  buyerId         String   @db.Uuid
+  paymentMethod   String   @db.VarChar(20)
+  paymentStatus   String   @default("PENDING") @db.VarChar(20)
+  receiptUrl      String?
+  stripeSessionId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+}
+
+model uniMartProducts {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String   @db.VarChar(200)
+  description    String
+  price          Decimal  @db.Decimal
+  category       String   @db.VarChar(100)
+  condition      String   @db.VarChar(50)
+  location       String?  @db.VarChar(200)
+  images         String[] @default([])
+  status         String   @default("AVAILABLE")
+  currentOrderId String?  @db.Uuid
+  sellerId       String   @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
+}
+
+model unimart_reviews {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rating    Int      @db.SmallInt
+  comment   String
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime
+  productId String   @db.Uuid
+  buyerId   String   @db.Uuid
+  orderId   String   @unique @db.Uuid
+
+  @@index([buyerId])
+  @@index([productId])
+}
+
+model Conversation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @db.Uuid
+  buyerId   String   @db.Uuid
+  sellerId  String   @db.Uuid
+  orderId   String?  @unique @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@unique([productId, buyerId, sellerId])
+  @@index([buyerId, createdAt(sort: Desc)])
+  @@index([productId, createdAt(sort: Desc)])
+  @@index([sellerId, createdAt(sort: Desc)])
+}
+
+model Message {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String   @db.Uuid
+  senderId       String   @db.Uuid
+  text           String
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@index([senderId, createdAt(sort: Desc)])
 }
