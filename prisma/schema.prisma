@@ -103,6 +103,7 @@ model users {
   mobile_no                               String?         @db.VarChar(20)
   group_status                            String?         @default("NO_GROUP") @db.VarChar(20)
   avatar_path                             String?
+  group_number                            String?
   group_members                           group_members[]
   groups                                  groups[]
   invites_invites_receiver_idTousers      invites[]       @relation("invites_receiver_idTousers")

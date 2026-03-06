@@ -42,6 +42,11 @@ export type StudentProfile = {
   linkedinUrl?: string;
   skills: string[];
 
+  specialization?: string;
+  year?: number;
+  semester?: number;
+  groupNumber?: string;
+
   projects: ProfileProject[];
   resultSheet: ResultSheetState;
 };

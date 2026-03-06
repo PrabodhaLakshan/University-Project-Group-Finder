@@ -12,6 +12,7 @@ import ProjectsSection from "./ProjectsSection";
 import ResultSheetSection from "./ResultSheetSection";
 import GroupStatusSection from "./GroupStatusSection";
 import SkillsSection from "./SkillsSection";
+import AcademicInfoSection, { AcademicInfoData } from "./AcademicInfoSection";
 import type { ProfileProject, GroupStatus } from "@/app/modules/project-group-finder/types";
 
 function StatBox({
@@ -56,6 +57,10 @@ export default function ProfilePage() {
     mobile: "",
     githubUrl: "",
     linkedinUrl: "",
+    specialization: undefined,
+    year: undefined,
+    semester: undefined,
+    groupNumber: undefined,
     groupStatus: "NO_GROUP" as GroupStatus,
     skills: [],
     projects: [],
@@ -135,6 +140,10 @@ export default function ProfilePage() {
           mobile: profileData?.mobile_no ?? "",
           githubUrl: profileData?.github_url ?? "",
           linkedinUrl: profileData?.linkedin_url ?? "",
+          specialization: profileData?.specialization ?? undefined,
+          year: profileData?.year ?? undefined,
+          semester: profileData?.semester ?? undefined,
+          groupNumber: profileData?.group_number ?? undefined,
           groupStatus: (profileData?.group_status as GroupStatus) ?? "NO_GROUP",
           skills: profileData?.skills ?? [],
           imageUrl: profileData?.avatar_url ?? "",
@@ -166,6 +175,10 @@ export default function ProfilePage() {
       github_url?: string | null;
       linkedin_url?: string | null;
       group_status?: string | null;
+      specialization?: string | null;
+      year?: number | null;
+      semester?: number | null;
+      group_number?: string | null;
       skills?: string[];
     }) => {
       if (!profile.id) return;
@@ -213,6 +226,16 @@ export default function ProfilePage() {
   async function saveSkills(skills: string[]) {
     setProfile((p) => ({ ...p, skills }));
     await saveToDb({ skills });
+  }
+
+  async function saveAcademicInfo(info: AcademicInfoData) {
+    setProfile((p) => ({ ...p, ...info }));
+    await saveToDb({
+      specialization: info.specialization || null,
+      year: info.year || null,
+      semester: info.semester || null,
+      group_number: info.groupNumber || null,
+    });
   }
 
   // ── Add project — POST to API then update state ───────────────────────────
@@ -442,6 +465,17 @@ export default function ProfilePage() {
             skills={profile.skills}
             isEditing={isEditing}
             onSave={saveSkills}
+          />
+
+          <AcademicInfoSection
+            data={{
+              specialization: profile.specialization,
+              year: profile.year,
+              semester: profile.semester,
+              groupNumber: profile.groupNumber,
+            }}
+            isEditing={isEditing}
+            onSave={saveAcademicInfo}
           />
 
           <LinksSection

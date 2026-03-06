@@ -2,55 +2,11 @@
 
 import { useAuth } from "@/app/providers";
 import { useRouter, useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import LeftSidebar, { NavKey } from "@/app/modules/project-group-finder/components/LeftSidebar";
-import { useState } from "react";
 
 type Panel = NavKey;
-
-// ── Mock student data (replace with real API call later) ──────────────────────
-const MOCK_STUDENTS: Record<string, {
-    id: string;
-    name: string;
-    specialization: string;
-    gpa: number;
-    availability: string;
-    skills: string[];
-    bio?: string;
-    year?: string;
-    semester?: string;
-    batch?: string;
-    githubUrl?: string;
-    linkedinUrl?: string;
-}> = {
-    s1: {
-        id: "s1",
-        name: "Nimal Perera",
-        specialization: "Software Engineering",
-        gpa: 3.65,
-        availability: "Weekend",
-        skills: ["React", "Node.js", "MongoDB", "Express", "Git"],
-        bio: "3rd year IT student passionate about full-stack web development and open source.",
-        year: "3",
-        semester: "2",
-        batch: "23.2",
-        githubUrl: "https://github.com/nimal",
-    },
-    s2: {
-        id: "s2",
-        name: "Imasha Silva",
-        specialization: "Data Science",
-        gpa: 3.78,
-        availability: "Evening",
-        skills: ["Python", "SQL", "PowerBI", "React", "ML"],
-        bio: "Focused on machine learning and data visualization. Love building dashboards.",
-        year: "3",
-        semester: "2",
-        batch: "23.2",
-        linkedinUrl: "https://linkedin.com/in/imasha",
-    },
-};
 
 function SkillBadge({ children }: { children: React.ReactNode }) {
     return (
@@ -60,7 +16,7 @@ function SkillBadge({ children }: { children: React.ReactNode }) {
     );
 }
 
-function StatBox({ label, value }: { label: string; value: string }) {
+function StatBox({ label, value }: { label: string; value: string | number }) {
     return (
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
             <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
@@ -70,7 +26,7 @@ function StatBox({ label, value }: { label: string; value: string }) {
 }
 
 export default function StudentProfilePage() {
-    const { user, loading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const params = useParams();
     const studentId = params?.id as string;
@@ -78,26 +34,71 @@ export default function StudentProfilePage() {
     const [panel, setPanel] = useState<Panel>("dashboard");
     const [mobileOpen, setMobileOpen] = useState(false);
 
-    useEffect(() => {
-        if (!loading && !user) router.replace("/login");
-    }, [loading, user, router]);
+    const [student, setStudent] = useState<any>(null);
+    const [gpa, setGpa] = useState<string | null>(null);
+    const [loadingData, setLoadingData] = useState(true);
+    const [inviting, setInviting] = useState(false);
 
-    if (loading)
+    useEffect(() => {
+        if (!authLoading && !user) router.replace("/login");
+    }, [authLoading, user, router]);
+
+    useEffect(() => {
+        async function fetchStudent() {
+            if (!studentId) return;
+            try {
+                // Fetch profile
+                const res = await fetch(`/api/project-group-finder/profile?userId=${studentId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setStudent(data);
+                }
+
+                // Fetch GPA
+                const resResults = await fetch(`/api/project-group-finder/results?userId=${studentId}`);
+                if (resResults.ok) {
+                    const data = await resResults.json();
+                    if (data.gpa) setGpa(data.gpa);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoadingData(false);
+            }
+        }
+        fetchStudent();
+    }, [studentId]);
+
+    if (authLoading || loadingData)
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center">
                 <p className="text-sm text-slate-500">Loading...</p>
             </div>
         );
+
     if (!user) return null;
 
-    const student = MOCK_STUDENTS[studentId];
-
     const initials = student?.name
-        .split(" ")
-        .map((w) => w[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase() ?? "??";
+        ? student.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+        : "??";
+
+    const handleInvite = async () => {
+        setInviting(true);
+        try {
+            const res = await fetch("/api/project-group-finder/invite", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ receiverId: studentId }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            alert("Invite sent successfully!");
+        } catch (err: any) {
+            alert(err.message || "Failed to send invite");
+        } finally {
+            setInviting(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50">
@@ -129,16 +130,21 @@ export default function StudentProfilePage() {
                         <div className="px-6 pb-6">
                             {/* Avatar */}
                             <div className="-mt-8 flex items-end justify-between gap-4">
-                                <div className="h-16 w-16 flex-shrink-0 rounded-2xl border-4 border-white bg-blue-100 shadow-md flex items-center justify-center">
-                                    <span className="text-xl font-bold text-blue-600">{initials}</span>
+                                <div className="h-16 w-16 flex-shrink-0 rounded-2xl border-4 border-white bg-blue-100 shadow-md flex items-center justify-center overflow-hidden">
+                                    {student?.avatar_url ? (
+                                        <img src={student.avatar_url} alt="Profile" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <span className="text-xl font-bold text-blue-600">{initials}</span>
+                                    )}
                                 </div>
 
-                                {student && (
+                                {student && student.id !== user.id && (
                                     <button
-                                        onClick={() => alert(`Invite sent to ${student.name}`)}
-                                        className="mb-1 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        onClick={handleInvite}
+                                        disabled={inviting}
+                                        className="mb-1 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
                                     >
-                                        Invite
+                                        {inviting ? "Sending..." : "Invite"}
                                     </button>
                                 )}
                             </div>
@@ -147,14 +153,14 @@ export default function StudentProfilePage() {
                                 <>
                                     <div className="mt-3">
                                         <h1 className="text-xl font-bold text-slate-900">{student.name}</h1>
-                                        <p className="text-sm text-slate-500">{student.specialization}</p>
+                                        <p className="text-sm text-slate-500">{student.specialization || "No Specialization Set"}</p>
                                     </div>
 
                                     {/* Stats */}
                                     <div className="mt-4 grid grid-cols-3 gap-3">
-                                        <StatBox label="GPA" value={student.gpa.toFixed(2)} />
-                                        <StatBox label="Availability" value={student.availability} />
-                                        <StatBox label="Batch" value={student.batch ?? "—"} />
+                                        <StatBox label="GPA" value={gpa ? parseFloat(gpa).toFixed(2) : "—"} />
+                                        <StatBox label="Group Status" value={student.group_status === "NO_GROUP" ? "No Group" : student.group_status || "—"} />
+                                        <StatBox label="Group No." value={student.group_number ?? "—"} />
                                     </div>
 
                                     {/* Tags */}
@@ -180,11 +186,11 @@ export default function StudentProfilePage() {
                                     )}
 
                                     {/* Skills */}
-                                    {student.skills.length > 0 && (
+                                    {student.skills && student.skills.length > 0 && (
                                         <div className="mt-5">
                                             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Skills</p>
                                             <div className="flex flex-wrap gap-1.5">
-                                                {student.skills.map((s) => (
+                                                {student.skills.map((s: string) => (
                                                     <SkillBadge key={s}>{s}</SkillBadge>
                                                 ))}
                                             </div>
@@ -192,11 +198,11 @@ export default function StudentProfilePage() {
                                     )}
 
                                     {/* Links */}
-                                    {(student.githubUrl || student.linkedinUrl) && (
+                                    {(student.github_url || student.linkedin_url) && (
                                         <div className="mt-5 flex flex-wrap gap-3">
-                                            {student.githubUrl && (
+                                            {student.github_url && (
                                                 <a
-                                                    href={student.githubUrl}
+                                                    href={student.github_url}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
@@ -204,9 +210,9 @@ export default function StudentProfilePage() {
                                                     🐙 GitHub →
                                                 </a>
                                             )}
-                                            {student.linkedinUrl && (
+                                            {student.linkedin_url && (
                                                 <a
-                                                    href={student.linkedinUrl}
+                                                    href={student.linkedin_url}
                                                     target="_blank"
                                                     rel="noreferrer"
                                                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700"

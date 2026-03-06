@@ -8,7 +8,7 @@ export type GroupSearchFilters = {
   year: string;
   semester: string;
   batch: string;
-  group: string;
+  specialization: string;
 };
 
 const YEAR_OPTS = [
@@ -24,17 +24,39 @@ const SEM_OPTS = [
 ];
 
 const BATCH_OPTS = [
-  { label: "Batch 23.1", value: "23.1" },
-  { label: "Batch 23.2", value: "23.2" },
-  { label: "Batch 24.1", value: "24.1" },
-  { label: "Batch 24.2", value: "24.2" },
+  { label: "Batch 1.1", value: "1.1" },
+  { label: "Batch 1.2", value: "1.2" },
+  { label: "Batch 2.1", value: "2.1" },
+  { label: "Batch 2.2", value: "2.2" },
+  { label: "Batch 3.1", value: "3.1" },
+  { label: "Batch 3.2", value: "3.2" },
+  { label: "Batch 4.1", value: "4.1" },
+  { label: "Batch 4.2", value: "4.2" },
+  { label: "Batch 5.1", value: "5.1" },
+  { label: "Batch 5.2", value: "5.2" },
+  { label: "Batch 6.1", value: "6.1" },
+  { label: "Batch 6.2", value: "6.2" },
+  { label: "Batch 7.1", value: "7.1" },
+  { label: "Batch 7.2", value: "7.2" },
+  { label: "Batch 8.1", value: "8.1" },
+  { label: "Batch 8.2", value: "8.2" },
+  { label: "Batch 9.1", value: "9.1" },
+  { label: "Batch 9.2", value: "9.2" },
+  { label: "Batch 10.1", value: "10.1" },
+  { label: "Batch 10.2", value: "10.2" },
 ];
 
-const GROUP_OPTS = [
-  { label: "Group A", value: "A" },
-  { label: "Group B", value: "B" },
-  { label: "Group C", value: "C" },
-  { label: "Group D", value: "D" },
+const SPECIALIZATIONS_OPTS = [
+  { label: "IT", value: "IT" },
+  { label: "Software Engineering (SE)", value: "Software Engineering (SE)" },
+  { label: "Data Science (DS)", value: "Data Science (DS)" },
+  { label: "Cyber Security (CSNE)", value: "Cyber Security (CSNE)" },
+  { label: "Interactive Media (IM)", value: "Interactive Media (IM)" },
+  { label: "Information Systems (IS)", value: "Information Systems (IS)" },
+  { label: "Computer Systems & Network Engineering (CSNE)", value: "Computer Systems & Network Engineering (CSNE)" },
+  { label: "Business Management", value: "Business Management" },
+  { label: "Engineering", value: "Engineering" },
+  { label: "Other", value: "Other" },
 ];
 
 export default function GroupSearchForm({
@@ -55,7 +77,7 @@ export default function GroupSearchForm({
   };
 
   const canSearch =
-    value.year && value.semester && value.batch && value.group && !loading;
+    value.year && value.semester && value.batch && value.specialization && !loading;
 
   return (
     <section className="rounded-2xl border border-blue-100 bg-white shadow-sm overflow-hidden">
@@ -107,12 +129,12 @@ export default function GroupSearchForm({
             disabled={!!loading}
           />
           <FilterDropdown
-            label="Group"
-            name="group"
-            value={value.group}
+            label="Specialization"
+            name="specialization"
+            value={value.specialization}
             onChange={setField}
-            options={GROUP_OPTS}
-            placeholder="Select group"
+            options={SPECIALIZATIONS_OPTS}
+            placeholder="Select specialization"
             disabled={!!loading}
           />
         </div>
@@ -122,7 +144,7 @@ export default function GroupSearchForm({
           <button
             type="button"
             onClick={() => {
-              onChange({ year: "", semester: "", batch: "", group: "" });
+              onChange({ year: "", semester: "", batch: "", specialization: "" });
               onReset?.();
             }}
             disabled={!!loading}

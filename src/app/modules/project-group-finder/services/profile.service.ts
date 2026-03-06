@@ -23,6 +23,7 @@ export async function getProfileByUserId(userId: string) {
             group_status: true,
 
             avatar_path: true,
+            group_number: true,
 
             rating: true,
             created_at: true,
@@ -55,6 +56,7 @@ export type UpsertProfileData = {
     year?: number | null;
     semester?: number | null;
     skills?: string[];
+    group_number?: string | null;
 };
 
 /** Called by the PUT route */
@@ -71,6 +73,7 @@ export async function upsertProfile(userId: string, data: UpsertProfileData) {
             ...(data.year !== undefined ? { year: data.year } : {}),
             ...(data.semester !== undefined ? { semester: data.semester } : {}),
             ...(data.skills !== undefined ? { skills: data.skills } : {}),
+            ...(data.group_number !== undefined ? { group_number: data.group_number } : {}),
         },
         select: {
             id: true,
@@ -85,6 +88,7 @@ export async function upsertProfile(userId: string, data: UpsertProfileData) {
             linkedin_url: true,
             mobile_no: true,
             group_status: true,
+            group_number: true,
             rating: true,
             created_at: true,
         },

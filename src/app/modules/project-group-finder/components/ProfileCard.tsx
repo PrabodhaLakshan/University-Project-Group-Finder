@@ -16,6 +16,7 @@ export type StudentProfile = {
   batch?: string;
   availability?: string;
   skills: string[];
+  groupStatus?: "pending" | "no_group" | "in_group";
 };
 
 function SkillBadge({ children }: { children: React.ReactNode }) {

@@ -121,6 +121,11 @@ function ResultCard({
               <p className="truncate text-base font-bold text-slate-900">{r.name}</p>
               <p className="truncate text-xs text-slate-500">{r.specialization}</p>
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                {r.groupStatus && (
+                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">
+                    {r.groupStatus === "no_group" ? "No Group" : "Pending"}
+                  </span>
+                )}
                 {r.gpa !== undefined && (
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                     GPA {r.gpa.toFixed(2)}
