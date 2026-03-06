@@ -80,6 +80,7 @@ export async function POST(req: Request) {
       score: verifyJson.score,
       reasons: verifyJson.reasons,
       extractedMarks: verifyJson.extractedMarks,
+      gpa: verifyJson.gpa,
     });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Server error" }, { status: 500 });

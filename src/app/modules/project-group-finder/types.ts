@@ -24,6 +24,8 @@ export type ResultSheetState = {
   status: "EMPTY" | "PENDING" | "VERIFIED" | "REJECTED";
   allMarks: Mark[];
   publishedMarks: Mark[];  // only selected ones to save in DB
+  gpa?: string | null;     // Extracted cumulative GPA
+  publishGpa?: boolean;    // User toggled selection
 };
 
 export type StudentProfile = {

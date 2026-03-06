@@ -147,3 +147,12 @@ def extract_marks_from_pdf(doc: fitz.Document) -> List[Dict[str, Any]]:
         uniq.append(r)
 
     return uniq
+
+
+def extract_gpa_from_pdf(doc: fitz.Document) -> Optional[str]:
+    text = _get_full_text(doc, max_pages=2)
+    # Match common GPA formats like "Cumulative GPA : 3.45" or "GPA 3.4"
+    m = re.search(r"(?:Cumulative\s*)?GPA\s*[:=]?\s*(\d+\.\d+)", text, re.IGNORECASE)
+    if m:
+        return m.group(1)
+    return None

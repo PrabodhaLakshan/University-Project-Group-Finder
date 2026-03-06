@@ -120,8 +120,10 @@ export default function ProfilePage() {
           }))
           : [];
 
-        // Load saved published marks
-        const savedMarks: Mark[] = resultsRes.ok ? await resultsRes.json() : [];
+        // Load saved published marks + GPA
+        const resultsData = resultsRes.ok ? await resultsRes.json() : { marks: [], gpa: null };
+        const savedMarks: Mark[] = resultsData.marks || [];
+        const savedGpa: string | null = resultsData.gpa || null;
 
         setProfile((p) => ({
           ...p,
@@ -140,9 +142,11 @@ export default function ProfilePage() {
           resultSheet: {
             ...p.resultSheet,
             publishedMarks: savedMarks,
-            // If there are saved marks, show the sheet as VERIFIED
             status: savedMarks.length > 0 ? "VERIFIED" : "EMPTY",
             allMarks: savedMarks.length > 0 ? savedMarks : [],
+            // Set GPA and publish state from DB if available
+            gpa: savedGpa,
+            publishGpa: !!savedGpa,
           },
         }));
       } catch {
@@ -271,6 +275,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           userId: profile.id,
           marks: profile.resultSheet.publishedMarks,
+          gpa: profile.resultSheet.publishGpa ? profile.resultSheet.gpa : null,
         }),
       });
 

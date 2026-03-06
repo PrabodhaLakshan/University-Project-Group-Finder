@@ -28,7 +28,10 @@ export async function GET(req: Request) {
             }))
         );
 
-        return NextResponse.json(marks);
+        // Find the first non-null GPA among the semester results
+        const gpa = results.find((r) => r.gpa)?.gpa || null;
+
+        return NextResponse.json({ marks, gpa });
     } catch (e: any) {
         return NextResponse.json({ error: e?.message || "Failed to fetch results" }, { status: 500 });
     }

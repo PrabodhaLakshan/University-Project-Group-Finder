@@ -10,12 +10,12 @@ type IncomingMark = {
 };
 
 // POST /api/project-group-finder/results/save
-// Body: { userId: string, marks: IncomingMark[] }
+// Body: { userId: string, marks: IncomingMark[], gpa?: string | null }
 // Replaces all stored results for the user with the provided marks
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { userId, marks } = body as { userId: string; marks: IncomingMark[] };
+        const { userId, marks, gpa } = body as { userId: string; marks: IncomingMark[]; gpa?: string | null };
 
         if (!userId) {
             return NextResponse.json({ error: "userId is required" }, { status: 400 });
@@ -46,6 +46,7 @@ export async function POST(req: Request) {
                     module: `${semester} results`,
                     grade: semMarks[0]?.grade ?? "",
                     semester,
+                    gpa: gpa || null,
                 },
             });
 

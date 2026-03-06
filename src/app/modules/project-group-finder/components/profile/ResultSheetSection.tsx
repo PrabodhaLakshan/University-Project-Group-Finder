@@ -106,9 +106,15 @@ export default function ResultSheetSection({
         semester: m.semester ?? m.semesterTag ?? m.semester_name ?? null,
       }));
 
-      setState((s) => ({ ...s, status: data.verified ? "VERIFIED" : "REJECTED", fileName: file.name, allMarks: marks }));
+      setState((s) => ({
+        ...s,
+        status: data.verified ? "VERIFIED" : "REJECTED",
+        fileName: file.name,
+        allMarks: marks,
+        gpa: data.gpa,
+      }));
     } catch {
-      setState((s) => ({ ...s, status: "REJECTED", allMarks: [] }));
+      setState((s) => ({ ...s, status: "REJECTED", allMarks: [], gpa: null }));
     }
   }
 
@@ -196,12 +202,34 @@ export default function ResultSheetSection({
           ) : (
             <>
               <div>
-                <p className="mb-3 text-sm font-semibold text-slate-900">
-                  Extracted Marks{" "}
-                  <span className="ml-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                    {state.allMarks.length} modules
-                  </span>
-                </p>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-900">
+                    Extracted Marks{" "}
+                    <span className="ml-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                      {state.allMarks.length} modules
+                    </span>
+                  </p>
+                  {state.gpa && (
+                    <label className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 border border-emerald-200 cursor-pointer hover:bg-emerald-100 transition">
+                      <input
+                        type="checkbox"
+                        checked={!!state.publishGpa}
+                        onChange={(e) =>
+                          isEditing &&
+                          setState((s) => ({ ...s, publishGpa: e.target.checked }))
+                        }
+                        disabled={!isEditing}
+                        className="h-4 w-4 rounded accent-emerald-600 disabled:opacity-50"
+                      />
+                      <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wide">
+                        Publish GPA
+                      </span>
+                      <span className="ml-1 rounded bg-white px-2 py-0.5 text-sm font-bold text-emerald-700 shadow-sm">
+                        {state.gpa}
+                      </span>
+                    </label>
+                  )}
+                </div>
 
                 {/* ✅ GROUPED DISPLAY */}
                 <div className="space-y-4">

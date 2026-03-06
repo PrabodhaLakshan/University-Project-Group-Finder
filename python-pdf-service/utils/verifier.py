@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 from PIL import Image
 
-from utils.extractor import extract_marks_from_pdf
+from utils.extractor import extract_marks_from_pdf, extract_gpa_from_pdf
 
 TEMPLATE_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "templates", "sample_template.pdf")
@@ -109,6 +109,7 @@ def verify_pdf_against_template(pdf_bytes: bytes, template_version: str = "v1") 
     verified = score >= 75
 
     extracted = extract_marks_from_pdf(doc)
+    gpa = extract_gpa_from_pdf(doc)
     doc.close()
 
     return {
@@ -116,5 +117,6 @@ def verify_pdf_against_template(pdf_bytes: bytes, template_version: str = "v1") 
         "score": int(score),
         "reasons": [] if verified else reasons,
         "extractedMarks": extracted,
+        "gpa": gpa,
         "debug": {"logo_score": logo_score, "anchors_found": found, "header_found": header_found},
     }
