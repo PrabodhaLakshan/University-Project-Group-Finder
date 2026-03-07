@@ -277,3 +277,14 @@ model project_group_members {
   @@index([group_id], map: "idx_project_group_members_group_id")
   @@index([user_id], map: "idx_project_group_members_user_id")
 }
+model group_messages {
+  id           String   @id @default(uuid()) @db.Uuid
+  group_id     String
+  sender_id    String   @db.Uuid
+  sender_name  String?  @db.VarChar(120)
+  sender_image String?  @db.Text
+  message      String   @db.Text
+  created_at   DateTime @default(now())
+
+  @@index([group_id, created_at])
+}

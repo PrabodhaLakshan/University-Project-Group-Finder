@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: Params) {
         const { id: inviteId } = await params;
 
         const invite = await prisma.project_group_invites.findUnique({
-            where: { id: BigInt(inviteId) },
+            where: { id: inviteId },
         });
 
         if (!invite) {
@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: Params) {
         }
 
         await prisma.project_group_invites.update({
-            where: { id: BigInt(inviteId) },
+            where: { id: inviteId },
             data: {
                 status: "rejected",
             },

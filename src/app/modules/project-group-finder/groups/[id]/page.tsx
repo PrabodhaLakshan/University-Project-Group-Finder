@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { toast } from "react-hot-toast";
+
+import ProfileCard, { StudentProfile } from "../../components/ProfileCard";
 
 type User = {
     id: string;
@@ -12,6 +13,13 @@ type User = {
     avatarUrl?: string;
     specialization: string | null;
     student_id: string;
+    year: string | null;
+    semester: string | null;
+    skills: string[];
+    bio: string | null;
+    github_url: string | null;
+    linkedin_url: string | null;
+    mobile_no: string | null;
 };
 
 type Member = {
@@ -45,12 +53,18 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
     const [editMaxMembers, setEditMaxMembers] = useState<number>(4);
     const [saving, setSaving] = useState(false);
 
+    // Profile Modal State
+    const [selectedProfile, setSelectedProfile] = useState<StudentProfile | null>(null);
+
+    // Role changing state
+    const [changingRole, setChangingRole] = useState<string | null>(null);
+
     const currentUserToken = typeof window !== "undefined" ? localStorage.getItem("pgf_token") : null;
     let currentUserId: string | null = null;
     if (currentUserToken) {
         try {
             const payload = JSON.parse(atob(currentUserToken.split(".")[1]));
-            currentUserId = payload.id;
+            currentUserId = payload.userId || payload.id;
         } catch (e) { }
     }
 
@@ -110,14 +124,59 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
 
-            toast.success("Group updated successfully!");
+            alert("Group updated successfully!");
             setGroup({ ...group!, ...data.group });
             setIsEditing(false);
         } catch (err: any) {
-            toast.error(err.message || "Failed to update group");
+            alert(err.message || "Failed to update group");
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleChangeRole = async (memberId: string, newRole: string) => {
+        setChangingRole(memberId);
+        try {
+            const token = localStorage.getItem("pgf_token");
+            const res = await fetch(`/api/project-group-finder/groups/${groupId}/members/${memberId}/role`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ role: newRole }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            alert("Role updated successfully!");
+            setGroup(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    members: prev.members.map(m => m.id === memberId ? { ...m, role: newRole } : m)
+                };
+            });
+        } catch (err: any) {
+            alert(err.message || "Failed to update role");
+        } finally {
+            setChangingRole(null);
+        }
+    };
+
+    const openProfile = (member: Member) => {
+        setSelectedProfile({
+            id: member.user.student_id,
+            name: member.user.name,
+            email: member.user.email,
+            imageUrl: member.user.avatarUrl,
+            specialization: member.user.specialization || "Unspecified",
+            year: member.user.year || undefined,
+            semester: member.user.semester || undefined,
+            skills: member.user.skills || [],
+            groupStatus: "in_group"
+        });
     };
 
     if (loading) {
@@ -250,8 +309,9 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
                     </div>
                 </div>
 
-                {/* Right Column: Members List */}
-                <div className="lg:col-span-1">
+                {/* Right Column: Members List & Settings */}
+                <div className="lg:col-span-1 space-y-6">
+                    {/* Members List */}
                     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <div className="mb-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-slate-900">Members</h3>
@@ -263,7 +323,7 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
                         <ul className="space-y-4">
                             {group.members.map((member) => (
                                 <li key={member.id} className="flex items-center gap-3">
-                                    <div className="relative h-10 w-10 shrink-0 rounded-full border border-slate-200 bg-slate-100 overflow-hidden">
+                                    <div className="relative h-10 w-10 shrink-0 cursor-pointer rounded-full border border-slate-200 bg-slate-100 overflow-hidden" onClick={() => openProfile(member)}>
                                         {member.user.avatarUrl ? (
                                             <Image
                                                 src={member.user.avatarUrl}
@@ -277,8 +337,8 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="truncate text-sm font-semibold text-slate-900">
+                                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openProfile(member)}>
+                                        <p className="truncate text-sm font-semibold text-slate-900 hover:text-blue-600 transition">
                                             {member.user.name}
                                             {member.user_id === currentUserId && <span className="ml-1 text-slate-400 font-normal">(You)</span>}
                                         </p>
@@ -286,7 +346,7 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
                                             {member.user.specialization || member.user.student_id}
                                         </p>
                                     </div>
-                                    <div className="shrink-0 text-right">
+                                    <div className="shrink-0 text-right flex items-center gap-2">
                                         <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${member.role === "leader" ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
                                             }`}>
                                             {member.role}
@@ -305,8 +365,84 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
                             </button>
                         )}
                     </div>
+
+                    {/* Group Setting */}
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-slate-900">Group Setting</h3>
+                        </div>
+                        {isLeader ? (
+                            <div className="space-y-6">
+                                {/* Max Members */}
+                                <div>
+                                    <label className="text-sm font-semibold text-slate-800">Max Member Limit</label>
+                                    <p className="text-xs text-slate-500 mb-2">Change the maximum number of people allowed in the group.</p>
+                                    <div className="flex items-center gap-3">
+                                        <select
+                                            value={editMaxMembers}
+                                            onChange={(e) => setEditMaxMembers(Number(e.target.value))}
+                                            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        >
+                                            <option value={2}>2 Members</option>
+                                            <option value={3}>3 Members</option>
+                                            <option value={4}>4 Members</option>
+                                            <option value={5}>5 Members</option>
+                                        </select>
+                                        <button
+                                            onClick={handleUpdateGroup}
+                                            disabled={saving}
+                                            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+                                        >
+                                            {saving ? "..." : "Save"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-100 pt-4">
+                                    <label className="text-sm font-semibold text-slate-800 mb-3 block">Manage Roles</label>
+                                    <ul className="space-y-3">
+                                        {group.members.map((member) => (
+                                            <li key={member.id} className="flex items-center justify-between">
+                                                <span className="text-sm text-slate-700 truncate mr-2">{member.user.name}</span>
+                                                {member.user_id !== currentUserId ? (
+                                                    <select
+                                                        disabled={changingRole === member.id}
+                                                        value={member.role}
+                                                        onChange={(e) => handleChangeRole(member.id, e.target.value)}
+                                                        className="rounded-lg border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                    >
+                                                        <option value="member">Member</option>
+                                                        <option value="leader">Leader</option>
+                                                    </select>
+                                                ) : (
+                                                    <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 rounded-lg">You ({member.role})</span>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-slate-500">Only the group leader can access settings.</p>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* Profile Modal */}
+            {selectedProfile && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+                    <div className="relative w-full max-w-sm">
+                        <ProfileCard profile={selectedProfile} />
+                        <button
+                            onClick={() => setSelectedProfile(null)}
+                            className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-500 shadow-md hover:text-slate-900"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

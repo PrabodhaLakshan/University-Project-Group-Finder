@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 export type NavKey = "dashboard" | "project-group" | "invites" | "chat";
 
@@ -71,14 +72,17 @@ function SidebarContent({
   active,
   onChange,
   onClose,
+  groupId,
 }: {
   active: NavKey;
   onChange: (k: NavKey) => void;
   onClose: () => void;
+  groupId?: string;
 }) {
+  const router = useRouter();
+
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-white px-3 py-4">
-      {/* Header */}
       <div className="mb-5 flex items-center justify-between px-1">
         <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
           Group Space
@@ -91,15 +95,17 @@ function SidebarContent({
         </button>
       </div>
 
-      {/* Nav items */}
       <div className="space-y-1.5">
-        {/* Dashboard — top */}
         <NavItem
           active={active === "dashboard"}
           icon="🏠"
           title="Dashboard"
           desc="Find & match students"
-          onClick={() => { onChange("dashboard"); onClose(); }}
+          onClick={() => {
+            onChange("dashboard");
+            onClose();
+            router.push("/project-group-finder");
+          }}
         />
 
         <div className="my-2 border-t border-slate-100" />
@@ -111,8 +117,13 @@ function SidebarContent({
           desc="View members & roles"
           badge="4"
           badgeColor="green"
-          onClick={() => { onChange("project-group"); onClose(); }}
+          onClick={() => {
+            onChange("project-group");
+            onClose();
+            router.push(`/project-group-finder/groups/${groupId}`);
+          }}
         />
+
         <NavItem
           active={active === "invites"}
           icon="✉️"
@@ -120,19 +131,33 @@ function SidebarContent({
           desc="Sent & received"
           badge="3"
           badgeColor="orange"
-          onClick={() => { onChange("invites"); onClose(); }}
+          onClick={() => {
+            onChange("invites");
+            onClose();
+            router.push("/project-group-finder");
+          }}
         />
+
         <NavItem
           active={active === "chat"}
           icon="💬"
           title="Chat"
           desc="Real-time group chat"
           badge="Live"
-          onClick={() => { onChange("chat"); onClose(); }}
+          onClick={() => {
+            console.log("Chat groupId:", groupId);
+            if (!groupId) {
+              console.error("groupId is missing");
+              return;
+            }
+
+            onChange("chat");
+            onClose();
+            router.push(`/project-group-finder/groups/${groupId}/chat`);
+          }}
         />
       </div>
 
-      {/* Tip */}
       <div className="mt-auto pt-6">
         <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
           <p className="text-sm font-semibold text-amber-800">💡 Tip</p>
@@ -150,20 +175,25 @@ export default function LeftSidebar({
   onChange,
   mobileOpen,
   setMobileOpen,
+  groupId,
 }: {
   active: NavKey;
   onChange: (k: NavKey) => void;
   mobileOpen: boolean;
   setMobileOpen: (v: boolean) => void;
+  groupId?: string;
 }) {
   return (
     <>
-      {/* DESKTOP: fixed sidebar below navbar */}
       <aside className="fixed left-0 top-16 z-30 hidden h-[calc(100vh-64px)] w-[260px] border-r border-slate-200 bg-white shadow-sm lg:block">
-        <SidebarContent active={active} onChange={onChange} onClose={() => { }} />
+        <SidebarContent
+          active={active}
+          onChange={onChange}
+          onClose={() => { }}
+          groupId={groupId}
+        />
       </aside>
 
-      {/* MOBILE: drawer overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -185,6 +215,7 @@ export default function LeftSidebar({
                 active={active}
                 onChange={onChange}
                 onClose={() => setMobileOpen(false)}
+                groupId={groupId}
               />
             </motion.aside>
           </>
