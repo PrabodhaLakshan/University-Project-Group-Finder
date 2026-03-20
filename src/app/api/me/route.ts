@@ -17,5 +17,19 @@ export async function GET(req: Request) {
     select: { id: true, student_id: true, name: true, email: true, avatar_path: true },
   });
 
-  return Response.json({ user });
+  let userData = user;
+  
+  // If database query fails (RLS policies or user not synced yet),
+  // return user object with data from JWT token
+  if (!userData) {
+    console.log("User not found in database, using JWT token data for userId:", payload.userId);
+    userData = {
+      id: payload.userId,
+      student_id: payload.student_id || "",
+      name: payload.name || "",
+      email: payload.email || "",
+    };
+  }
+
+  return Response.json({ user: userData });
 }

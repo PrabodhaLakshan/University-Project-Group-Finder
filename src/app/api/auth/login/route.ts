@@ -18,17 +18,25 @@ export async function POST(req: Request) {
     });
 
     if (!user) {
+      console.log("❌ User not found for email:", email);
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
     }
+
+    console.log("✅ User found:", { id: user.id, email: user.email });
 
     // if you stored hashed password in DB
     const ok = await bcrypt.compare(password, user.password);
+    console.log("🔐 Password comparison result:", ok);
+    
     if (!ok) {
+      console.log("❌ Password mismatch for user:", email);
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
     }
 
+    console.log("✅ Authentication successful for:", email);
+
     const token = jwt.sign(
-      { userId: user.id, student_id: user.student_id },
+      { userId: user.id, student_id: user.student_id, name: user.name, email: user.email },
       process.env.JWT_SECRET!,
       { expiresIn: "7d" }
     );
