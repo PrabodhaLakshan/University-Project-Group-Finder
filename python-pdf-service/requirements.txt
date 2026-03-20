@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pymupdf
+pdfplumber
+pikepdf
+pillow
+opencv-python
+imagehash
+requests
