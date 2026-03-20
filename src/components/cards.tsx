@@ -40,7 +40,7 @@ export default function CampusPlatformCards() {
         { label: "Sellers", value: "120" },
       ],
       btn: "Open Module",
-      href: "/uni-mart",
+      href: "/modules/uni-mart",
     },
     {
       title: "Tutor Finder",
@@ -64,7 +64,7 @@ export default function CampusPlatformCards() {
         { label: "Hires", value: "17" },
       ],
       btn: "Open Module",
-      href: "/startup-connect",
+      href: "/modules/startup-connect",
     },
   ];
 
