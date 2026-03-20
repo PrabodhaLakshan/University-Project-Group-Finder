@@ -8,6 +8,7 @@ type User = {
   student_id: string;
   email: string;
   name: string;
+  avatar_path?: string;
 };
 
 type AuthState = {

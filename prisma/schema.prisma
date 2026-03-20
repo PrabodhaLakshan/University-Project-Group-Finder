@@ -1,11 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
 datasource db {
   provider = "postgresql"
-   
 }
 
 model group_members {
@@ -26,17 +25,6 @@ model groups {
   group_members group_members[]
   users         users?          @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   messages      messages[]
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model invites {
-  id                               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sender_id                        String?   @db.Uuid
-  receiver_id                      String?   @db.Uuid
-  status                           String?   @default("pending") @db.VarChar(20)
-  created_at                       DateTime? @default(now()) @db.Timestamp(6)
-  users_invites_receiver_idTousers users?    @relation("invites_receiver_idTousers", fields: [receiver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_invites_sender_idTousers   users?    @relation("invites_sender_idTousers", fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -65,13 +53,14 @@ model ratings {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model results {
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id     String?    @db.Uuid
-  gpa         Decimal?   @db.Decimal
-  is_verified Boolean?   @default(false)
-  created_at  DateTime?  @default(now()) @db.Timestamp(6)
-  users       users?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  subjects    subjects[]
+  id       String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id  String?    @db.Uuid
+  module   String?
+  grade    String?
+  semester String?
+  gpa      String?
+  users    users?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  subjects subjects[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -86,26 +75,216 @@ model subjects {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model users {
-  id                                      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  student_id                              String          @unique @db.VarChar(50)
-  name                                    String          @db.VarChar(100)
-  email                                   String          @unique @db.VarChar(100)
-  password                                String
-  specialization                          String?         @db.VarChar(100)
-  year                                    Int?
-  semester                                Int?
-  skills                                  String[]
-  bio                                     String?
-  rating                                  Decimal?        @default(0) @db.Decimal
-  created_at                              DateTime?       @default(now()) @db.Timestamp(6)
-  github_url                              String?
-  linkedin_url                            String?
-  group_members                           group_members[]
-  groups                                  groups[]
-  invites_invites_receiver_idTousers      invites[]       @relation("invites_receiver_idTousers")
-  invites_invites_sender_idTousers        invites[]       @relation("invites_sender_idTousers")
-  messages                                messages[]
-  ratings_ratings_reviewed_user_idTousers ratings[]       @relation("ratings_reviewed_user_idTousers")
-  ratings_ratings_reviewer_idTousers      ratings[]       @relation("ratings_reviewer_idTousers")
-  results                                 results[]
+  id                                                             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id                                                     String                  @unique @db.VarChar(50)
+  name                                                           String                  @db.VarChar(100)
+  email                                                          String                  @unique @db.VarChar(100)
+  password                                                       String
+  specialization                                                 String?                 @db.VarChar(100)
+  year                                                           Int?
+  semester                                                       Int?
+  skills                                                         String[]
+  bio                                                            String?
+  rating                                                         Decimal?                @default(0) @db.Decimal
+  created_at                                                     DateTime?               @default(now()) @db.Timestamp(6)
+  github_url                                                     String?
+  linkedin_url                                                   String?
+  mobile_no                                                      String?                 @db.VarChar(20)
+  group_status                                                   String?                 @default("NO_GROUP") @db.VarChar(20)
+  avatar_path                                                    String?
+  group_number                                                   String?
+  group_members                                                  group_members[]
+  groups                                                         groups[]
+  messages                                                       messages[]
+  project_group                                                  project_group[]
+  project_group_invites_project_group_invites_receiver_idTousers project_group_invites[] @relation("project_group_invites_receiver_idTousers")
+  project_group_invites_project_group_invites_sender_idTousers   project_group_invites[] @relation("project_group_invites_sender_idTousers")
+  project_group_members                                          project_group_members?
+  projects                                                       projects[]
+  ratings_ratings_reviewed_user_idTousers                        ratings[]               @relation("ratings_reviewed_user_idTousers")
+  ratings_ratings_reviewer_idTousers                             ratings[]               @relation("ratings_reviewer_idTousers")
+  results                                                        results[]
+  user_skills                                                    user_skills[]
+}
+
+model app_notifications {
+  id          String   @id
+  receiver_id String
+  sender_id   String?
+  type        String
+  title       String
+  message     String
+  is_read     Boolean  @default(false)
+  meta        Json?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([receiver_id, created_at(sort: Desc)], map: "idx_app_notifications_receiver_created")
+  @@index([receiver_id, is_read], map: "idx_app_notifications_receiver_unread")
+}
+
+model projects {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String    @db.Uuid
+  title       String    @db.VarChar(120)
+  description String?
+  github_url  String?
+  live_url    String?
+  image_path  String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model uniMartMessage {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content    String
+  senderId   String   @db.Uuid
+  receiverId String   @db.Uuid
+  productId  String?  @db.Uuid
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model uniMartOrder {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId       String   @db.Uuid
+  buyerId         String   @db.Uuid
+  paymentMethod   String   @db.VarChar(20)
+  paymentStatus   String   @default("PENDING") @db.VarChar(20)
+  receiptUrl      String?
+  stripeSessionId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+}
+
+model uniMartProducts {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String   @db.VarChar(200)
+  description    String
+  price          Decimal  @db.Decimal
+  category       String   @db.VarChar(100)
+  condition      String   @db.VarChar(50)
+  location       String?  @db.VarChar(200)
+  images         String[] @default([])
+  status         String   @default("AVAILABLE")
+  currentOrderId String?  @db.Uuid
+  sellerId       String   @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
+}
+
+model unimart_reviews {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rating    Int      @db.SmallInt
+  comment   String
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime
+  productId String   @db.Uuid
+  buyerId   String   @db.Uuid
+  orderId   String   @unique @db.Uuid
+
+  @@index([buyerId])
+  @@index([productId])
+}
+
+model Conversation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String   @db.Uuid
+  buyerId   String   @db.Uuid
+  sellerId  String   @db.Uuid
+  orderId   String?  @unique @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@unique([productId, buyerId, sellerId])
+  @@index([buyerId, createdAt(sort: Desc)])
+  @@index([productId, createdAt(sort: Desc)])
+  @@index([sellerId, createdAt(sort: Desc)])
+}
+
+model Message {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String   @db.Uuid
+  senderId       String   @db.Uuid
+  text           String
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@index([senderId, createdAt(sort: Desc)])
+}
+
+model skills {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String        @unique @db.VarChar(60)
+  created_at  DateTime?     @default(now()) @db.Timestamp(6)
+  user_skills user_skills[]
+}
+
+model user_skills {
+  user_id     String    @db.Uuid
+  skill_id    String    @db.Uuid
+  proficiency Int?      @db.SmallInt
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  skills      skills    @relation(fields: [skill_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, skill_id])
+  @@index([skill_id], map: "idx_user_skills_skill_id")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model project_group {
+  id                    BigInt                  @id @default(autoincrement())
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  name                  String?                 @db.VarChar(100)
+  created_by            String?                 @db.Uuid
+  status                String?                 @default("active") @db.VarChar(20)
+  description           String?
+  max_members           Int                     @default(4)
+  users                 users?                  @relation(fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_project_group_created_by")
+  project_group_invites project_group_invites[]
+  project_group_members project_group_members[]
+}
+
+model project_group_invites {
+  id                                             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sender_id                                      String         @db.Uuid
+  receiver_id                                    String         @db.Uuid
+  group_id                                       BigInt?
+  status                                         String         @default("pending") @db.VarChar(20)
+  created_at                                     DateTime       @default(now()) @db.Timestamp(6)
+  project_group                                  project_group? @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_project_group_invites_group")
+  users_project_group_invites_receiver_idTousers users          @relation("project_group_invites_receiver_idTousers", fields: [receiver_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "invites_receiver_id_fkey")
+  users_project_group_invites_sender_idTousers   users          @relation("project_group_invites_sender_idTousers", fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "invites_sender_id_fkey")
+
+  @@index([group_id], map: "idx_project_group_invites_group_id")
+  @@index([receiver_id], map: "idx_project_group_invites_receiver_id")
+  @@index([sender_id], map: "idx_project_group_invites_sender_id")
+  @@index([status], map: "idx_project_group_invites_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model project_group_members {
+  id            BigInt        @id @default(autoincrement())
+  group_id      BigInt
+  user_id       String        @unique(map: "uq_project_group_members_user") @db.Uuid
+  role          String?       @default("member") @db.VarChar(30)
+  joined_at     DateTime      @default(now()) @db.Timestamptz(6)
+  project_group project_group @relation(fields: [group_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_project_group_members_group")
+  users         users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_project_group_members_user")
+
+  @@unique([group_id, user_id], map: "uq_project_group_members")
+  @@index([group_id], map: "idx_project_group_members_group_id")
+  @@index([user_id], map: "idx_project_group_members_user_id")
+}
+model group_messages {
+  id           String   @id @default(uuid()) @db.Uuid
+  group_id     String
+  sender_id    String   @db.Uuid
+  sender_name  String?  @db.VarChar(120)
+  sender_image String?  @db.Text
+  message      String   @db.Text
+  created_at   DateTime @default(now())
+
+  @@index([group_id, created_at])
 }
