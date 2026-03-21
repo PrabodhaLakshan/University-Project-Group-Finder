@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CampusPlatformCards() {
   return (
@@ -13,6 +14,7 @@ export default function CampusPlatformCards() {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
+
           <SpotlightCard
             title="Project Group Finder"
             desc="Find teammates by skills, year & specialization."
@@ -23,6 +25,7 @@ export default function CampusPlatformCards() {
               { label: "Groups", value: "12" },
             ]}
             btn="Create Profile"
+            link="/project-group-finder"
           />
 
           <SpotlightCard
@@ -35,6 +38,7 @@ export default function CampusPlatformCards() {
               { label: "Sellers", value: "120" },
             ]}
             btn="Explore Items"
+            link="/uni-mart"
           />
 
           <SpotlightCard
@@ -47,6 +51,7 @@ export default function CampusPlatformCards() {
               { label: "Bookings", value: "19" },
             ]}
             btn="Find Tutor"
+            link="/tutor-connect"
           />
 
           <SpotlightCard
@@ -59,7 +64,9 @@ export default function CampusPlatformCards() {
               { label: "Hires", value: "17" },
             ]}
             btn="Post a Gig"
+            link="/startup-connect"
           />
+
         </div>
       </div>
     </div>
@@ -72,14 +79,17 @@ function SpotlightCard({
   pill,
   stats,
   btn,
+  link,
 }: {
   title: string;
   desc: string;
   pill: string;
   stats: { label: string; value: string }[];
   btn: string;
+  link: string;
 }) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const router = useRouter();
 
   return (
     <div
@@ -90,19 +100,12 @@ function SpotlightCard({
           y: e.clientY - rect.top,
         });
       }}
-      className="
-        relative overflow-hidden
-        rounded-2xl border border-white/10
-        bg-gradient-to-b from-[#0a1020] to-black
-        p-6
-        transition-all duration-300
-        hover:-translate-y-2
-        hover:border-blue-500/40
-        hover:shadow-[0_0_30px_rgba(59,130,246,0.25)]
-        group
-      "
+      className="relative overflow-hidden rounded-2xl border border-white/10
+      bg-gradient-to-b from-[#0a1020] to-black p-6 transition-all duration-300
+      hover:-translate-y-2 hover:border-blue-500/40
+      hover:shadow-[0_0_30px_rgba(59,130,246,0.25)] group cursor-pointer"
     >
-      {/* Spotlight Glow */}
+      {/* Glow Effect */}
       <div
         className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition duration-300"
         style={{
@@ -120,12 +123,7 @@ function SpotlightCard({
             <p className="text-sm text-white/60 mt-1">{desc}</p>
           </div>
 
-          <span className="
-            text-xs font-medium
-            rounded-full px-3 py-1
-            bg-blue-500/10 text-blue-300
-            border border-blue-500/20
-          ">
+          <span className="text-xs font-medium rounded-full px-3 py-1 bg-blue-500/10 text-blue-300 border border-blue-500/20">
             {pill}
           </span>
         </div>
@@ -135,12 +133,7 @@ function SpotlightCard({
           {stats.map((s) => (
             <div
               key={s.label}
-              className="
-                rounded-xl border border-white/10
-                bg-white/5 p-3
-                transition
-                hover:bg-blue-500/10 hover:border-blue-500/25
-              "
+              className="rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-blue-500/10 hover:border-blue-500/25"
             >
               <p className="text-xs text-white/60">{s.label}</p>
               <p className="text-lg font-semibold text-white mt-1">{s.value}</p>
@@ -149,15 +142,12 @@ function SpotlightCard({
         </div>
 
         {/* Button */}
-        <button className="
-          mt-6 w-full rounded-xl
-          bg-blue-600/90 text-white font-medium
-          py-3
-          transition-all duration-300
-          hover:bg-blue-500
-          hover:shadow-[0_0_20px_rgba(59,130,246,0.35)]
-          active:scale-[0.98]
-        ">
+        <button
+          onClick={() => router.push(link)}
+          className="mt-6 w-full rounded-xl bg-blue-600/90 text-white font-medium
+          py-3 transition-all duration-300 hover:bg-blue-500
+          hover:shadow-[0_0_20px_rgba(59,130,246,0.35)] active:scale-[0.98]"
+        >
           {btn}
         </button>
       </div>

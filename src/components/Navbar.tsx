@@ -9,27 +9,51 @@ export default function Navbar() {
   const router = useRouter();
 
   return (
-   <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0a1020]">
-
+    <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0a1020]">
       <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="font-semibold">
+        
+        {/* Logo */}
+        <Link href="/" className="font-semibold text-white">
           UniNest
         </Link>
 
-         <div className="flex items-center gap-6 text-white/70">
+        <div className="flex items-center gap-6 text-white/70">
+          
+          {/* Not Logged In */}
           {!loading && !user && (
             <>
-              <Link className="text-sm hover:underline" href="/login">Login</Link>
-              <Link className="rounded-md bg-black px-3 py-1.5 text-sm text-white" href="/register">
+              <Link className="text-sm hover:underline" href="/login">
+                Login
+              </Link>
+
+              <Link
+                className="rounded-md bg-black px-3 py-1.5 text-sm text-white"
+                href="/register"
+              >
                 Register
               </Link>
             </>
           )}
 
+          {/* Logged In */}
           {!loading && user && (
             <>
-              <Link className="hover:text-blue-300 transition" href="/dashboard">Dashboard</Link>
-              <Link className="hover:text-blue-300 transition" href="/profile">Profile</Link>
+              <Link
+                className="hover:text-blue-300 transition"
+                href="/dashboard"
+              >
+                Dashboard
+              </Link>
+
+               
+
+              <Link
+                className="hover:text-blue-300 transition"
+                href="/profile"
+              >
+                Profile
+              </Link>
+
               <button
                 onClick={() => {
                   logout();
