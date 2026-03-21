@@ -120,7 +120,6 @@ function SidebarContent({
           onClick={() => {
             onChange("project-group");
             onClose();
-            router.push(`/project-group-finder/groups/${groupId}`);
           }}
         />
 
