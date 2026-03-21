@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useState } from 'react';
-import { AddProjectModal } from "@/modules/startup-connect/components/AddProjectModal";
+import Link from 'next/link';
 import { Button } from "@/components/ui/button";
-import { Github, ExternalLink, Calendar } from "lucide-react";
+import { ArrowLeft, Github, ExternalLink } from "lucide-react";
 
-// Component එකේ නම හරියට මෙතන තියෙන්න ඕනේ
 const MyProjectsPage = () => {
-  // State එක (Frontend UI එක update කරන්න)
   const [projects, setProjects] = useState([
     {
       id: 1,
@@ -20,7 +18,6 @@ const MyProjectsPage = () => {
     }
   ]);
 
-  // අලුත් Project එකක් එකතු කරන Function එක
   const handleAddProject = (newProject: any) => {
     setProjects([newProject, ...projects]);
   };
@@ -28,20 +25,23 @@ const MyProjectsPage = () => {
   return (
     <div className="min-h-screen bg-slate-50/30 pb-20 pt-10">
       <div className="max-w-6xl mx-auto px-6">
+        <Link
+          href="/startup-connect/browse-gigs"
+          className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-700 mb-6"
+        >
+          <ArrowLeft size={14} /> Back to Browse Gigs
+        </Link>
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-16">
+        <div className="mb-16">
           <div>
             <h1 className="text-4xl font-black text-slate-900 italic uppercase tracking-tight">
-              My Portfolio
+              Our Recent Projects
             </h1>
             <p className="text-slate-500 font-bold mt-1">
-              Manage and showcase your professional work.
+              We are proud to showcase our latest innovations and collaborations in the startup ecosystem. Each project reflects our commitment to creativity, impact, and excellence.
             </p>
           </div>
-
-          {/* Modal එකට Function එක Pass කරනවා */}
-          <AddProjectModal onAddProject={handleAddProject} />
         </div>
 
         {/* Projects Grid */}
@@ -76,5 +76,4 @@ const MyProjectsPage = () => {
   );
 };
 
-// අන්තිමට මේක අනිවාර්යයෙන්ම තියෙන්න ඕනේ
 export default MyProjectsPage;

@@ -3,9 +3,48 @@ import React, { useState } from 'react';
 import { Star, X, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export const AddReviewModal = ({ onClose }: { onClose: () => void }) => {
+type NewReviewInput = {
+  studentName: string;
+  role: string;
+  comment: string;
+  rating: number;
+};
+
+export const AddReviewModal = ({
+  onClose,
+  onSubmit,
+}: {
+  onClose: () => void;
+  onSubmit: (review: NewReviewInput) => void;
+}) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = () => {
+    const trimmedComment = comment.trim();
+
+    if (!rating) {
+      setError('Please select a rating before submitting.');
+      return;
+    }
+
+    if (trimmedComment.length < 20 || trimmedComment.length > 500) {
+      setError('Please write 20-500 characters for your review.');
+      return;
+    }
+
+    setError(null);
+
+    onSubmit({
+      studentName: 'You',
+      role: 'Student',
+      comment: trimmedComment,
+      rating,
+    });
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-100 flex items-center justify-center p-4">
@@ -23,6 +62,12 @@ export const AddReviewModal = ({ onClose }: { onClose: () => void }) => {
 
         {/* Form Body */}
         <div className="p-8 space-y-8">
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
+              {error}
+            </div>
+          )}
+
           {/* Rating Selector */}
           <div className="flex flex-col items-center">
             <span className="text-[10px] font-black text-slate-400 uppercase mb-3">Overall Rating</span>
@@ -50,6 +95,8 @@ export const AddReviewModal = ({ onClose }: { onClose: () => void }) => {
             <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Your Experience</label>
             <textarea 
               placeholder="Tell us about the team, the work environment, and the projects..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
               className="w-full h-32 bg-slate-50 border-none rounded-[24px] p-5 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-orange-500 outline-none resize-none placeholder:text-slate-300"
             />
           </div>
@@ -58,7 +105,7 @@ export const AddReviewModal = ({ onClose }: { onClose: () => void }) => {
         {/* Footer */}
         <div className="p-8 pt-0 flex gap-3">
           <Button variant="ghost" onClick={onClose} className="flex-1 rounded-2xl py-6 font-black text-[10px] uppercase text-slate-400">Cancel</Button>
-          <Button className="flex-2 bg-orange-500 hover:bg-slate-900 text-white rounded-2xl py-6 font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-orange-100">
+          <Button onClick={handleSubmit} className="flex-2 bg-orange-500 hover:bg-slate-900 text-white rounded-2xl py-6 font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-orange-100">
             <Send className="w-3 h-3 mr-2" /> Submit Review
           </Button>
         </div>

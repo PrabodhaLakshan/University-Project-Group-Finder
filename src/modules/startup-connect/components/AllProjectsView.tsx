@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 export const AllProjectsView = () => {
   const router = useRouter();
 
-  // මෙතනට images වලට අදාළ paths හෝ URLs එකතු කරන්න
   const myProjects = [
     { 
       title: "Nexus Marketplace", 
@@ -35,7 +34,6 @@ export const AllProjectsView = () => {
 
   return (
     <div className="min-h-screen bg-white pb-20">
-      {/* Top Navigation - Header එකත් Pure White කළා */}
       <div className="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <Button 
@@ -67,7 +65,7 @@ export const AllProjectsView = () => {
                <ProjectCard 
                   title={project.title} 
                   description={project.desc}
-                  image={project.image} // පින්තූරය ProjectCard එකට යවනවා
+                  image={project.image} 
                />
             </div>
           ))}

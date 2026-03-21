@@ -19,6 +19,7 @@ export default function StartupConnectPage() {
 
   
   const goToRegister = () => setCurrentView('register');
+  const goToDashboard = () => setCurrentView('dashboard');
 
   // 2. Register Form එක Submit කරාම Dashboard එකට යවන function එක
   const finishRegistration = (data: any) => {
@@ -35,7 +36,7 @@ export default function StartupConnectPage() {
       )}
 
       {currentView === 'register' && (
-        <StartupRegisterForm onComplete={finishRegistration} />
+        <StartupRegisterForm onComplete={finishRegistration} onAlreadyHaveAccount={goToDashboard} />
       )}
 
       {currentView === 'dashboard' && (

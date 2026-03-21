@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken";
 
 type AuthTokenPayload = {
   userId: string;
-  student_id: string;
   iat?: number;
   exp?: number;
 };

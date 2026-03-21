@@ -24,6 +24,30 @@ const REVIEWS = [
 
 export const StartupReviews = () => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [reviews, setReviews] = React.useState(REVIEWS);
+
+  const handleAddReview = (review: {
+    studentName: string;
+    role: string;
+    comment: string;
+    rating: number;
+  }) => {
+    setReviews((prev) => [
+      {
+        id: prev.length + 1,
+        studentName: review.studentName,
+        role: review.role,
+        comment: review.comment,
+        rating: review.rating,
+        date: "Just now",
+      },
+      ...prev,
+    ]);
+  };
+
+  const averageRating = reviews.length
+    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+    : "0.0";
 
   return (
     <div className="mt-16 bg-white rounded-[40px] p-10 border border-slate-100 shadow-xl shadow-slate-50">
@@ -37,16 +61,16 @@ export const StartupReviews = () => {
         
         {/* Overall Rating Badge */}
         <div className="bg-orange-50 px-6 py-3 rounded-2xl border border-orange-100 flex items-center gap-3">
-            <span className="text-2xl font-black text-orange-600">4.8</span>
+            <span className="text-2xl font-black text-orange-600">{averageRating}</span>
             <div className="flex flex-col">
                 <div className="flex text-orange-400"><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/><Star size={12} fill="currentColor"/></div>
-                <span className="text-[9px] font-black text-slate-400 uppercase">12 Reviews</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase">{reviews.length} Reviews</span>
             </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {REVIEWS.map((review) => (
+        {reviews.map((review) => (
           <div key={review.id} className="p-8 bg-slate-50/50 rounded-[32px] border border-transparent hover:border-orange-200 transition-all group relative">
             <Quote className="absolute top-6 right-6 text-slate-200 group-hover:text-orange-100 transition-colors" size={40} />
             
@@ -85,7 +109,12 @@ export const StartupReviews = () => {
         </span>
       </button>
 
-      {isModalOpen && <AddReviewModal onClose={() => setIsModalOpen(false)} />}
+      {isModalOpen && (
+        <AddReviewModal
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddReview}
+        />
+      )}
     </div>
   );
 };
