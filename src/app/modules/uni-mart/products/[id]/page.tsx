@@ -1,17 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getProductById, deleteProduct } from "../../services/product.service";
 import { startConversation } from "../../services/message.service";
 import { Product } from "../../types";
-import { ArrowLeft, Share2, Heart, Trash2, Edit2, MessageCircle, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Share2, Heart, Trash2, Edit2, MessageCircle, ShoppingCart, ArrowUpDown, SlidersHorizontal, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { getToken } from "@/lib/auth";
-import { RatingBreakdown } from "../../components/RatingBreakdown";
-import { ReviewsList } from "../../components/ReviewsList";
+import { Oxanium, Inter } from "next/font/google";
+
+const oxanium = Oxanium({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+});
+
+type SellerStats = {
+  averageRating: number;
+  totalReviews: number;
+  soldProducts: number;
+};
+
+type SellerReview = {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  buyer?: {
+    id: string;
+    name: string;
+    student_id: string;
+  };
+  product?: {
+    id: string;
+    title: string;
+  };
+};
 
 export default function ProductDetailsPage() {
+  const ZOOM_LENS_SIZE = 160;
   const params = useParams();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
@@ -20,9 +52,56 @@ export default function ProductDetailsPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [ratingStats, setRatingStats] = useState<any>(null);
+  const [sellerReviews, setSellerReviews] = useState<SellerReview[]>([]);
+  const [sellerReviewsAverage, setSellerReviewsAverage] = useState(0);
+  const [sellerReviewsCount, setSellerReviewsCount] = useState(0);
+  const [sellerStats, setSellerStats] = useState<SellerStats | null>(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [sellerStatsLoading, setSellerStatsLoading] = useState(false);
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const [isZooming, setIsZooming] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+  const [reviewSort, setReviewSort] = useState<"high-to-low" | "low-to-high" | "newest">("high-to-low");
+  const [reviewFilterStar, setReviewFilterStar] = useState<"all" | "5" | "4" | "3" | "2" | "1">("all");
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement | null>(null);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const sortOptions: Array<{ value: "high-to-low" | "low-to-high" | "newest"; label: string }> = [
+    { value: "high-to-low", label: "Rating: High to Low" },
+    { value: "low-to-high", label: "Rating: Low to High" },
+    { value: "newest", label: "Newest First" },
+  ];
+
+  const filterOptions: Array<{ value: "all" | "5" | "4" | "3" | "2" | "1"; label: string }> = [
+    { value: "all", label: "All Star" },
+    { value: "5", label: "5 Star" },
+    { value: "4", label: "4 Star" },
+    { value: "3", label: "3 Star" },
+    { value: "2", label: "2 Star" },
+    { value: "1", label: "1 Star" },
+  ];
+
+  const selectedSortLabel = sortOptions.find((option) => option.value === reviewSort)?.label || "Sort";
+  const selectedFilterLabel = filterOptions.find((option) => option.value === reviewFilterStar)?.label || "All Star";
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const targetNode = event.target as Node;
+
+      if (sortMenuRef.current && !sortMenuRef.current.contains(targetNode)) {
+        setIsSortMenuOpen(false);
+      }
+
+      if (filterMenuRef.current && !filterMenuRef.current.contains(targetNode)) {
+        setIsFilterMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -68,33 +147,57 @@ export default function ProductDetailsPage() {
     }
   }, [product]);
 
-  // Load rating stats only (ReviewsList will load reviews itself)
-  const loadRatingStats = async () => {
-    if (!product) return;
-    
-    try {
-      setReviewsLoading(true);
-      
-      // Fetch rating stats for breakdown display
-      const statsResponse = await fetch(
-        `/api/unimart/reviews/stats?productId=${product.id}`
-      );
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setRatingStats(statsData);
+  useEffect(() => {
+    const loadSellerReviews = async () => {
+      if (!product?.sellerId) return;
+
+      try {
+        setReviewsLoading(true);
+        const response = await fetch(`/api/unimart/reviews?sellerId=${product.sellerId}`);
+
+        if (!response.ok) {
+          throw new Error("Failed to load seller reviews");
+        }
+
+        const data = await response.json();
+        setSellerReviews(data.reviews || []);
+        setSellerReviewsAverage(data.average || 0);
+        setSellerReviewsCount(data.count || 0);
+      } catch (error) {
+        console.error("Failed to load seller reviews:", error);
+        setSellerReviews([]);
+        setSellerReviewsAverage(0);
+        setSellerReviewsCount(0);
+      } finally {
+        setReviewsLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to load rating stats:", error);
-    } finally {
-      setReviewsLoading(false);
-    }
-  };
+    };
+
+    loadSellerReviews();
+  }, [product?.sellerId]);
 
   useEffect(() => {
-    if (product) {
-      loadRatingStats();
-    }
-  }, [product]);
+    const loadSellerStats = async () => {
+      if (!product?.sellerId) return;
+
+      try {
+        setSellerStatsLoading(true);
+        const response = await fetch(`/api/unimart/sellers/${product.sellerId}/stats`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch seller stats");
+        }
+        const data = await response.json();
+        setSellerStats(data);
+      } catch (error) {
+        console.error("Failed to load seller stats:", error);
+        setSellerStats(null);
+      } finally {
+        setSellerStatsLoading(false);
+      }
+    };
+
+    loadSellerStats();
+  }, [product?.sellerId]);
 
   const handleDelete = async () => {
     if (!product) return;
@@ -135,21 +238,97 @@ export default function ProductDetailsPage() {
     }
   };
 
+  const handleImageMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const lensHalfWidthPercent = (ZOOM_LENS_SIZE / 2 / rect.width) * 100;
+    const lensHalfHeightPercent = (ZOOM_LENS_SIZE / 2 / rect.height) * 100;
+
+    const rawX = ((event.clientX - rect.left) / rect.width) * 100;
+    const rawY = ((event.clientY - rect.top) / rect.height) * 100;
+
+    const clampedX = Math.min(Math.max(rawX, lensHalfWidthPercent), 100 - lensHalfWidthPercent);
+    const clampedY = Math.min(Math.max(rawY, lensHalfHeightPercent), 100 - lensHalfHeightPercent);
+
+    setZoomPosition({ x: clampedX, y: clampedY });
+  };
+
+  const maskReviewerName = (name?: string) => {
+    const cleaned = (name || "Anonymous").replace(/\s+/g, "").trim();
+    if (cleaned.length <= 1) return "A**";
+    if (cleaned.length === 2) return `${cleaned[0]}**${cleaned[1]}`;
+    return `${cleaned[0]}**${cleaned[cleaned.length - 1]}`;
+  };
+
+  const getSellerRatingBreakdown = () => {
+    const breakdown: Record<1 | 2 | 3 | 4 | 5, number> = {
+      5: 0,
+      4: 0,
+      3: 0,
+      2: 0,
+      1: 0,
+    };
+
+    sellerReviews.forEach((review) => {
+      const value = review.rating as 1 | 2 | 3 | 4 | 5;
+      if (breakdown[value] !== undefined) {
+        breakdown[value] += 1;
+      }
+    });
+
+    return breakdown;
+  };
+
+  const productStatusLabel =
+    product?.status === "AVAILABLE"
+      ? "Available"
+      : product?.status === "RESERVED"
+      ? "Reserved"
+      : "Sold Out";
+
+  const productStatusClass =
+    product?.status === "AVAILABLE"
+      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+      : product?.status === "RESERVED"
+      ? "bg-amber-100 text-amber-700 border-amber-200"
+      : "bg-slate-200 text-slate-700 border-slate-300";
+
+  const sellerRatingBreakdown = getSellerRatingBreakdown();
+  const filteredSellerReviews = sellerReviews.filter((review) => {
+    if (reviewFilterStar === "all") return true;
+    return review.rating === Number(reviewFilterStar);
+  });
+
+  const visibleSellerReviews = [...filteredSellerReviews].sort((a, b) => {
+    if (reviewSort === "newest") {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    if (reviewSort === "low-to-high") {
+      return a.rating - b.rating;
+    }
+    return b.rating - a.rating;
+  });
+
+  const isAnyReviewMenuOpen = isSortMenuOpen || isFilterMenuOpen;
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <p className="text-gray-500">Loading product...</p>
+      <div className="flex h-96 items-center justify-center">
+        <div className="rounded-2xl border border-white/70 bg-white/70 px-8 py-6 text-center shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-md">
+          <p className={`${oxanium.className} text-lg font-semibold text-gray-800`}>Loading product...</p>
+        </div>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 text-lg mb-4">Product not found</p>
+      <div className="py-12 text-center">
+        <div className="mx-auto max-w-md rounded-2xl border border-white/70 bg-white/70 p-8 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-md">
+          <p className={`${oxanium.className} mb-4 text-xl font-semibold text-gray-800`}>Product not found</p>
+        </div>
         <button
           onClick={() => router.back()}
-          className="text-blue-500 hover:text-blue-700 font-medium"
+          className="mt-4 rounded-xl bg-blue-600 px-5 py-2.5 font-semibold text-white transition-colors hover:bg-blue-700"
         >
           Go Back
         </button>
@@ -158,56 +337,75 @@ export default function ProductDetailsPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className={`${inter.className} mx-auto w-full max-w-[1400px] space-y-8 px-2 sm:px-4 lg:px-6`}>
       {/* Header */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
+        className="inline-flex items-center gap-2 rounded-xl border border-white/70 bg-white/70 px-4 py-2.5 font-semibold text-gray-700 shadow-[0_8px_22px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-0.5 hover:bg-white"
       >
         <ArrowLeft size={20} />
         Back to Products
       </button>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="relative grid grid-cols-1 gap-8 lg:grid-cols-5 lg:gap-10">
         {/* Images Section */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-3 space-y-4">
           {/* Main Image */}
-          <div className="relative h-96 bg-gray-200 rounded-lg overflow-hidden">
+          <div
+            className="relative h-[32rem] cursor-crosshair overflow-hidden rounded-2xl border border-white/70 bg-white/70 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-md lg:h-[38rem]"
+            onMouseEnter={() => setIsZooming(true)}
+            onMouseLeave={() => setIsZooming(false)}
+            onMouseMove={handleImageMouseMove}
+          >
             {product.images[selectedImage] ? (
               <img
                 src={product.images[selectedImage]}
                 alt={product.title}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-contain p-5"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400">
+              <div className="flex h-full w-full items-center justify-center text-gray-400">
                 No image available
               </div>
             )}
 
-            <div className="absolute top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-full font-semibold">
+            {isZooming && product.images[selectedImage] && (
+              <>
+                <div
+                  className="pointer-events-none absolute z-10 rounded-lg border-2 border-white/90 bg-white/20 shadow-[0_0_0_1px_rgba(15,23,42,0.15)]"
+                  style={{
+                    width: `${ZOOM_LENS_SIZE}px`,
+                    height: `${ZOOM_LENS_SIZE}px`,
+                    left: `calc(${zoomPosition.x}% - ${ZOOM_LENS_SIZE / 2}px)`,
+                    top: `calc(${zoomPosition.y}% - ${ZOOM_LENS_SIZE / 2}px)`,
+                  }}
+                />
+              </>
+            )}
+
+            <div className="absolute right-4 top-4 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm">
               {product.condition}
             </div>
           </div>
 
           {/* Thumbnail Images */}
           {product.images.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="flex gap-3 overflow-x-auto rounded-2xl border border-white/70 bg-white/70 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.06)] backdrop-blur-md">
               {product.images.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                  className={`h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
                     selectedImage === index
-                      ? "border-blue-500"
+                      ? "border-blue-500 shadow-[0_6px_18px_rgba(59,130,246,0.30)]"
                       : "border-gray-300 hover:border-gray-400"
                   }`}
                 >
                   <img
                     src={image}
                     alt={`Thumbnail ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 </button>
               ))}
@@ -215,19 +413,40 @@ export default function ProductDetailsPage() {
           )}
         </div>
 
+        {isZooming && product.images[selectedImage] && (
+          <div className="pointer-events-none absolute right-0 top-0 z-30 hidden w-[40%] rounded-2xl border border-white/80 bg-white/95 p-2 shadow-[0_14px_30px_rgba(15,23,42,0.18)] lg:block">
+            <div className="h-[22rem] overflow-hidden rounded-xl bg-gray-100">
+              <img
+                src={product.images[selectedImage]}
+                alt={`${product.title} zoom preview`}
+                className="h-full w-full object-cover"
+                style={{
+                  transform: "scale(2.3)",
+                  transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Info Section */}
-        <div className="space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           {/* Price & Title */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          <div className="rounded-2xl border border-white/70 bg-white/70 p-6 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-md">
+            <h1 className={`${oxanium.className} text-3xl font-bold text-gray-900 mb-4`}>
               {product.title}
             </h1>
 
-            <p className="text-4xl font-bold text-blue-600 mb-6">
-              Rs. {product.price.toLocaleString()}
-            </p>
+            <div className="mb-6 flex items-end justify-between gap-3">
+              <p className={`${oxanium.className} text-4xl font-bold text-blue-600`}>
+                Rs. {product.price.toLocaleString()}
+              </p>
+              <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${productStatusClass}`}>
+                {productStatusLabel}
+              </span>
+            </div>
 
-            <div className="flex gap-2 mb-6">
+            <div className="mb-6 flex flex-wrap gap-2">
               {!isOwner && (
                 <>
                   <button
@@ -237,7 +456,7 @@ export default function ProductDetailsPage() {
                       }
                     }}
                     disabled={product.status !== "AVAILABLE"}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition ${
+                    className={`flex-1 min-w-[160px] rounded-xl py-3 font-semibold shadow-sm transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 ${
                       product.status !== "AVAILABLE"
                         ? "bg-gray-400 text-white cursor-not-allowed"
                         : "bg-blue-600 text-white hover:bg-blue-700"
@@ -253,7 +472,7 @@ export default function ProductDetailsPage() {
                   <button
                     onClick={handleChatWithSeller}
                     disabled={isStartingChat}
-                    className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 font-medium disabled:bg-gray-200 disabled:text-gray-500"
+                    className="flex-1 min-w-[180px] rounded-xl border border-gray-200 bg-white py-3 font-semibold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-gray-50 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
                   >
                     <MessageCircle size={20} />
                     {isStartingChat ? "Opening Chat..." : "Chat with Seller"}
@@ -266,14 +485,14 @@ export default function ProductDetailsPage() {
                     <>
                       <button
                         onClick={() => router.push(`/modules/uni-mart/my-items/${product.id}/edit`)}
-                        className="flex-1 flex items-center justify-center gap-2 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 font-medium"
+                        className="flex-1 min-w-[150px] rounded-xl bg-blue-600 py-3 font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-blue-700 flex items-center justify-center gap-2"
                       >
                         <Edit2 size={20} />
                         Edit
                       </button>
                       <button
                         onClick={handleDelete}
-                        className="flex-1 flex items-center justify-center gap-2 bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 font-medium"
+                        className="flex-1 min-w-[150px] rounded-xl bg-red-500 py-3 font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-red-600 flex items-center justify-center gap-2"
                       >
                         <Trash2 size={20} />
                         Delete
@@ -298,7 +517,7 @@ export default function ProductDetailsPage() {
               )}
               <button
                 onClick={() => setIsFavorite(!isFavorite)}
-                className={`px-4 py-3 rounded-lg border-2 transition-colors ${
+                className={`rounded-xl border-2 px-4 py-3 transition-all hover:-translate-y-0.5 ${
                   isFavorite
                     ? "border-red-500 bg-red-50 text-red-500"
                     : "border-gray-300 text-gray-600 hover:border-gray-400"
@@ -306,7 +525,7 @@ export default function ProductDetailsPage() {
               >
                 <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
               </button>
-              <button className="px-4 py-3 rounded-lg border-2 border-gray-300 text-gray-600 hover:border-gray-400">
+              <button className="rounded-xl border-2 border-gray-300 px-4 py-3 text-gray-600 transition-all hover:-translate-y-0.5 hover:border-gray-400">
                 <Share2 size={20} />
               </button>
             </div>
@@ -326,19 +545,19 @@ export default function ProductDetailsPage() {
             )}
 
             {/* Quick Info */}
-            <div className="space-y-3 text-gray-700">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Category</p>
+            <div className="grid grid-cols-1 gap-3 text-gray-700 sm:grid-cols-2">
+              <div className="rounded-xl border border-gray-100 bg-white/80 p-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Category</p>
                 <p className="font-medium">{product.category}</p>
               </div>
               {product.location && (
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Location</p>
+                <div className="rounded-xl border border-gray-100 bg-white/80 p-3">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Location</p>
                   <p className="font-medium">{product.location}</p>
                 </div>
               )}
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Posted</p>
+              <div className="rounded-xl border border-gray-100 bg-white/80 p-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Posted</p>
                 <p className="font-medium">
                   {new Date(product.createdAt).toLocaleDateString()}
                 </p>
@@ -347,8 +566,8 @@ export default function ProductDetailsPage() {
           </div>
 
           {/* Seller Card */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="font-bold text-gray-900 mb-4">Seller Info</h3>
+          <div className="rounded-2xl border border-white/70 bg-white/70 p-6 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-md">
+            <h3 className={`${oxanium.className} text-xl font-bold text-gray-900 mb-4`}>Seller Info</h3>
 
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600" />
@@ -356,16 +575,29 @@ export default function ProductDetailsPage() {
                 <p className="font-semibold text-gray-900">
                   {product.sellerName}
                 </p>
-                {product.rating && (
-                  <div className="flex items-center gap-1 text-yellow-400 text-sm">
-                    <span>★</span>
-                    <span>{product.rating} ({product.reviews} reviews)</span>
+                {!sellerStatsLoading && sellerStats && (
+                  <div className="flex items-center gap-1 text-sm">
+                    <span className="text-yellow-400">★</span>
+                    <span className="font-semibold text-gray-800">{sellerStats.averageRating.toFixed(1)} / 5</span>
+                    <span className="text-gray-500">({sellerStats.totalReviews} reviews)</span>
                   </div>
+                )}
+                {sellerStatsLoading && (
+                  <p className="text-sm text-gray-500">Loading seller ratings...</p>
+                )}
+                {!sellerStatsLoading && !sellerStats && (
+                  <p className="text-sm text-gray-500">No seller ratings yet</p>
                 )}
               </div>
             </div>
 
-            <button className="w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50 font-medium">
+            {sellerStats && (
+              <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+                <span className="font-semibold">Completed sales:</span> {sellerStats.soldProducts}
+              </div>
+            )}
+
+            <button className="w-full rounded-xl border border-gray-300 py-2.5 font-semibold text-gray-700 transition-colors hover:bg-gray-50">
               View Seller Profile
             </button>
           </div>
@@ -373,34 +605,213 @@ export default function ProductDetailsPage() {
       </div>
 
       {/* Description */}
-      <div className="bg-white rounded-lg shadow-md p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Description</h2>
+      <div className="rounded-2xl border border-white/70 bg-white/70 p-8 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-md">
+        <h2 className={`${oxanium.className} text-2xl font-bold text-gray-900 mb-4`}>Description</h2>
         <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
           {product.description}
         </p>
       </div>
 
-      {/* Reviews & Ratings Section */}
-      {!reviewsLoading && ratingStats && (
-        <div className="space-y-6">
-          {/* Rating Breakdown */}
-          {ratingStats.totalReviews > 0 && (
-            <RatingBreakdown
-              breakdown={ratingStats.breakdown}
-              totalReviews={ratingStats.totalReviews}
-            />
+      {/* Seller Reviews Section */}
+      <div className="space-y-6">
+        <div
+          className={`overflow-visible rounded-2xl border border-white/70 bg-white/70 shadow-[0_16px_36px_rgba(15,23,42,0.08)] backdrop-blur-md ${
+            isAnyReviewMenuOpen ? "relative z-40" : "relative z-10"
+          }`}
+        >
+          <div className="grid gap-8 border-b border-gray-200/80 p-8 md:grid-cols-[260px_1fr]">
+            <div>
+              <p className={`${oxanium.className} text-6xl font-bold leading-none text-gray-900`}>
+                {sellerReviewsAverage.toFixed(1)}
+                <span className="ml-1 text-4xl text-gray-400">/5</span>
+              </p>
+
+              <div className="mt-4 flex gap-1 text-4xl leading-none text-amber-400">
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const isFilled = star <= Math.round(sellerReviewsAverage);
+                  return (
+                    <span key={star} className={isFilled ? "text-amber-400" : "text-gray-300"}>
+                      ★
+                    </span>
+                  );
+                })}
+              </div>
+
+              <p className="mt-3 text-base font-medium text-gray-600">
+                {sellerReviewsCount} Ratings
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = sellerRatingBreakdown[star as 1 | 2 | 3 | 4 | 5] || 0;
+                const percent = sellerReviewsCount > 0 ? (count / sellerReviewsCount) * 100 : 0;
+
+                return (
+                  <div key={star} className="flex items-center gap-4">
+                    <div className="w-24 text-lg font-semibold text-amber-400">
+                      {"★".repeat(star)}
+                      <span className="text-gray-300">{"★".repeat(5 - star)}</span>
+                    </div>
+
+                    <div className="h-4 flex-1 overflow-hidden rounded-full bg-gray-200">
+                      <div
+                        className="h-full rounded-full bg-amber-400 transition-all"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+
+                    <div className="w-10 text-right text-lg text-gray-700">{count}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {reviewsLoading ? (
+            <div className="p-8 text-gray-500">Loading seller reviews...</div>
+          ) : sellerReviewsCount === 0 ? (
+            <div className="p-8">
+              <div className="rounded-xl border border-gray-200 bg-white/80 p-6 text-center text-gray-500">
+              No seller reviews yet
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="relative z-50 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/80 px-8 py-4">
+                <h2 className={`${oxanium.className} text-2xl font-bold text-gray-900`}>
+                  Seller Reviews
+                </h2>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div ref={sortMenuRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSortMenuOpen((prev) => {
+                          const next = !prev;
+                          if (next) setIsFilterMenuOpen(false);
+                          return next;
+                        });
+                      }}
+                      className="group flex items-center gap-2 rounded-xl border border-gray-200/90 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-all hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    >
+                      <ArrowUpDown size={15} className="text-gray-500" />
+                      <span className="font-medium text-gray-600">Sort</span>
+                      <span className="font-semibold text-gray-900">{selectedSortLabel}</span>
+                      <ChevronDown size={15} className={`text-gray-400 transition-transform ${isSortMenuOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {isSortMenuOpen && (
+                      <div className="absolute right-0 top-[calc(100%+0.5rem)] z-[120] w-60 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.16)]">
+                        {sortOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setReviewSort(option.value);
+                              setIsSortMenuOpen(false);
+                            }}
+                            className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                              reviewSort === option.value
+                                ? "bg-blue-600 font-semibold text-white"
+                                : "text-gray-700 hover:bg-blue-50"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div ref={filterMenuRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFilterMenuOpen((prev) => {
+                          const next = !prev;
+                          if (next) setIsSortMenuOpen(false);
+                          return next;
+                        });
+                      }}
+                      className="group flex items-center gap-2 rounded-xl border border-gray-200/90 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-all hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    >
+                      <SlidersHorizontal size={15} className="text-gray-500" />
+                      <span className="font-medium text-gray-600">Filter</span>
+                      <span className="font-semibold text-gray-900">{selectedFilterLabel}</span>
+                      <ChevronDown size={15} className={`text-gray-400 transition-transform ${isFilterMenuOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {isFilterMenuOpen && (
+                      <div className="absolute right-0 top-[calc(100%+0.5rem)] z-[120] w-44 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.16)]">
+                        {filterOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setReviewFilterStar(option.value);
+                              setIsFilterMenuOpen(false);
+                            }}
+                            className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
+                              reviewFilterStar === option.value
+                                ? "bg-blue-600 font-semibold text-white"
+                                : "text-gray-700 hover:bg-blue-50"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
           )}
-
-          {/* Reviews List */}
-          <ReviewsList productId={product.id} />
         </div>
-      )}
 
-      {reviewsLoading && (
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <p className="text-gray-500">Loading reviews...</p>
-        </div>
-      )}
+        {!reviewsLoading && sellerReviewsCount > 0 && (
+          <div className="relative z-0 space-y-4">
+            {visibleSellerReviews.length === 0 && (
+              <div className="rounded-2xl border border-white/70 bg-white/70 p-6 text-center text-gray-500 shadow-[0_10px_24px_rgba(15,23,42,0.06)] backdrop-blur-md">
+                No reviews found for selected filter
+              </div>
+            )}
+
+            {visibleSellerReviews.map((review) => (
+              <div
+                key={review.id}
+                className="rounded-2xl border border-white/70 bg-white/70 p-6 shadow-[0_10px_24px_rgba(15,23,42,0.06)] backdrop-blur-md"
+              >
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className={`${oxanium.className} font-semibold text-gray-900`}>{maskReviewerName(review.buyer?.name)}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(review.createdAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-amber-50 px-2.5 py-1 text-sm font-semibold text-amber-700">
+                    {review.rating} ★
+                  </div>
+                </div>
+
+                {review.product?.title && (
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Product: {review.product.title}
+                  </p>
+                )}
+
+                <p className="text-[15px] leading-relaxed text-gray-700">{review.comment}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Action Buttons (for product owner) */}
       {isOwner && (

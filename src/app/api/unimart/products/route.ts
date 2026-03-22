@@ -14,7 +14,10 @@ export async function GET(request: NextRequest) {
     const maxPrice = searchParams.get("maxPrice");
     const seller = searchParams.get("seller"); // seller=me for seller's own products
     const page = parseInt(searchParams.get("page") || "1");
-    const pageSize = 12;
+    const limitParam = searchParams.get("limit");
+    const isAll = limitParam === "all";
+    const parsedLimit = limitParam ? parseInt(limitParam, 10) : NaN;
+    const pageSize = !Number.isNaN(parsedLimit) && parsedLimit > 0 ? parsedLimit : 12;
 
     const where: any = {};
 
@@ -53,17 +56,22 @@ export async function GET(request: NextRequest) {
 
     try {
       const total = await prismaDelegates.uniMartProducts.count({ where });
-      const products = await prismaDelegates.uniMartProducts.findMany({
+      const queryOptions: any = {
         where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
         orderBy: { createdAt: "desc" },
         include: {
           seller: {
             select: { id: true, name: true, email: true },
           },
         },
-      });
+      };
+
+      if (!isAll) {
+        queryOptions.skip = (page - 1) * pageSize;
+        queryOptions.take = pageSize;
+      }
+
+      const products = await prismaDelegates.uniMartProducts.findMany(queryOptions);
 
       const items = products.map((p: any) => ({
         ...p,
@@ -76,7 +84,7 @@ export async function GET(request: NextRequest) {
         items,
         total,
         page,
-        pageSize,
+        pageSize: isAll ? total : pageSize,
       });
     } catch (dbError) {
       // Database tables don't exist yet - return empty results
@@ -85,7 +93,7 @@ export async function GET(request: NextRequest) {
         items: [],
         total: 0,
         page,
-        pageSize,
+        pageSize: isAll ? 0 : pageSize,
       });
     }
   } catch (error) {
