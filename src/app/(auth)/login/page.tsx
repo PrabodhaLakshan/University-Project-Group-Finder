@@ -1,10 +1,11 @@
-﻿"use client";
+"use client";
 
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/app/providers";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Oxanium } from "next/font/google";
+import IntroGate from "@/components/IntroGate";
 
 const oxanium = Oxanium({
   subsets: ["latin"],
@@ -49,6 +50,7 @@ export default function LoginPage() {
   }
 
   return (
+    <IntroGate>
     <div
       className={`${oxanium.className} h-screen overflow-hidden bg-cover bg-center bg-no-repeat`}
       style={{ backgroundImage: "url('/images/auth/login_BG.jpg')" }}
@@ -126,5 +128,6 @@ export default function LoginPage() {
         </section>
       </main>
     </div>
+    </IntroGate>
   );
 }
