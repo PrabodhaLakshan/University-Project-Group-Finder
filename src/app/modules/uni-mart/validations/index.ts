@@ -59,6 +59,7 @@ export const searchSchema = z.object({
   minPrice: z.number().optional(),
   maxPrice: z.number().optional(),
   page: z.number().optional().default(1),
+  limit: z.union([z.number().int().positive(), z.literal("all")]).optional(),
 });
 
 export type SearchParams = z.input<typeof searchSchema>;

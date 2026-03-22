@@ -4,6 +4,12 @@ import Navbar from "@/components/Navbar";
 import { useAuth } from "@/app/providers";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Oxanium } from "next/font/google";
+
+const oxanium = Oxanium({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -56,75 +62,102 @@ export default function RegisterPage() {
   }
 
   return (
-    <div>
+    <div
+      className={`${oxanium.className} h-screen overflow-hidden bg-cover bg-center bg-no-repeat`}
+      style={{ backgroundImage: "url('/images/auth/signup_BG.jpg')" }}
+    >
       <Navbar />
-      <main className="mx-auto max-w-md px-4 py-10">
-        <h1 className="text-2xl font-semibold">Create account</h1>
-        <p className="mt-1 text-gray-600">Join and find your project team.</p>
+      <main className="mx-auto grid h-[calc(100vh-64px)] overflow-hidden w-full max-w-7xl grid-cols-1 lg:grid-cols-2">
+        <section className="flex items-center px-6 lg:px-16">
+          <div className="w-full max-w-lg lg:-translate-y-20">
+            <img
+              src="/images/auth/UniNexus_auth_Logo.png"
+              alt="UniNexus Logo"
+              className="-ml-8 mb-8 h-24 w-auto"
+            />
 
-       <form
-  onSubmit={onSubmit}
-  className="mt-6 space-y-4 rounded-2xl border border-white/10 bg-[#0a1020] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]"
->
-  {error && (
-    <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-      {error}
-    </div>
-  )}
+            <h1 className="text-3xl font-semibold text-gray-900">Create account</h1>
+            <p className="mt-1 text-gray-700">Join and find your project team.</p>
 
-  <div>
-    <label className="text-sm font-medium text-white/80">Full Name</label>
-    <input
-      className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 shadow-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500/60 transition"
-      value={name}
-      onChange={(e) => setName(e.target.value)}
-      placeholder="John Doe"
-      required
-    />
-  </div>
+            <form
+              onSubmit={onSubmit}
+              className="mt-6 space-y-4 rounded-2xl border border-white/50 bg-white/45 p-6 shadow-sm backdrop-blur-sm"
+            >
+              {error && (
+                <div className="rounded-md border border-red-200 bg-red-50/90 px-3 py-2 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
 
-  <div>
-    <label className="text-sm font-medium text-white/80">Student ID</label>
-    <input
-      className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 shadow-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500/60 transition"
-      value={studentId}
-      onChange={(e) => setStudentId(e.target.value)}
-      placeholder="IT23XXXXXX"
-      required
-    />
-  </div>
+              <div>
+                <label className="text-base font-medium">Full Name</label>
+                <input
+                  className="mt-1 w-full rounded-md border border-white/60 bg-white/70 px-3 py-2 outline-none focus:ring"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
 
-  <div>
-    <label className="text-sm font-medium text-white/80">Email</label>
-    <input
-      type="email"
-      className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 shadow-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500/60 transition"
-      value={email}
-      onChange={(e) => setEmail(e.target.value)}
-      placeholder="you@example.com"
-      required
-    />
-  </div>
+              <div>
+                <label className="text-base font-medium">Email</label>
+                <input
+                  className="mt-1 w-full rounded-md border border-white/60 bg-white/70 px-3 py-2 outline-none focus:ring"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="YourStudentNumber@my.sliit.lk"
+                  required
+                />
+              </div>
 
-  <div>
-    <label className="text-sm font-medium text-white/80">Password</label>
-    <input
-      type="password"
-      className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 text-white px-3 py-2 shadow-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500/60 transition"
-      value={password}
-      onChange={(e) => setPassword(e.target.value)}
-      placeholder="••••••••"
-      required
-    />
-  </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-base font-medium">Student ID</label>
+                  <input
+                    className="mt-1 w-full rounded-md border border-white/60 bg-white/70 px-3 py-2 outline-none focus:ring"
+                    value={studentId}
+                    onChange={(e) => setStudentId(e.target.value)}
+                    placeholder="Enter your student ID"
+                    required
+                  />
+                </div>
 
-  <button
-    disabled={submitting}
-    className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-500 transition disabled:opacity-60"
-  >
-    {submitting ? "Creating..." : "Register"}
-  </button>
-</form>
+                <div>
+                  <label className="text-base font-medium">Password</label>
+                  <input
+                    className="mt-1 w-full rounded-md border border-white/60 bg-white/70 px-3 py-2 outline-none focus:ring"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create a password"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button disabled={submitting} className="w-full rounded-md bg-black px-4 py-2 text-white disabled:opacity-60">
+                {submitting ? "Creating..." : "Register"}
+              </button>
+
+              <p className="text-center text-sm text-gray-700">
+                Already have an account?{" "}
+                <a href="/login" className="font-medium text-black underline underline-offset-2">
+                  Login
+                </a>
+              </p>
+            </form>
+          </div>
+        </section>
+
+        <section className="hidden items-center justify-center p-0 lg:flex lg:p-2">
+          <img
+            src="/images/auth/signup_img1.png"
+            alt="Signup"
+            className="h-full w-full rounded-2xl object-cover lg:translate-x-8 lg:-translate-y-12 lg:scale-105"
+          />
+        </section>
       </main>
     </div>
   );

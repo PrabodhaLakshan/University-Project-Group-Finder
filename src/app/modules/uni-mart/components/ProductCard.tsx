@@ -5,6 +5,12 @@ import { Product } from "../types";
 import Link from "next/link";
 import Image from "next/image";
 import { Star, MapPin } from "lucide-react";
+import { Oxanium } from "next/font/google";
+
+const oxanium = Oxanium({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
 
 interface ProductCardProps {
   product: Product;
@@ -20,6 +26,13 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [sellerStats, setSellerStats] = useState<SellerStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const condition = product.condition.toLowerCase();
+
+  const conditionBadgeStyles: Record<string, string> = {
+    new: "bg-blue-600/95 text-white ring-1 ring-blue-300/60",
+    used: "bg-amber-500/95 text-white ring-1 ring-amber-300/60",
+    refurbished: "bg-gradient-to-r from-amber-500 to-yellow-500 text-white ring-1 ring-yellow-300/70",
+  };
 
   useEffect(() => {
     const fetchSellerStats = async () => {
@@ -63,84 +76,90 @@ export default function ProductCard({ product }: ProductCardProps) {
   }, [product.sellerId]);
   return (
     <Link href={`/uni-mart/products/${product.id}`}>
-      <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow overflow-hidden h-full flex flex-col cursor-pointer">
+      <div className={`${oxanium.className} group h-full cursor-pointer overflow-hidden rounded-2xl border border-white/70 bg-white/80 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(37,99,235,0.16)]`}>
         {/* Product Image */}
-        <div className="relative h-48 w-full bg-gray-200">
+        <div className="relative h-48 w-full bg-slate-100">
           {product.images[0] ? (
             <Image
               src={product.images[0]}
               alt={product.title}
               fill
-              className="object-cover"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
+            <div className="flex h-full w-full items-center justify-center text-sm font-medium text-gray-400">
               No image
             </div>
           )}
-          <div className="absolute top-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-            {product.condition}
+          <div
+            className={`${oxanium.className} absolute right-3 top-3 rounded-full px-3.5 py-1 text-xs font-semibold capitalize tracking-wide shadow-sm ${
+              conditionBadgeStyles[condition] ?? "bg-slate-600/95 text-white"
+            }`}
+          >
+            {condition}
           </div>
         </div>
 
         {/* Product Info */}
-        <div className="p-4 flex-1 flex flex-col">
-          <h3 className="text-lg font-bold text-gray-800 line-clamp-2 mb-2">
+        <div className="flex h-[calc(100%-12rem)] flex-col p-5">
+          <h3 className="mb-2 line-clamp-2 text-xl font-bold text-slate-900">
             {product.title}
           </h3>
 
-          <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+          <p className="mb-4 min-h-[3.25rem] line-clamp-2 text-sm leading-relaxed text-gray-600">
             {product.description}
           </p>
 
           {/* Price */}
-          <div className="mb-3">
-            <p className="text-2xl font-bold text-blue-600">
+          <div className="mb-4">
+            <p className="text-[1.75rem] font-bold leading-none text-indigo-600">
               Rs. {product.price.toLocaleString()}
             </p>
           </div>
 
           {/* Location */}
           {product.location && (
-            <div className="flex items-center text-gray-500 text-sm mb-3">
-              <MapPin size={16} className="mr-1" />
+            <div className="mb-4 flex items-center gap-1.5 text-sm font-medium text-gray-500">
+              <MapPin size={16} className="text-gray-400" />
               {product.location}
             </div>
           )}
 
           {/* Seller Info & Rating */}
-          <div className="border-t pt-3 mt-auto">
-            <p className="text-gray-900 text-sm font-semibold mb-3">
+          <div className="mt-auto border-t border-slate-200 pt-3">
+            <p className="mb-3 text-base font-semibold text-slate-900">
               {product.sellerName}
             </p>
             
             {!isLoading && sellerStats ? (
               <div className="space-y-2">
                 {/* Rating Stars & Review Count */}
-                <div className="flex items-center gap-2">
-                  <div className="flex text-yellow-400 gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={16}
-                        fill={i < Math.floor(sellerStats.averageRating) ? "currentColor" : "none"}
-                        strokeWidth={i < Math.floor(sellerStats.averageRating) ? 0 : 1}
-                      />
-                    ))}
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex text-yellow-400 gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={16}
+                          fill={i < Math.floor(sellerStats.averageRating) ? "currentColor" : "none"}
+                          strokeWidth={i < Math.floor(sellerStats.averageRating) ? 0 : 1}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700">
+                      {sellerStats.averageRating.toFixed(1)}
+                    </span>
                   </div>
-                  <span className="text-gray-700 text-sm font-medium">
-                    {sellerStats.averageRating.toFixed(1)}
-                  </span>
-                  <span className="text-gray-500 text-xs">
+                  <span className="block text-xs text-gray-500">
                     ({sellerStats.totalReviews} {sellerStats.totalReviews === 1 ? "review" : "reviews"})
                   </span>
                 </div>
 
                 {/* Sold Products Count */}
                 {sellerStats.soldProducts > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-green-600 font-bold">✓</span>
-                    <span className="text-gray-700 text-xs font-medium">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1">
+                    <span className="font-bold text-emerald-600">✓</span>
+                    <span className="text-xs font-semibold text-emerald-700">
                       {sellerStats.soldProducts} sold
                     </span>
                   </div>

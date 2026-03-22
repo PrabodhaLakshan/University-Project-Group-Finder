@@ -15,6 +15,7 @@ export const getAllProducts = async (
   if (filters.maxPrice) params.append("maxPrice", filters.maxPrice.toString());
   if (filters.condition) params.append("condition", filters.condition);
   if (filters.page) params.append("page", filters.page.toString());
+  if (filters.limit) params.append("limit", filters.limit.toString());
 
   const response = await fetch(`${API_BASE}/products?${params.toString()}`);
   if (!response.ok) throw new Error("Failed to fetch products");

@@ -17,19 +17,29 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("productId");
+    const sellerId = searchParams.get("sellerId");
 
-    if (!productId) {
+    if (!productId && !sellerId) {
       return NextResponse.json(
-        { error: "productId is required" },
+        { error: "productId or sellerId is required" },
         { status: 400 }
       );
     }
 
     const reviews = await prisma.uniMartReview.findMany({
-      where: { productId },
+      where: productId
+        ? { productId }
+        : {
+            product: {
+              sellerId: sellerId as string,
+            },
+          },
       include: {
         buyer: {
           select: { id: true, name: true, student_id: true },
+        },
+        product: {
+          select: { id: true, title: true },
         },
       },
       orderBy: { createdAt: "desc" },
