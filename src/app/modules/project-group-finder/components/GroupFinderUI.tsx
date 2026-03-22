@@ -12,7 +12,7 @@ import GroupDashboardPage from "../groups/[id]/page";
 import ChatWindow from "./chat/ChatWindow";
 
 type Props = {
-  user: { name: string; email: string; student_id: string };
+  user: { id: string; name: string; email: string; student_id: string };
 };
 
 // ── Mock group members ────────────────────────────────────────────────────────
@@ -196,10 +196,31 @@ function DashboardPanel({
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function GroupFinderUI({ user }: Props) {
+  const [avatarUrl, setAvatarUrl] = React.useState<string | undefined>(undefined);
+
+  React.useEffect(() => {
+    const fetchAvatar = async () => {
+      try {
+        const token = localStorage.getItem("pgf_token");
+        const res = await fetch(`/api/project-group-finder/profile?userId=${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+        }
+      } catch (err) {
+        console.error("Failed to fetch avatar", err);
+      }
+    };
+    fetchAvatar();
+  }, [user.id]);
+
   const myProfile: StudentProfile = {
     id: user.student_id,
     name: user.name,
     email: user.email,
+    imageUrl: avatarUrl,
     specialization: "IT Undergraduate",
     gpa: 3.4,
     availability: "Evening",
