@@ -48,7 +48,7 @@ const modules = [
     title: "Startup Connect",
     description: "Collaborate on startup ideas",
     icon: Briefcase,
-    href: "/modules/startup-connect",
+    href: "/startup-connect",
     // Logo: purple-indigo mix
     iconBg: "from-purple-500 to-violet-600",
     topBar: "from-purple-400 to-violet-500",

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prismaClient";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { hasLengthBetween, isValidEmail, normalizeEmail } from "@/lib/validation";
+import { isValidEmail, normalizeEmail } from "@/lib/validation";
 
 export async function POST(req: Request) {
   try {
@@ -16,10 +16,6 @@ export async function POST(req: Request) {
 
     if (!isValidEmail(email)) {
       return NextResponse.json({ message: "Invalid email format" }, { status: 400 });
-    }
-
-    if (!hasLengthBetween(password, 8, 72)) {
-      return NextResponse.json({ message: "Invalid password length" }, { status: 400 });
     }
 
     const user = await prisma.users.findFirst({

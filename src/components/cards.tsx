@@ -77,7 +77,7 @@ export default function CampusPlatformCards() {
         { label: "Hires", value: "17" },
       ],
       btn: "Open Module",
-      href: "/modules/startup-connect",
+      href: "/startup-connect",
     },
   ];
 
