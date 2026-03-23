@@ -324,3 +324,6 @@ model user_skills {
   @@id([user_id, skill_id])
   @@index([skill_id], map: "idx_user_skills_skill_id")
 }
+
+
+

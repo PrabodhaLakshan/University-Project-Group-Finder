@@ -4,7 +4,7 @@ export default function ProjectGroupFinderCard() {
       <div className="
         w-full max-w-md
         rounded-2xl border border-white/10
-        bg-gradient-to-b from-[#0a1020] to-black
+        bg-linear-to-b from-[#0a1020] to-black
         p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]
         transition-all duration-300
         hover:-translate-y-1
@@ -60,7 +60,7 @@ export default function ProjectGroupFinderCard() {
         {/* Hover Glow Line */}
         <div className="
           mt-6 h-px w-full
-          bg-gradient-to-r from-transparent via-blue-500/40 to-transparent
+          bg-linear-to-r from-transparent via-blue-500/40 to-transparent
           opacity-40 group-hover:opacity-80
           transition
         " />

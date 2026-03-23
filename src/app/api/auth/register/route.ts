@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const password = (body?.password ?? "").toString();
 
     if (!student_id || !name || !email || !password) {
-      return Response.json(
+      return NextResponse.json(
         { message: "student_id, name, email, password required" },
         { status: 400 }
       );
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     });
 
     if (existing) {
-      return Response.json(
+      return NextResponse.json(
         { message: "Student ID or Email already exists" },
         { status: 409 }
       );
@@ -47,11 +47,12 @@ export async function POST(req: Request) {
       select: { id: true, student_id: true, name: true, email: true, created_at: true },
     });
 
-    return Response.json({ user }, { status: 201 });
-  } catch (e: any) {
+    return NextResponse.json({ user }, { status: 201 });
+  } catch (e: unknown) {
     console.error("REGISTER_ERROR:", e);
-    return Response.json(
-      { message: "Server error", error: e?.message ?? String(e) },
+    const message = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      { message: "Server error", error: message },
       { status: 500 }
     );
   }

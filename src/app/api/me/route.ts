@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
 
-  const payload: any = verifyToken(authHeader || undefined);
+  const payload = verifyToken(authHeader || undefined);
 
   if (!payload) {
     return Response.json({ message: "Unauthorized" }, { status: 401 });

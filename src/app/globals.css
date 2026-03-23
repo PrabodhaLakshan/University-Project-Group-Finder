@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 :root {
   /* Base (LIGHT) */
@@ -74,4 +76,4 @@ body {
 .animate-slide-in-right  { animation: slideInFromRight  0.38s cubic-bezier(0.4,0,0.2,1) both; }
 .animate-slide-in-left   { animation: slideInFromLeft   0.38s cubic-bezier(0.4,0,0.2,1) both; }
 .animate-slide-out-left  { animation: slideOutToLeft    0.38s cubic-bezier(0.4,0,0.2,1) both; }
-.animate-slide-out-right { animation: slideOutToRight   0.38s cubic-bezier(0.4,0,0.2,1) both; }
+.animate-slide-out-right { animation: slideOutToRight   0.38s cubic-bezier(0.4,0,0.2,1) both; }

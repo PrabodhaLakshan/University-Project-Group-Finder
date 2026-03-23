@@ -1,5 +1,11 @@
 import jwt from "jsonwebtoken";
 
+type AuthTokenPayload = {
+  userId: string;
+  iat?: number;
+  exp?: number;
+};
+
 export function verifyToken(authHeader?: string) {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
@@ -8,7 +14,7 @@ export function verifyToken(authHeader?: string) {
   const token = authHeader.split(" ")[1];
 
   try {
-    return jwt.verify(token, process.env.JWT_SECRET!);
+    return jwt.verify(token, process.env.JWT_SECRET!) as AuthTokenPayload;
   } catch {
     return null;
   }
