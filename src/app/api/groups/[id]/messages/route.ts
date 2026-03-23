@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prismaClient";
 
 export async function GET(
@@ -71,6 +72,7 @@ export async function POST(
 
         const newMessage = await prisma.group_messages.create({
             data: {
+                id: randomUUID(),
                 group_id: groupId,
                 sender_id,
                 sender_name: sender_name || null,
