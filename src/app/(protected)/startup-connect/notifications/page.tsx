@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { NotificationDropdown } from "@/modules/startup-connect/components/NotificationDropdown";
+import { NotificationDropdown } from "@/app/modules/startup-connect/components/NotificationDropdown";
 import {
   AppNotification,
   fetchNotifications,
   markAllNotificationsAsRead,
-} from "@/modules/startup-connect/services/notification.service";
+} from "@/app/modules/startup-connect/services/notification.service";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);

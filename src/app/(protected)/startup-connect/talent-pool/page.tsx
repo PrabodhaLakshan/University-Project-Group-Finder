@@ -1,5 +1,5 @@
-import { TalentPoolView } from "@/modules/startup-connect/components/TalentPoolView";
-import { DashboardLayout } from "@/modules/startup-connect/components/DashboardLayout";
+import { TalentPoolView } from "@/app/modules/startup-connect/components/TalentPoolView";
+import { DashboardLayout } from "@/app/modules/startup-connect/components/DashboardLayout";
 
 export default function TalentPoolPage() {
   return (

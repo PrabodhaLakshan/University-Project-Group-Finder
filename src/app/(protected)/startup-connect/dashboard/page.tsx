@@ -1,7 +1,7 @@
 "use client";
 
-import { StartupDashboardView } from "@/modules/startup-connect/components/StartupDashboardView";
-import { useStartupProfile } from "@/modules/startup-connect/context/StartupProfileContext";
+import { StartupDashboardView } from "@/app/modules/startup-connect/components/StartupDashboardView";
+import { useStartupProfile } from "@/app/modules/startup-connect/context/StartupProfileContext";
 
 export default function StartupDashboardPage() {
   const { profile } = useStartupProfile();

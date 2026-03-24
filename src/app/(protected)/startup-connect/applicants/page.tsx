@@ -1,5 +1,5 @@
-import { ApplicantsListView } from "@/modules/startup-connect/components/ApplicantsListView";
-import { DashboardLayout } from "@/modules/startup-connect/components/DashboardLayout";
+import { ApplicantsListView } from "@/app/modules/startup-connect/components/ApplicantsListView";
+import { DashboardLayout } from "@/app/modules/startup-connect/components/DashboardLayout";
 
 export default function ApplicantsPage() {
   return (

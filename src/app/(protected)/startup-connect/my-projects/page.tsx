@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Github, ExternalLink } from "lucide-react";
-import { COMPANY_DETAILS } from "@/modules/startup-connect/constants/company-details";
+import { COMPANY_DETAILS } from "@/app/modules/startup-connect/constants/company-details";
 
 const MyProjectsPage = () => {
   const searchParams = useSearchParams();

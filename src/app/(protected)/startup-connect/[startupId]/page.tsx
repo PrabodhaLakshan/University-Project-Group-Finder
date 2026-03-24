@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { COMPANY_DETAILS } from '@/modules/startup-connect/constants/company-details';
+import { COMPANY_DETAILS } from '@/app/modules/startup-connect/constants/company-details';
 
 type StartupDetailsPageProps = {
   params: Promise<{ startupId: string }>;

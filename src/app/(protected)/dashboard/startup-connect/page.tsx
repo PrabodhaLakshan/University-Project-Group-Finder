@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { StartupReviews } from '@/modules/startup-connect/components/StartupReviews';
+import { StartupReviews } from '@/app/modules/startup-connect/components/StartupReviews';
 
 export default function DashboardStartupConnectPage() {
   return (

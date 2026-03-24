@@ -2,8 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../components/ui/card";
-import { Button } from "../../../components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../../components/ui/card";
+import { Button } from "../../../../components/ui/button";
 import { Building2, Briefcase, ArrowRight } from "lucide-react";
 
 export const StartupUI = ({ onPostGigClick }: { onPostGigClick: () => void }) => {

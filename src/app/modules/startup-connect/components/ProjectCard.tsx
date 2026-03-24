@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ImageIcon, Github, ExternalLink } from "lucide-react"; // මේක වෙනස් කරන්න
-import { Button } from "../../../components/ui/button";
+import { Button } from "../../../../components/ui/button";
 
 interface ProjectProps {
   title: string;

@@ -1,4 +1,4 @@
-import { StartupReviews } from "@/modules/startup-connect/components/StartupReviews";
+import { StartupReviews } from "@/app/modules/startup-connect/components/StartupReviews";
 
 export default function StartupReviewsPage() {
   return (

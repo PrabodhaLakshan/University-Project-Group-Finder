@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 // Components ටික නිවැරදි Path එකෙන් Import කරගන්න
-import { StartupUI } from "@/modules/startup-connect/components/StartupUI"; 
-import { StartupRegisterForm } from "@/modules/startup-connect/components/StartupRegisterForm";
-import { useStartupProfile } from "@/modules/startup-connect/context/StartupProfileContext";
+import { StartupUI } from "@/app/modules/startup-connect/components/StartupUI"; 
+import { StartupRegisterForm } from "@/app/modules/startup-connect/components/StartupRegisterForm";
+import { useStartupProfile } from "@/app/modules/startup-connect/context/StartupProfileContext";
 
 export default function StartupConnectPage() {
   const router = useRouter();
