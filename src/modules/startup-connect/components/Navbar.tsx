@@ -124,10 +124,7 @@ export const Navbar = () => {
   const sidebarContent = (
     <>
       <div className="flex items-center justify-between md:justify-start">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center group-hover:rotate-6 transition-transform shadow-lg shadow-sky-100">
-            <Rocket className="w-6 h-6 text-white" />
-          </div>
+        <Link href="/" className="flex items-center group">
           <div className="flex flex-col">
             <span className="text-lg font-black text-slate-900 leading-none tracking-tight">UniNexus</span>
             <span className="text-[10px] font-bold text-sky-600 tracking-tighter uppercase">
@@ -211,7 +208,7 @@ export const Navbar = () => {
 
         <Button
           variant="ghost"
-          onClick={() => router.push('/dashboard')}
+          onClick={() => router.back()}
           className="text-red-500 font-bold text-xs hover:bg-red-50 rounded-xl px-4 py-6 transition-all active:scale-95 group"
         >
           <LogOut className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />

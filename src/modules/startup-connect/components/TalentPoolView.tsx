@@ -34,10 +34,10 @@ export const TalentPoolView = () => {
   return (
     <div className="p-8 max-w-7xl mx-auto mt-20">
       <div className="flex flex-col mb-10">
-        <h1 className="text-4xl font-black italic text-slate-900 tracking-tighter uppercase">
+        <h1 className="text-4xl font-black  text-slate-900 tracking-tighter uppercase">
           Top <span className="text-orange-500">Talent</span> Pool
         </h1>
-        <p className="text-slate-500 font-bold italic">Invite the best campus minds to your next big gig</p>
+        <p className="text-slate-500 font-bold ">Invite the best campus minds to your next big gig</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -46,7 +46,10 @@ export const TalentPoolView = () => {
           const strokeDashoffset = circumference - (student.match / 100) * circumference;
 
           return (
-          <Card key={student.id} className="p-6 border-none bg-white rounded-[40px] shadow-2xl shadow-slate-100 hover:-translate-y-2 transition-all duration-300 group">
+          <Card
+            key={student.id}
+            className="relative p-6 border-none bg-white rounded-[40px] shadow-2xl shadow-slate-100 hover:-translate-y-2 hover:bg-slate-50 transition-all duration-300 group before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-[44px] before:bg-white/70 before:blur-xl"
+          >
             <div className="flex items-start justify-between gap-4 mb-6">
               <div className="flex items-center gap-4">
               <div className={`w-16 h-16 ${student.color} rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-lg`}>

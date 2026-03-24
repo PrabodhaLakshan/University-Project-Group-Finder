@@ -2,10 +2,16 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Github, ExternalLink } from "lucide-react";
+import { COMPANY_DETAILS } from "@/modules/startup-connect/constants/company-details";
 
 const MyProjectsPage = () => {
+  const searchParams = useSearchParams();
+  const startupId = searchParams.get('startupId');
+  const company = startupId ? COMPANY_DETAILS[startupId] : undefined;
+
   const [projects, setProjects] = useState([
     {
       id: 1,
@@ -36,7 +42,7 @@ const MyProjectsPage = () => {
         <div className="mb-16">
           <div>
             <h1 className="text-4xl font-black text-slate-900 italic uppercase tracking-tight">
-              Our Recent Projects
+              {company ? `${company.name} Recent Works` : "Our Recent Projects"}
             </h1>
             <p className="text-slate-500 font-bold mt-1">
               We are proud to showcase our latest innovations and collaborations in the startup ecosystem. Each project reflects our commitment to creativity, impact, and excellence.

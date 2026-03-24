@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 // Components ටික නිවැරදි Path එකෙන් Import කරගන්න
 import { StartupUI } from "@/modules/startup-connect/components/StartupUI"; 
 import { StartupRegisterForm } from "@/modules/startup-connect/components/StartupRegisterForm";
+import { useStartupProfile } from "@/modules/startup-connect/context/StartupProfileContext";
 
 export default function StartupConnectPage() {
   const router = useRouter();
+  const { setProfile } = useStartupProfile();
   
   const [currentView, setCurrentView] = useState<'landing' | 'register'>('landing');
 
@@ -16,7 +18,14 @@ export default function StartupConnectPage() {
   const goToDashboard = () => router.push('/startup-connect/dashboard');
 
  
-  const finishRegistration = () => {
+  const finishRegistration = (data: any) => {
+    setProfile({
+      name: data?.name || '',
+      industry: data?.industry || '',
+      about: data?.about || '',
+      logo: data?.logo ?? null,
+      certificates: Array.isArray(data?.certificates) ? data.certificates : [],
+    });
     router.push('/startup-connect/dashboard'); 
   };
 

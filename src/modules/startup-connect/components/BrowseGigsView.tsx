@@ -54,11 +54,11 @@ export const BrowseGigsView = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto mt-20 bg-white">
+    <div className="px-4 py-8 md:p-8 max-w-7xl mx-auto mt-16 md:mt-20 bg-white">
       {/* Header & Search Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <div>
-          <h1 className="text-4xl font-black italic text-slate-900 tracking-tighter uppercase leading-none">
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">
             Find Your Next <span className="text-blue-700">Gig</span>
           </h1>
           <p className="text-slate-400 font-bold uppercase text-[10px] mt-2 tracking-widest italic">Browse projects from top campus startups</p>
@@ -131,9 +131,12 @@ export const BrowseGigsView = () => {
       )}
 
       {/* Gigs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         {filteredGigs.map((gig) => (
-          <div key={gig.id} className="group bg-white rounded-[40px] p-8 border border-slate-100 shadow-xl shadow-slate-100/40 hover:shadow-blue-100 transition-all hover:-translate-y-2 border-b-4 border-b-blue-100 hover:border-b-orange-500">
+          <div
+            key={gig.id}
+            className="group relative bg-white rounded-xl sm:rounded-2xl md:rounded-[32px] lg:rounded-[40px] p-4 sm:p-5 md:p-6 lg:p-8 border border-slate-100 shadow-[0_18px_35px_rgba(15,23,42,0.10)] hover:shadow-[0_26px_70px_rgba(37,99,235,0.30)] transition-all hover:-translate-y-1.5 md:hover:-translate-y-2 border-b-4 border-b-blue-100 hover:border-b-orange-500 before:absolute before:-inset-1 before:rounded-[inherit] before:bg-linear-to-br before:from-blue-200/0 before:via-blue-200/60 before:to-orange-200/0 before:opacity-0 hover:before:opacity-100 before:-z-10 before:blur-sm"
+          >
             <div className="flex justify-between items-start mb-6">
               <div className="bg-blue-50 text-blue-700 text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider">
                 {gig.category}

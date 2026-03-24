@@ -5,19 +5,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Users, Zap, Briefcase, ArrowUpRight, Github, ExternalLink, ShieldCheck, Rocket } from "lucide-react";
+import { Plus, Users, Zap, Briefcase, ArrowUpRight, Github, ExternalLink, ShieldCheck, Rocket, Settings } from "lucide-react";
 import { PostGigModal } from "./PostGigModal";
 import { AddProjectModal } from "./AddProjectModal";
 import { DashboardLayout } from "./DashboardLayout";
-
-// Types remain same as per your request
-type StartupProfile = {
-  name: string;
-  industry: string;
-  about: string;
-  logo: File | null;
-  certificates: File[];
-};
+import { StartupProfile } from "../context/StartupProfileContext";
 
 type TalentItem = {
   name: string;
@@ -67,6 +59,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
   const [certificateImageFailed, setCertificateImageFailed] = useState(false);
   const [certificateSrcIndex, setCertificateSrcIndex] = useState(0);
+  const [certificatePreviewUrl, setCertificatePreviewUrl] = useState<string | null>(null);
   
   const [startupProfile, setStartupProfile] = useState<StartupProfile>({
     name: data?.name || "Startup",
@@ -107,6 +100,33 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
     return () => URL.revokeObjectURL(url);
   }, [startupProfile.logo]);
 
+  useEffect(() => {
+    const files = Array.isArray(startupProfile.certificates) ? startupProfile.certificates : [];
+
+    let objectUrl: string | null = null;
+
+    if (files.length > 0) {
+      const first = files[0];
+
+      if (first instanceof File && first.type && first.type.startsWith("image/")) {
+        objectUrl = URL.createObjectURL(first);
+        setCertificatePreviewUrl(objectUrl);
+        setCertificateImageFailed(false);
+        setCertificateSrcIndex(0);
+      } else {
+        setCertificatePreviewUrl(null);
+      }
+    } else {
+      setCertificatePreviewUrl(null);
+    }
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [startupProfile.certificates]);
+
   const handleSaveProfile = () => {
     setStartupProfile(editForm);
     setIsManageOpen(false);
@@ -138,9 +158,9 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
   return (
     <DashboardLayout contentClassName="space-y-10 bg-[#f8fafc]/50">
       <PostGigModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      
+
       <div className="max-w-7xl mx-auto space-y-10 px-4">
-        
+
         {/* --- WELCOME HEADER SECTION --- */}
         <Card className="relative overflow-hidden p-8 md:p-12 border-none rounded-[40px] bg-white shadow-2xl shadow-blue-100/20">
           {/* Decorative Background Blobs */}
@@ -175,12 +195,23 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-2xl font-black text-xs shadow-xl shadow-orange-200 flex items-center gap-3 transition-all active:scale-95 group"
               >
                 <Plus size={18} strokeWidth={3} className="group-hover:rotate-90 transition-transform" /> POST A NEW GIG
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditForm(startupProfile);
+                  setIsManageOpen(true);
+                }}
+                className="w-10 h-10 rounded-2xl border border-slate-200 flex items-center justify-center text-slate-500 hover:text-blue-700 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                aria-label="Manage dashboard settings"
+              >
+                <Settings size={18} />
               </button>
             </div>
           </div>
@@ -276,7 +307,13 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
             <div className="space-y-6">
               <div className="group relative rounded-3xl overflow-hidden bg-slate-50 border-2 border-slate-100 p-3 hover:border-orange-200 transition-colors">
                 <div className="h-40 rounded-2xl overflow-hidden bg-white flex items-center justify-center">
-                  {certificateImageFailed ? (
+                  {certificatePreviewUrl ? (
+                    <img
+                      src={certificatePreviewUrl}
+                      alt="Uploaded certificate"
+                      className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : certificateImageFailed ? (
                     <div className="flex flex-col items-center gap-2 opacity-40">
                         <Briefcase size={40} />
                         <span className="text-[10px] font-black">DOCUMENT_PENDING</span>
@@ -316,7 +353,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
         </div>
 
         {/* --- RECENT WORKS SECTION --- */}
-        <div className="space-y-8">
+        <div id="portfolio" className="space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
                 <div className="h-1.5 w-12 bg-orange-500 rounded-full mb-3" />
@@ -337,7 +374,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
                 </div>
                 <div className="p-8">
                   <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{work.title}</h3>
-                  <p className="text-slate-500 font-bold text-sm mt-3 leading-relaxed min-h-[3rem]">{work.description}</p>
+                  <p className="text-slate-500 font-bold text-sm mt-3 leading-relaxed min-h-12">{work.description}</p>
                   <div className="flex gap-3 mt-8">
                     <Button variant="outline" className="flex-1 rounded-2xl border-slate-200 font-black text-[10px] uppercase h-12 hover:bg-slate-50" onClick={() => work.github && window.open(work.github, "_blank")}>
                       <Github size={16} className="mr-2" /> Repository
@@ -428,24 +465,10 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
           </div>
         </div>
 
-        {/* --- FOOTER MANAGE ACTION --- */}
-        <div className="pt-10 flex justify-center">
-          <Button
-            onClick={() => {
-              setEditForm(startupProfile);
-              setIsManageOpen(true);
-            }}
-            variant="outline"
-            className="border-2 border-blue-700 text-blue-700 hover:bg-blue-700 hover:text-white px-10 py-7 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-xl shadow-blue-100"
-          >
-            Manage Dashboard Settings
-          </Button>
-        </div>
-
         {/* --- NOTIFICATION TOAST --- */}
         {notificationMessage && (
-          <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 duration-500">
-            <div className="bg-green-600 text-white px-10 py-5 rounded-[20px] font-black text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3">
+          <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-100 animate-in slide-in-from-bottom-10 duration-500">
+            <div className="bg-green-600 text-white px-10 py-5 rounded-4xl font-black text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3">
               <ShieldCheck size={20} /> {notificationMessage}
             </div>
           </div>
@@ -475,7 +498,7 @@ const StatCard = ({
 
     return (
         <Card className={`p-8 border-none rounded-[35px] shadow-xl transition-transform hover:scale-[1.02] duration-300 flex items-center gap-6 ${tones[tone]}`}>
-          <div className="p-4 rounded-[20px] bg-white shadow-sm">{icon}</div>
+          <div className="p-4 rounded-4xl bg-white shadow-sm">{icon}</div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">{label}</p>
             <p className="text-4xl font-black text-slate-900 tracking-tighter">{value}</p>
