@@ -222,9 +222,13 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
                                         type="text"
                                         value={editName}
                                         onChange={(e) => setEditName(e.target.value)}
+                                        maxLength={30}
                                         className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                         placeholder="e.g. Nexus Team"
                                     />
+                                    <p className="mt-1 text-right text-xs text-slate-500">
+                                    {editName.length}/30
+                                    </p>
                                 </div>
 
                                 <div>
@@ -233,9 +237,13 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
                                         value={editDescription}
                                         onChange={(e) => setEditDescription(e.target.value)}
                                         rows={4}
+                                         maxLength={150}
                                         className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                         placeholder="What is your group working on?"
                                     />
+                                 <p className="mt-1 text-right text-xs text-slate-500">
+                                    {editDescription.length}/150
+                                    </p>  
                                 </div>
 
                                 <div>

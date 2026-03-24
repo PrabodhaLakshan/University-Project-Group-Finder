@@ -1,17 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import SectionCard from "./SectionCard";
 import EmptyAddCard from "./EmptyAddCard";
 
 const inputCls =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100";
 
+const inputErrorCls =
+  "border-red-400 focus:border-red-400 focus:ring-red-100";
+
 const btnPrimary =
-  "rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400";
+  "rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50";
 
 const btnGhost =
   "rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100";
+
+function normalizePhone(value: string) {
+  return value.replace(/[\s-]/g, "");
+}
+
+function validateSriLankanMobile(value: string) {
+  const cleaned = normalizePhone(value.trim());
+
+  if (!cleaned) return "";
+
+  const valid =
+    /^07\d{8}$/.test(cleaned) ||
+    /^\+947\d{8}$/.test(cleaned) ||
+    /^947\d{8}$/.test(cleaned);
+
+  if (!valid) {
+    return "Enter a valid Sri Lankan mobile number.";
+  }
+
+  return "";
+}
+
+function formatPhoneForSave(value: string) {
+  const cleaned = normalizePhone(value.trim());
+
+  if (/^\+947\d{8}$/.test(cleaned)) return cleaned;
+  if (/^947\d{8}$/.test(cleaned)) return `+${cleaned}`;
+  if (/^07\d{8}$/.test(cleaned)) return cleaned;
+
+  return cleaned;
+}
 
 export default function MobileSection({
   mobile,
@@ -25,8 +59,22 @@ export default function MobileSection({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(mobile || "");
 
+  const error = useMemo(() => validateSriLankanMobile(draft), [draft]);
+  const hasError = !!error;
+
+  const handleSave = () => {
+    if (hasError) return;
+
+    onSave(formatPhoneForSave(draft));
+    setEditing(false);
+  };
+
   return (
-    <SectionCard title="Mobile Number" hint="Optional — makes it easier for teammates to reach you." accent="indigo">
+    <SectionCard
+      title="Mobile Number"
+      hint="Optional — makes it easier for teammates to reach you."
+      accent="indigo"
+    >
       {!mobile && !editing ? (
         isEditing ? (
           <EmptyAddCard text="Add your mobile number." onAdd={() => setEditing(true)} />
@@ -35,20 +83,22 @@ export default function MobileSection({
         )
       ) : editing ? (
         <div className="space-y-3">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="07XXXXXXXX"
-            type="tel"
-            className={inputCls}
-          />
+          <div>
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="07XXXXXXXX"
+              type="tel"
+              className={`${inputCls} ${hasError ? inputErrorCls : ""}`}
+            />
+            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+          </div>
+
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => {
-                onSave(draft.trim());
-                setEditing(false);
-              }}
+              onClick={handleSave}
+              disabled={hasError}
               className={btnPrimary}
             >
               Save

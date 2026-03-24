@@ -4,7 +4,8 @@ import { useState } from "react";
 import SectionCard from "./SectionCard";
 import EmptyAddCard from "./EmptyAddCard";
 
-/* Shared light input style */
+const MAX_BIO = 160;
+
 const inputCls =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:cursor-not-allowed";
 
@@ -36,13 +37,22 @@ export default function BioSection({
         )
       ) : editing ? (
         <div className="space-y-3">
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            rows={4}
-            placeholder="I'm a 2nd-year IT student focusing on web development and machine learning..."
-            className={inputCls}
-          />
+          <div>
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={4}
+              maxLength={MAX_BIO}
+              placeholder="I'm a 2nd-year IT student focusing on web development and machine learning..."
+              className={inputCls}
+            />
+            <div className="mt-1 flex justify-end">
+              <p className="text-xs text-slate-400">
+                {draft.length}/{MAX_BIO}
+              </p>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <button
               type="button"

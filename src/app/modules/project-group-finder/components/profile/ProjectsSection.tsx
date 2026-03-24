@@ -8,6 +8,19 @@ import type { ProfileProject } from "@/app/modules/project-group-finder/types";
 const inputCls =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100";
 
+const DESC_MAX = 150;
+
+function isValidHttpsUrl(value: string) {
+  if (!value.trim()) return true;
+
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function TechBadge({ label }: { label: string }) {
   return (
     <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700">
@@ -27,9 +40,7 @@ function RepoCard({
 }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md overflow-hidden">
-      {/* Project image */}
       {p.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={p.imageUrl}
           alt={p.name}
@@ -38,7 +49,6 @@ function RepoCard({
       )}
 
       <div className="p-4">
-        {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-base">📁</span>
@@ -58,7 +68,6 @@ function RepoCard({
           <p className="mt-2 text-sm text-slate-600 leading-relaxed">{p.description}</p>
         )}
 
-        {/* Tech badges */}
         {p.tech.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {p.tech.map((t) => (
@@ -67,7 +76,6 @@ function RepoCard({
           </div>
         )}
 
-        {/* Links + date */}
         <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
           {p.repoUrl && (
             <a
@@ -120,11 +128,26 @@ export default function ProjectsSection({
   const [imageFile, setImageFile] = useState<File | undefined>(undefined);
   const [imagePreview, setImagePreview] = useState<string | undefined>(undefined);
   const [adding, setAdding] = useState(false);
+  const [imageError, setImageError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const repoError = repo.trim() && !isValidHttpsUrl(repo) ? "Repo URL must start with https://" : "";
+  const liveError = live.trim() && !isValidHttpsUrl(live) ? "Live URL must start with https://" : "";
+  const hasLinkErrors = !!repoError || !!liveError;
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setImageError("Only image files are allowed.");
+      setImageFile(undefined);
+      setImagePreview(undefined);
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+
+    setImageError("");
     setImageFile(file);
     const reader = new FileReader();
     reader.onload = () => setImagePreview(reader.result as string);
@@ -132,18 +155,24 @@ export default function ProjectsSection({
   }
 
   function resetForm() {
-    setName(""); setDesc(""); setTech("Next.js, Prisma"); setRepo(""); setLive("");
-    setImageFile(undefined); setImagePreview(undefined);
+    setName("");
+    setDesc("");
+    setTech("Next.js, Prisma");
+    setRepo("");
+    setLive("");
+    setImageFile(undefined);
+    setImagePreview(undefined);
+    setImageError("");
     if (fileRef.current) fileRef.current.value = "";
   }
 
   async function add() {
-    if (!name.trim()) return;
+    if (!name.trim() || hasLinkErrors) return;
+
     setAdding(true);
     try {
       let imageUrl: string | undefined = undefined;
 
-      // Upload image to Supabase if a file was selected
       if (imageFile && userId) {
         const fd = new FormData();
         fd.append("file", imageFile);
@@ -156,11 +185,10 @@ export default function ProjectsSection({
           const uploadData = await uploadRes.json();
           imageUrl = uploadData.url;
         }
-        // If upload fails, continue without image (don't block project creation)
       }
 
       await onAdd({
-        id: crypto.randomUUID(),   // placeholder — Profilepage replaces with DB id
+        id: crypto.randomUUID(),
         name: name.trim(),
         description: desc.trim() || "No description",
         tech: tech.split(",").map((x) => x.trim()).filter(Boolean),
@@ -183,30 +211,62 @@ export default function ProjectsSection({
       hint="Showcase your work — add GitHub repo links and tech stacks."
       accent="indigo"
     >
-      {/* Add form */}
       {open ? (
         <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4 space-y-3">
           <p className="text-sm font-semibold text-blue-800 mb-1">New Project</p>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Project name *" className={inputCls} />
-          <textarea
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            placeholder="Short description"
-            rows={2}
+
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Project name *"
             className={inputCls}
           />
+
+          <div>
+            <textarea
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="Short description"
+              rows={2}
+              maxLength={DESC_MAX}
+              className={inputCls}
+            />
+            <div className="mt-1 flex justify-end">
+              <p className="text-xs text-slate-500">
+                {desc.length}/{DESC_MAX}
+              </p>
+            </div>
+          </div>
+
           <input
             value={tech}
             onChange={(e) => setTech(e.target.value)}
             placeholder="Tech stack (comma separated e.g. React, Node.js)"
             className={inputCls}
           />
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <input value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="Repo URL (optional)" className={inputCls} />
-            <input value={live} onChange={(e) => setLive(e.target.value)} placeholder="Live URL (optional)" className={inputCls} />
+            <div>
+              <input
+                value={repo}
+                onChange={(e) => setRepo(e.target.value)}
+                placeholder="Repo URL (optional)"
+                className={inputCls}
+              />
+              {repoError && <p className="mt-1 text-xs text-red-500">{repoError}</p>}
+            </div>
+
+            <div>
+              <input
+                value={live}
+                onChange={(e) => setLive(e.target.value)}
+                placeholder="Live URL (optional)"
+                className={inputCls}
+              />
+              {liveError && <p className="mt-1 text-xs text-red-500">{liveError}</p>}
+            </div>
           </div>
 
-          {/* Image upload */}
           <div>
             <p className="mb-1.5 text-xs font-semibold text-slate-600">Project Image (optional)</p>
             <input
@@ -218,11 +278,15 @@ export default function ProjectsSection({
             />
             {imagePreview ? (
               <div className="relative rounded-xl overflow-hidden border border-slate-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imagePreview} alt="Preview" className="h-36 w-full object-cover" />
                 <button
                   type="button"
-                  onClick={() => { setImagePreview(undefined); setImageFile(undefined); if (fileRef.current) fileRef.current.value = ""; }}
+                  onClick={() => {
+                    setImagePreview(undefined);
+                    setImageFile(undefined);
+                    setImageError("");
+                    if (fileRef.current) fileRef.current.value = "";
+                  }}
                   className="absolute top-2 right-2 rounded-full bg-white/80 px-2 py-1 text-xs font-semibold text-red-500 shadow hover:bg-white"
                 >
                   ✕ Remove
@@ -237,12 +301,13 @@ export default function ProjectsSection({
                 🖼️ Click to upload project image
               </button>
             )}
+            {imageError && <p className="mt-1 text-xs text-red-500">{imageError}</p>}
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={add}
-              disabled={adding || !name.trim()}
+              disabled={adding || !name.trim() || hasLinkErrors}
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {adding ? (
@@ -258,7 +323,10 @@ export default function ProjectsSection({
               )}
             </button>
             <button
-              onClick={() => { setOpen(false); resetForm(); }}
+              onClick={() => {
+                setOpen(false);
+                resetForm();
+              }}
               disabled={adding}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
             >
@@ -276,7 +344,6 @@ export default function ProjectsSection({
         </button>
       ) : null}
 
-      {/* Empty state */}
       {projects.length === 0 && !open && (
         isEditing ? (
           <EmptyAddCard text="Add your first project." onAdd={() => setOpen(true)} />
@@ -285,7 +352,6 @@ export default function ProjectsSection({
         )
       )}
 
-      {/* Project list */}
       {projects.length > 0 && (
         <div className="space-y-3">
           {projects.map((p) => (
