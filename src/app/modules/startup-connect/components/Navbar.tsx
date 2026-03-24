@@ -220,7 +220,7 @@ export const Navbar = () => {
 
   return (
     <>
-      <div className="fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur-md md:hidden">
+      <div className="fixed inset-x-0 top-16 z-40 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur-md md:hidden">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-9 h-9 bg-sky-500 rounded-lg flex items-center justify-center shadow-md shadow-sky-100">
             <Rocket className="w-5 h-5 text-white" />
@@ -238,12 +238,12 @@ export const Navbar = () => {
         </button>
       </div>
 
-      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-72 border-r border-slate-200 bg-white px-5 py-6 md:flex md:flex-col">
+      <aside className="fixed left-0 top-16 z-30 hidden h-[calc(100vh-4rem)] w-72 border-r border-slate-200 bg-white px-5 py-6 md:flex md:flex-col">
         {sidebarContent}
       </aside>
 
       <div
-        className={`fixed inset-0 z-40 bg-slate-900/40 transition-opacity duration-300 md:hidden ${
+        className={`fixed inset-x-0 bottom-0 top-16 z-40 bg-slate-900/40 transition-opacity duration-300 md:hidden ${
           sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setSidebarOpen(false)}
@@ -251,7 +251,7 @@ export const Navbar = () => {
       />
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen w-72 flex-col border-r border-slate-200 bg-white px-5 py-6 transition-transform duration-300 md:hidden ${
+        className={`fixed left-0 top-16 z-50 flex h-[calc(100vh-4rem)] w-72 flex-col border-r border-slate-200 bg-white px-5 py-6 transition-transform duration-300 md:hidden ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-hidden={!sidebarOpen}
