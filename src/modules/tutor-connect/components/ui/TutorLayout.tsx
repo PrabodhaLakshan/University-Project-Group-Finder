@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import Navbar from "@/components/Navbar";
 import TutorSidebar from "./TutorSidebar";
 import StudentSidebar from "./StudentSidebar";
 
@@ -22,15 +23,23 @@ export default function TutorLayout({
     pathname === "/tutor-connect/student-bookings";
 
   if (isNoSidebarPage) {
-    return <div className="bg-slate-50 min-h-screen">{children}</div>;
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Navbar />
+        <div className="bg-slate-50 min-h-screen">{children}</div>
+      </div>
+    );
   }
 
   if (isStudentPage) {
     return (
-      <div className="flex bg-slate-50 min-h-screen">
-        <StudentSidebar />
-        <div className="flex-1 overflow-y-auto">
-          {children}
+      <div className="min-h-screen bg-slate-50">
+        <Navbar />
+        <div className="flex bg-slate-50 min-h-screen">
+          <StudentSidebar />
+          <div className="flex-1 overflow-y-auto">
+            {children}
+          </div>
         </div>
       </div>
     );
@@ -38,10 +47,13 @@ export default function TutorLayout({
 
   // Default: Tutor sidebar
   return (
-    <div className="flex bg-slate-50 min-h-screen">
-      <TutorSidebar />
-      <div className="flex-1 p-8">
-        {children}
+    <div className="min-h-screen bg-slate-50">
+      <Navbar />
+      <div className="flex bg-slate-50 min-h-screen">
+        <TutorSidebar />
+        <div className="flex-1 p-8">
+          {children}
+        </div>
       </div>
     </div>
   );

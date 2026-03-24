@@ -298,7 +298,13 @@ export default function GroupFinderUI({ user }: Props) {
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
                   </div>
                 ) : myGroupId ? (
-                  <GroupDashboardPage groupId={myGroupId} />
+                  <GroupDashboardPage
+                    groupId={myGroupId}
+                    onLeaveSuccess={() => {
+                      setMyGroupId(null);
+                      setPanel("dashboard");
+                    }}
+                  />
                 ) : (
                   <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
                     <p className="text-lg font-medium text-slate-900">You are not in a group yet</p>

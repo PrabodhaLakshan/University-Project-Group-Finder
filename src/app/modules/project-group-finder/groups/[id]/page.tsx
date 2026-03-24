@@ -40,7 +40,12 @@ type Group = {
     members: Member[];
 };
 
-export default function GroupDashboardPage({ groupId }: { groupId: string }) {
+type GroupDashboardPageProps = {
+    groupId: string;
+    onLeaveSuccess?: () => void;
+};
+
+export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDashboardPageProps) {
     const router = useRouter();
     const [group, setGroup] = useState<Group | null>(null);
     const [loading, setLoading] = useState(true);
@@ -52,6 +57,7 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
     const [editDescription, setEditDescription] = useState("");
     const [editMaxMembers, setEditMaxMembers] = useState<number>(4);
     const [saving, setSaving] = useState(false);
+    const [leaving, setLeaving] = useState(false);
 
     // Profile Modal State
     const [selectedProfile, setSelectedProfile] = useState<StudentProfile | null>(null);
@@ -165,6 +171,36 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
         }
     };
 
+    const handleLeaveGroup = async () => {
+        if (!group || !currentUserId) return;
+
+        const confirmed = window.confirm("Are you sure you want to leave this group?");
+        if (!confirmed) return;
+
+        setLeaving(true);
+        try {
+            const token = localStorage.getItem("pgf_token");
+            const res = await fetch(`/api/project-group-finder/groups/${groupId}/leave`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            alert(data.message || "You left the group successfully.");
+            onLeaveSuccess?.();
+            router.push("/project-group-finder");
+            router.refresh();
+        } catch (err: any) {
+            alert(err.message || "Failed to leave group");
+        } finally {
+            setLeaving(false);
+        }
+    };
+
     const openProfile = (member: Member) => {
         setSelectedProfile({
             id: member.user.student_id,
@@ -203,6 +239,7 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
         );
     }
 
+    const isCurrentUserMember = group.members.some((member) => member.user_id === currentUserId);
     const currentUserRole = group.members.find(m => m.user_id === currentUserId)?.role;
     const isLeader = currentUserRole === "leader";
 
@@ -429,9 +466,37 @@ export default function GroupDashboardPage({ groupId }: { groupId: string }) {
                                         ))}
                                     </ul>
                                 </div>
+
+                                {isCurrentUserMember && (
+                                    <div className="border-t border-slate-100 pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={handleLeaveGroup}
+                                            disabled={leaving}
+                                            className="w-full rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            {leaving ? "Leaving..." : "Leave Group"}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
-                            <p className="text-sm text-slate-500">Only the group leader can access settings.</p>
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-500">Only the group leader can access settings.</p>
+
+                                {isCurrentUserMember && (
+                                    <div className="border-t border-slate-100 pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={handleLeaveGroup}
+                                            disabled={leaving}
+                                            className="w-full rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            {leaving ? "Leaving..." : "Leave Group"}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
