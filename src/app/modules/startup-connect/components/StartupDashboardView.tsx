@@ -5,8 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Users, Zap, Briefcase, ArrowUpRight, Github, ExternalLink, ShieldCheck, Rocket, Settings } from "lucide-react";
-import { PostGigModal } from "./PostGigModal";
+import { Plus, Users, Zap, Briefcase, ArrowUpRight, Github, ExternalLink, ShieldCheck, Rocket, Settings, Pen, Trash2, Calendar as CalendarIcon, DollarSign } from "lucide-react";
+import { PostGigModal, type GigFormValues } from "./PostGigModal";
 import { AddProjectModal } from "./AddProjectModal";
 import { DashboardLayout } from "./DashboardLayout";
 import { StartupProfile } from "../context/StartupProfileContext";
@@ -26,6 +26,14 @@ type RecentWorkItem = {
   demo?: string;
   date: string;
   images: string[];
+};
+
+type Gig = {
+  id: number;
+  title: string;
+  budget: string;
+  deadline: string;
+  description: string;
 };
 
 const TALENT_ITEMS: TalentItem[] = [
@@ -56,10 +64,13 @@ const CERTIFICATE_IMAGE_SOURCES = [
 export const StartupDashboardView = ({ data }: { data: any }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
+  const [isManagingGigs, setIsManagingGigs] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null);
   const [certificateImageFailed, setCertificateImageFailed] = useState(false);
   const [certificateSrcIndex, setCertificateSrcIndex] = useState(0);
   const [certificatePreviewUrl, setCertificatePreviewUrl] = useState<string | null>(null);
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [selectedGigForEdit, setSelectedGigForEdit] = useState<Gig | null>(null);
   
   const [startupProfile, setStartupProfile] = useState<StartupProfile>({
     name: data?.name || "Startup",
@@ -151,15 +162,157 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
     setRecentWorks((prev) => [newWork, ...prev]);
   };
 
+  const handleSaveGig = (gig: GigFormValues) => {
+    setGigs((prev) => {
+      if (gig.id != null) {
+        return prev.map((existing) =>
+          existing.id === gig.id
+            ? {
+                id: gig.id!,
+                title: gig.title,
+                budget: gig.budget,
+                deadline: gig.deadline,
+                description: gig.description,
+              }
+            : existing
+        );
+      }
+
+      const nextId = prev.length ? Math.max(...prev.map((g) => g.id)) + 1 : 1;
+      return [
+        {
+          id: nextId,
+          title: gig.title,
+          budget: gig.budget,
+          deadline: gig.deadline,
+          description: gig.description,
+        },
+        ...prev,
+      ];
+    });
+  };
+
+  const handleDeleteGig = (id: number) => {
+    const confirmed = window.confirm("Are you sure you want to delete this gig?");
+    if (!confirmed) return;
+    setGigs((prev) => prev.filter((gig) => gig.id !== id));
+  };
+
   const certificates = Array.isArray(startupProfile.certificates) ? startupProfile.certificates : [];
   const displayName = startupProfile.name || "Startup";
   const displayIndustry = startupProfile.industry || "Technology";
 
   return (
     <DashboardLayout contentClassName="space-y-10 bg-[#f8fafc]/50">
-      <PostGigModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <PostGigModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedGigForEdit(null);
+        }}
+        initialGig={selectedGigForEdit ?? undefined}
+        onSubmitGig={handleSaveGig}
+      />
 
       <div className="max-w-7xl mx-auto space-y-10 px-4">
+        {isManagingGigs ? (
+          <>
+            {/* --- MANAGE GIGS VIEW --- */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4">
+              <div>
+                <div className="h-1.5 w-12 bg-blue-700 rounded-full mb-3" />
+                <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-slate-900 leading-none">
+                  Manage <span className="text-orange-600">My Gigs</span>
+                </h2>
+                <p className="text-slate-400 font-bold text-xs mt-2 uppercase tracking-[0.25em]">
+                  Update or remove opportunities you have posted
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="rounded-1xl font-black text-[10px] uppercase tracking-widest px-5 py-3 border-slate-200 bg-orange-600 text-white hover:bg-orange-700 transition-colors"
+                  onClick={() => {
+                    setIsManagingGigs(false);
+                  }}
+                >
+                  ← Back to Dashboard
+                </Button>
+                
+              </div>
+            </div>
+
+            <div className="mt-8 space-y-4">
+              {gigs.length === 0 ? (
+                <Card className="p-8 rounded-[32px] bg-white border border-dashed border-slate-200 text-center">
+                  <p className="text-sm font-black text-slate-700 uppercase tracking-[0.25em]">
+                    No gigs yet
+                  </p>
+                  <p className="text-xs font-bold text-slate-400 mt-2">
+                    Use "Post Gig" to create your first opportunity.
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {gigs.map((gig) => (
+                    <Card
+                      key={gig.id}
+                      className="p-6 rounded-[28px] border border-slate-100 bg-white shadow-md flex flex-col gap-4 hover:shadow-lg transition-shadow"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-500 mb-1">
+                            Active Gig
+                          </p>
+                          <h3 className="text-base md:text-lg font-black text-slate-900 leading-tight line-clamp-2">
+                            {gig.title}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedGigForEdit(gig);
+                              setIsModalOpen(true);
+                            }}
+                            className="w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:text-blue-700 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                            aria-label="Edit gig"
+                          >
+                            <Pen size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGig(gig.id)}
+                            className="w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors"
+                            aria-label="Delete gig"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-sm font-semibold text-slate-500 line-clamp-3">
+                        {gig.description}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-600 mt-2">
+                        <div className="flex items-center gap-1">
+                          <DollarSign size={14} className="text-blue-700" />
+                          <span>{gig.budget}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <CalendarIcon size={14} className="text-orange-500" />
+                          <span>{gig.deadline}</span>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
 
         {/* --- WELCOME HEADER SECTION --- */}
         <Card className="relative overflow-hidden p-8 md:p-12 border-none rounded-[40px] bg-white shadow-2xl shadow-blue-100/20">
@@ -197,7 +350,10 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
 
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => {
+                  setSelectedGigForEdit(null);
+                  setIsModalOpen(true);
+                }}
                 className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-2xl font-black text-xs shadow-xl shadow-orange-200 flex items-center gap-3 transition-all active:scale-95 group"
               >
                 <Plus size={18} strokeWidth={3} className="group-hover:rotate-90 transition-transform" /> POST A NEW GIG
@@ -284,7 +440,13 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
 
         {/* --- STATS OVERVIEW --- */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard label="Active Gigs" value="04" tone="blue" icon={<Briefcase size={22} />} />
+          <StatCard
+            label="Active Gigs"
+            value={String(gigs.length).padStart(2, "0")}
+            tone="blue"
+            icon={<Briefcase size={22} />}
+            onClick={() => setIsManagingGigs(true)}
+          />
           <StatCard label="New Applicants" value="28" tone="orange" icon={<Users size={22} />} />
           <StatCard label="Talent Reach" value="1.2k" tone="green" icon={<Zap size={22} />} />
         </div>
@@ -473,6 +635,9 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
             </div>
           </div>
         )}
+
+          </>
+        )}
       </div>
     </DashboardLayout>
   );
@@ -484,11 +649,13 @@ const StatCard = ({
   value,
   tone,
   icon,
+  onClick,
 }: {
   label: string;
   value: string;
   tone: "blue" | "orange" | "green";
   icon: React.ReactNode;
+  onClick?: () => void;
 }) => {
     const tones = {
         blue: "bg-blue-50 border-blue-100 text-blue-700 shadow-blue-100/50",
@@ -497,7 +664,12 @@ const StatCard = ({
     };
 
     return (
-        <Card className={`p-8 border-none rounded-[35px] shadow-xl transition-transform hover:scale-[1.02] duration-300 flex items-center gap-6 ${tones[tone]}`}>
+        <Card
+          className={`p-8 border-none rounded-[35px] shadow-xl transition-transform hover:scale-[1.02] duration-300 flex items-center gap-6 ${tones[tone]} ${onClick ? "cursor-pointer" : ""}`}
+          role={onClick ? "button" : undefined}
+          tabIndex={onClick ? 0 : undefined}
+          onClick={onClick}
+        >
           <div className="p-4 rounded-4xl bg-white shadow-sm">{icon}</div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">{label}</p>

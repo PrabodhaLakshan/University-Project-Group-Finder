@@ -1,17 +1,27 @@
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, DollarSign, Calendar, Zap } from "lucide-react";
 
+export interface GigFormValues {
+  id?: number;
+  title: string;
+  budget: string;
+  deadline: string;
+  description: string;
+}
+
 interface PostGigModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialGig?: GigFormValues | null;
+  onSubmitGig?: (gig: GigFormValues) => void;
 }
 
-export const PostGigModal = ({ isOpen, onClose }: PostGigModalProps) => {
+export const PostGigModal = ({ isOpen, onClose, initialGig, onSubmitGig }: PostGigModalProps) => {
   const [title, setTitle] = useState("");
   const [budget, setBudget] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -30,6 +40,26 @@ export const PostGigModal = ({ isOpen, onClose }: PostGigModalProps) => {
     const today = new Date();
     return today.toISOString().split('T')[0]; 
   }, []);
+
+  // Pre-fill or reset when opening
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (initialGig) {
+      setTitle(initialGig.title || "");
+      setBudget(initialGig.budget || "");
+      setDeadline(initialGig.deadline || "");
+      setDescription(initialGig.description || "");
+    } else {
+      setTitle("");
+      setBudget("");
+      setDeadline("");
+      setDescription("");
+    }
+
+    setErrors({});
+    setShowSuccess(false);
+  }, [isOpen, initialGig]);
 
   if (!isOpen) return null;
 
@@ -80,13 +110,19 @@ export const PostGigModal = ({ isOpen, onClose }: PostGigModalProps) => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      // Form is valid – show success message window
+      const payload: GigFormValues = {
+        id: initialGig?.id,
+        title: trimmedTitle,
+        budget,
+        deadline,
+        description: trimmedDescription,
+      };
+
+      if (onSubmitGig) {
+        onSubmitGig(payload);
+      }
+
       setShowSuccess(true);
-      // Optionally reset form fields
-      setTitle("");
-      setBudget("");
-      setDeadline("");
-      setDescription("");
     }
   };
 
@@ -175,13 +211,13 @@ export const PostGigModal = ({ isOpen, onClose }: PostGigModalProps) => {
              <Button
                type="button"
                onClick={onClose}
-               className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-6 rounded-2xl font-black text-base transition-all active:scale-95 border-none"
+               className="flex-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 py-4 md:py-6 rounded-xl md:rounded-2xl font-black text-sm md:text-base transition-all active:scale-95 border-none"
              >
                Cancel
              </Button>
              <Button
                type="submit"
-               className="flex-2 bg-blue-700 hover:bg-blue-800 text-white py-6 rounded-2xl font-black text-base shadow-xl shadow-blue-100 transition-all active:scale-95"
+               className="flex-0.5 bg-blue-700 hover:bg-blue-800 text-white py-4 md:py-6 rounded-xl font-black text-sm md:text-base shadow-xl shadow-blue-100 transition-all active:scale-95"
              >
                Publish Opportunity
              </Button>

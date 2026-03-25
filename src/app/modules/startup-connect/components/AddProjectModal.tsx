@@ -124,7 +124,7 @@ export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
 
       <DialogContent className="max-w-2xl bg-white rounded-[40px] border-none shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-3xl font-black text-slate-900 flex items-center gap-3 italic">
+          <DialogTitle className="text-3xl font-black text-slate-900 flex items-center gap-3">
             <Rocket className="w-8 h-8 text-sky-600" /> ADD NEW PROJECT
           </DialogTitle>
         </DialogHeader>
