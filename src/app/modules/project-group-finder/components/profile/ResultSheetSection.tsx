@@ -85,7 +85,15 @@ export default function ResultSheetSection({
   }
 
   async function uploadFile(file: File) {
-    setState((s) => ({ ...s, status: "PENDING", fileName: file.name, allMarks: [], publishedMarks: [] }));
+    setState((s) => ({
+      ...s,
+      status: "PENDING",
+      fileName: file.name,
+      allMarks: [],
+      publishedMarks: [],
+      errorMessage: null,
+      gpa: null,
+    }));
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -94,7 +102,17 @@ export default function ResultSheetSection({
       const data = await res.json();
 
       if (!res.ok) {
-        setState((s) => ({ ...s, status: "REJECTED", allMarks: [] }));
+        const details =
+          typeof data?.details === "string"
+            ? data.details
+            : data?.details?.detail || data?.error || "Failed to verify PDF";
+        setState((s) => ({
+          ...s,
+          status: "REJECTED",
+          allMarks: [],
+          gpa: null,
+          errorMessage: details,
+        }));
         return;
       }
 
@@ -112,9 +130,17 @@ export default function ResultSheetSection({
         fileName: file.name,
         allMarks: marks,
         gpa: data.gpa,
+        errorMessage:
+          data.verified ? null : (Array.isArray(data.reasons) && data.reasons.length > 0 ? data.reasons.join(", ") : "PDF verification failed"),
       }));
-    } catch {
-      setState((s) => ({ ...s, status: "REJECTED", allMarks: [], gpa: null }));
+    } catch (error) {
+      setState((s) => ({
+        ...s,
+        status: "REJECTED",
+        allMarks: [],
+        gpa: null,
+        errorMessage: error instanceof Error ? error.message : "Failed to upload PDF",
+      }));
     }
   }
 
@@ -182,6 +208,9 @@ export default function ResultSheetSection({
                 </div>
                 {state.status === "PENDING" && (
                   <p className="mt-1 text-xs text-slate-500">Verifying and extracting marks...</p>
+                )}
+                {state.status === "REJECTED" && state.errorMessage && (
+                  <p className="mt-1 text-xs font-medium text-red-600">{state.errorMessage}</p>
                 )}
               </div>
             </div>

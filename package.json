@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently \"npm:dev:next\" \"npm:dev:pdf\" \"npm:dev:socket\"",
     "dev:next": "next dev",
-    "dev:pdf": "cd python-pdf-service && .\\.venv\\Scripts\\python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+    "dev:pdf": "cd python-pdf-service && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
     "dev:socket": "node socket-server/server.js"
   },
   "dependencies": {

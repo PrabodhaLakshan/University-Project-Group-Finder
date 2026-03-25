@@ -51,25 +51,53 @@ export async function POST(req: Request) {
     }
 
     // Call Python service
-    const pdfService = process.env.PDF_SERVICE_URL!;
-    const verifyRes = await fetch(`${pdfService}/verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        pdf_url: signed.signedUrl,
-        template_version: "v1",
-      }),
-    });
+    const pdfService = process.env.PDF_SERVICE_URL;
+    if (!pdfService) {
+      await supabaseAdmin.storage.from(BUCKET).remove([path]);
+      return NextResponse.json(
+        { error: "PDF_SERVICE_URL is not configured" },
+        { status: 500 }
+      );
+    }
 
-    const verifyJson = await verifyRes.json();
+    let verifyRes: Response;
+    try {
+      verifyRes = await fetch(`${pdfService}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pdf_url: signed.signedUrl,
+          template_version: "v1",
+        }),
+      });
+    } catch (error: any) {
+      await supabaseAdmin.storage.from(BUCKET).remove([path]);
+      return NextResponse.json(
+        {
+          error: "PDF verification service is unreachable",
+          details: error?.message || "Connection failed",
+        },
+        { status: 503 }
+      );
+    }
+
+    let verifyJson: any = null;
+    try {
+      verifyJson = await verifyRes.json();
+    } catch {
+      verifyJson = null;
+    }
 
     // OPTIONAL: Delete file after verification (matches your “don’t store pdf” rule)
     await supabaseAdmin.storage.from(BUCKET).remove([path]);
 
     if (!verifyRes.ok) {
       return NextResponse.json(
-        { error: "Verification failed", details: verifyJson },
-        { status: 400 }
+        {
+          error: "Verification failed",
+          details: verifyJson?.detail || verifyJson || "Unknown verification error",
+        },
+        { status: verifyRes.status >= 400 && verifyRes.status < 600 ? verifyRes.status : 400 }
       );
     }
 

@@ -26,6 +26,7 @@ export type ResultSheetState = {
   publishedMarks: Mark[];  // only selected ones to save in DB
   gpa?: string | null;     // Extracted cumulative GPA
   publishGpa?: boolean;    // User toggled selection
+  errorMessage?: string | null;
 };
 
 export type StudentProfile = {

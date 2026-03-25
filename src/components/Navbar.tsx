@@ -29,9 +29,9 @@ export default function Navbar() {
   const navLinks = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "Uni-Mart", href: "/uni-mart" },
-    { label: "Project Finder", href: "/modules/project-group-finder" },
-    { label: "Tutor Connect", href: "/modules/tutor-connect" },
-    { label: "Startup Connect", href: "/modules/startup-connect" },
+    { label: "Project Finder", href: "/project-group-finder" },
+    { label: "Tutor Connect", href: "/tutor-connect" },
+    { label: "Startup Connect", href: "/startup-connect" },
   ];
 
   const avatarUrl = user

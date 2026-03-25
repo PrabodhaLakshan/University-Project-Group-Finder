@@ -89,7 +89,7 @@ export const users: UserRecord[] = [
   { id: "u1", name: "Nadun Perera", email: "nadun@uninexus.edu", role: "Student", status: "Active", joinedDate: "2026-01-12" },
   { id: "u2", name: "Ayesha Fernando", email: "ayesha@uninexus.edu", role: "Tutor", status: "Pending", joinedDate: "2026-02-04" },
   { id: "u3", name: "Kavi Labs", email: "hello@kavilabs.io", role: "Startup", status: "Approved", joinedDate: "2025-12-18" },
-  { id: "u4", name: "Tharushi Silva", email: "tharushi@unimart.lk", role: "Seller", status: "Reported", joinedDate: "2026-02-27" },
+  { id: "u4", name: "Tharushi Silva", email: "tharushi@unimart.lk", role: "Student", status: "Reported", joinedDate: "2026-02-27" },
   { id: "u5", name: "Admin Ops", email: "ops@uninexus.edu", role: "Admin", status: "Active", joinedDate: "2025-10-02" },
   { id: "u6", name: "Ravin Jayasekara", email: "ravin@uninexus.edu", role: "Student", status: "Suspended", joinedDate: "2026-01-21" },
 ];
