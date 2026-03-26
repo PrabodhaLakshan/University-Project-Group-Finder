@@ -8,9 +8,41 @@ export default function CreateSlotForm() {
   const [time, setTime] = useState("");
   const [subject, setSubject] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ date?: string; time?: string; subject?: string }>({});
+
+  // Today's date in YYYY-MM-DD format (local time)
+  const today = new Date();
+  const todayStr = today.toLocaleDateString("en-CA"); // "YYYY-MM-DD"
+
+  // Current time as "HH:MM"
+  const nowTimeStr = today.toTimeString().slice(0, 5);
+
+  const validate = (): boolean => {
+    const newErrors: { date?: string; time?: string; subject?: string } = {};
+
+    if (!date) {
+      newErrors.date = "Please select a date.";
+    } else if (date < todayStr) {
+      newErrors.date = "Date cannot be in the past.";
+    }
+
+    if (!time) {
+      newErrors.time = "Please select a time.";
+    } else if (date === todayStr && time <= nowTimeStr) {
+      newErrors.time = "Time must be in the future for today's date.";
+    }
+
+    if (!subject.trim()) {
+      newErrors.subject = "Please enter a subject.";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     setIsSubmitting(true);
     // Simulate API call
     setTimeout(() => {
@@ -20,6 +52,7 @@ export default function CreateSlotForm() {
       setDate("");
       setTime("");
       setSubject("");
+      setErrors({});
     }, 800);
   };
 
@@ -54,12 +87,19 @@ export default function CreateSlotForm() {
                 <div className="relative group">
                   <input
                     type="date"
-                    className="w-full bg-slate-50/50 border border-slate-200/80 rounded-[14px] px-4 py-3.5 text-slate-900 text-[15px] hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all duration-200 shadow-sm"
+                    min={todayStr}
+                    className={`w-full bg-slate-50/50 border rounded-[14px] px-4 py-3.5 text-slate-900 text-[15px] hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm ${
+                      errors.date
+                        ? "border-red-400 focus:border-red-400 focus:ring-red-500/10"
+                        : "border-slate-200/80 focus:border-blue-500/50"
+                    }`}
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    required
+                    onChange={(e) => { setDate(e.target.value); setErrors((prev) => ({ ...prev, date: undefined })); }}
                   />
                 </div>
+                {errors.date && (
+                  <p className="text-[13px] text-red-500 font-medium mt-1">{errors.date}</p>
+                )}
               </div>
 
               {/* Time Input */}
@@ -71,12 +111,19 @@ export default function CreateSlotForm() {
                 <div className="relative group">
                   <input
                     type="time"
-                    className="w-full bg-slate-50/50 border border-slate-200/80 rounded-[14px] px-4 py-3.5 text-slate-900 text-[15px] hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all duration-200 shadow-sm"
+                    min={date === todayStr ? nowTimeStr : undefined}
+                    className={`w-full bg-slate-50/50 border rounded-[14px] px-4 py-3.5 text-slate-900 text-[15px] hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm ${
+                      errors.time
+                        ? "border-red-400 focus:border-red-400 focus:ring-red-500/10"
+                        : "border-slate-200/80 focus:border-blue-500/50"
+                    }`}
                     value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    required
+                    onChange={(e) => { setTime(e.target.value); setErrors((prev) => ({ ...prev, time: undefined })); }}
                   />
                 </div>
+                {errors.time && (
+                  <p className="text-[13px] text-red-500 font-medium mt-1">{errors.time}</p>
+                )}
               </div>
             </div>
 
@@ -90,12 +137,18 @@ export default function CreateSlotForm() {
                 <input
                   type="text"
                   placeholder="e.g., Database Systems, Web Development..."
-                  className="w-full bg-slate-50/50 border border-slate-200/80 rounded-[14px] px-4 py-3.5 text-slate-900 text-[15px] placeholder:text-slate-400/80 hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all duration-200 shadow-sm"
+                  className={`w-full bg-slate-50/50 border rounded-[14px] px-4 py-3.5 text-slate-900 text-[15px] placeholder:text-slate-400/80 hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all duration-200 shadow-sm ${
+                    errors.subject
+                      ? "border-red-400 focus:border-red-400 focus:ring-red-500/10"
+                      : "border-slate-200/80 focus:border-blue-500/50"
+                  }`}
                   value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  required
+                  onChange={(e) => { setSubject(e.target.value); setErrors((prev) => ({ ...prev, subject: undefined })); }}
                 />
               </div>
+              {errors.subject && (
+                <p className="text-[13px] text-red-500 font-medium mt-1">{errors.subject}</p>
+              )}
             </div>
 
             <div className="pt-3">
