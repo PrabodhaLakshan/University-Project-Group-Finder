@@ -29,9 +29,9 @@ export default function Navbar() {
   const tutorDropdownRef = useRef<HTMLDivElement | null>(null);
 
   const publicLinks = [
-    { label: "About Us", href: "/#about-us" },
+    { label: "About Us", href: "/modules/about" },
     { label: "Services", href: "/#services" },
-    { label: "Contact Us", href: "/#contact-us" },
+    { label: "Contact Us", href: "/contactus" },
   ];
 
   const navLinks = [
@@ -438,7 +438,7 @@ export default function Navbar() {
 
               <Link 
                 className="rounded-lg p-2 text-slate-700 hover:bg-white/70 hover:text-blue-600 transition" 
-                href="/modules/uni-mart/messages"
+                href="/messages"
                 aria-label="Messages"
                 title="Messages"
               >

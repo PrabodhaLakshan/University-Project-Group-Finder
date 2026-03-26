@@ -46,6 +46,7 @@ export interface Conversation {
   id: string;
   participantId: string;
   participantName: string;
+  viewerRole?: "buyer" | "seller" | "unknown";
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
