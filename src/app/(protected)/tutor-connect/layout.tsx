@@ -1,4 +1,4 @@
-import TutorLayout from "@/modules/tutor-connect/components/ui/TutorLayout";
+import TutorLayout from "@/app/modules/tutor-connect/components/ui/TutorLayout";
 
 export default function Layout({
   children,
