@@ -8,6 +8,7 @@ type User = {
   student_id: string;
   email: string;
   name: string;
+  avatar_path?: string;
 };
 
 type AuthState = {
@@ -37,7 +38,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!res.ok) {
       setUser(null);
-      clearToken();
+      if (res.status === 401 || res.status === 403) {
+        clearToken();
+      }
       return;
     }
 
