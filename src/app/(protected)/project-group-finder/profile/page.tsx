@@ -29,7 +29,12 @@ export default function ProfilePageRoute() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div 
+      className="min-h-screen bg-cover bg-fixed bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(to bottom, rgba(248, 250, 252, 0.7), rgba(248, 250, 252, 0.95)), url('/images/project-group-finder/group-finder-ui-background.png')`
+      }}
+    >
       {/* Top navbar */}
       <Navbar />
 

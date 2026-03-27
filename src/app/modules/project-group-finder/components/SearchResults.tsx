@@ -86,7 +86,7 @@ function ResultCard({
     .toUpperCase();
 
   return (
-    <div className="group rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md">
+    <div className="relative group rounded-2xl border border-blue-100/50 bg-white/95 backdrop-blur-xl shadow-sm transition hover:border-blue-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] overflow-hidden">
       {/* Top stripe — colored by match score */}
       <div
         className={[

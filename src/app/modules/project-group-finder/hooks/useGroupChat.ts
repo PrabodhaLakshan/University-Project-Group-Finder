@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import type { GroupMessage } from "@/app/modules/project-group-finder/types/chat";
 
+type SendAttachment = {
+    kind: "image" | "video" | "voice";
+    file: File;
+};
+
 export function useGroupChat(groupId: string, currentUserId: string) {
     const [messages, setMessages] = useState<GroupMessage[]>([]);
     const [loading, setLoading] = useState(true);
@@ -11,10 +16,14 @@ export function useGroupChat(groupId: string, currentUserId: string) {
     useEffect(() => {
         async function loadHistory() {
             try {
-                const res = await fetch(`/api/groups/${groupId}/messages`);
-                const data = await res.json();
+                const token = localStorage.getItem("pgf_token");
+                const headers: HeadersInit = token
+                    ? { Authorization: `Bearer ${token}` }
+                    : {};
+                const securedRes = await fetch(`/api/groups/${groupId}/messages`, { headers });
+                const data = await securedRes.json();
 
-                if (data.success) {
+                if (securedRes.ok && data.success) {
                     setMessages(data.messages || []);
                 }
             } catch (error) {
@@ -47,28 +56,75 @@ export function useGroupChat(groupId: string, currentUserId: string) {
         };
     }, [groupId]);
 
-    async function sendMessage(text: string, senderName?: string, senderImage?: string) {
+    async function sendMessage(
+        text: string,
+        senderName?: string,
+        senderImage?: string,
+        attachment?: SendAttachment
+    ) {
         const trimmed = text.trim();
-        if (!trimmed) return;
+        if (!trimmed && !attachment) return;
 
         try {
+            const token = localStorage.getItem("pgf_token");
+            const headers: HeadersInit = {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            };
+
+            let uploadedAttachment:
+                | {
+                    kind: "image" | "video" | "voice";
+                    name: string;
+                    bucket: string;
+                    path: string;
+                    signedUrl: string | null;
+                }
+                | null = null;
+
+            if (attachment) {
+                const formData = new FormData();
+                formData.append("file", attachment.file);
+                formData.append("kind", attachment.kind);
+
+                const uploadHeaders: HeadersInit = token
+                    ? { Authorization: `Bearer ${token}` }
+                    : {};
+
+                const uploadRes = await fetch(`/api/groups/${groupId}/messages/upload`, {
+                    method: "POST",
+                    headers: uploadHeaders,
+                    body: formData,
+                });
+
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok || !uploadData.success) {
+                    console.error(uploadData.error || "Failed to upload attachment");
+                    return;
+                }
+
+                uploadedAttachment = uploadData.attachment;
+            }
+
             const res = await fetch(`/api/groups/${groupId}/messages`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers,
                 body: JSON.stringify({
                     sender_id: currentUserId,
                     sender_name: senderName || null,
                     sender_image: senderImage || null,
                     message: trimmed,
+                    attachment_type: uploadedAttachment?.kind || null,
+                    attachment_bucket: uploadedAttachment?.bucket || null,
+                    attachment_path: uploadedAttachment?.path || null,
+                    attachment_name: uploadedAttachment?.name || null,
                 }),
             });
 
             const data = await res.json();
 
             if (!data.success) {
-                console.error("Failed to save message");
+                console.error(data.message || "Failed to save message");
                 return;
             }
 

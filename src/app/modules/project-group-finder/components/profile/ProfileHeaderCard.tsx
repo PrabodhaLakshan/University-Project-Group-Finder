@@ -84,57 +84,59 @@ export default function ProfileHeaderCard({
   /* ---------- render ---------- */
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {/* Blue gradient top banner */}
-        <div className="h-24 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700" />
+      <div 
+        className="relative overflow-hidden rounded-2xl border border-blue-100 shadow-sm p-6 sm:p-8"
+        style={{
+          backgroundImage: `linear-gradient(to right, rgba(239, 246, 255, 0.85), rgba(248, 250, 252, 0.95)), url('/images/project-group-finder/group-finder-ui-background.png')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+            {/* Clickable avatar */}
+            <button
+              onClick={openModal}
+              title="Change profile photo"
+              className="group relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0 overflow-hidden rounded-2xl border-4 border-white shadow-md bg-blue-100 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {profile.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt=""
+                  src={profile.imageUrl}
+                  className="absolute inset-0 h-full w-full object-cover rounded-xl"
+                />
+              ) : (
+                <span className="text-2xl font-bold text-blue-600">{initials}</span>
+              )}
+              {/* Hover overlay */}
+              <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </span>
+            </button>
 
-        {/* Avatar + info row */}
-        <div className="px-6 pb-5">
-          <div className="flex items-end justify-between -mt-8">
-            <div className="flex items-end gap-4">
-              {/* Clickable avatar */}
-              <button
-                onClick={openModal}
-                title="Change profile photo"
-                className="group relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border-4 border-white shadow-md bg-blue-100 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {profile.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    alt=""
-                    src={profile.imageUrl}
-                    className="absolute inset-0 h-full w-full object-cover rounded-xl"
-                  />
-                ) : (
-                  <span className="text-lg font-bold text-blue-600">{initials}</span>
-                )}
-                {/* Hover overlay */}
-                <span className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+            <div className="min-w-0">
+              <p className="text-2xl font-bold text-slate-900 truncate">{profile.fullName}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                <span className="font-semibold text-slate-800 bg-white/60 px-2.5 py-0.5 rounded-full border border-blue-200/50 shadow-sm">
+                  {profile.studentId}
                 </span>
-              </button>
-
-              <div className="min-w-0 pb-1">
-                <p className="text-xl font-bold text-slate-900 truncate">{profile.fullName}</p>
-                <p className="mt-0.5 text-sm text-slate-500">
-                  <span className="font-medium text-slate-700">{profile.studentId}</span>
-                  <span className="mx-1.5 text-slate-300">•</span>
-                  {profile.email}
-                </p>
+                <span className="font-medium">{profile.email}</span>
               </div>
             </div>
-
-            {/* Show more / less toggle button */}
-            <button
-              onClick={onToggle}
-              className="mb-1 flex-shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition"
-            >
-              {showMore ? "Show less" : "Show more details"}
-            </button>
           </div>
+
+          {/* Show more / less toggle button */}
+          <button
+            onClick={onToggle}
+            className="flex-shrink-0 rounded-xl border border-blue-200/60 bg-white/80 backdrop-blur px-5 py-2 text-sm font-semibold text-blue-700 shadow-sm hover:bg-white transition sm:self-center self-start"
+          >
+            {showMore ? "Show less" : "Show more details"}
+          </button>
         </div>
       </div>
 

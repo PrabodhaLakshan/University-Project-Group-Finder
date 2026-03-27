@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 
 import GroupSearchForm, { GroupSearchFilters } from "./GroupSearchForm";
 import ProfileCard, { StudentProfile } from "./ProfileCard";
@@ -25,25 +26,6 @@ const GROUP_MEMBERS = [
 ];
 
 // ── Shared UI helpers ─────────────────────────────────────────────────────────
-function PageHeader({
-  title,
-  subtitle,
-  action,
-}: {
-  title: string;
-  subtitle: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-      </div>
-      {action}
-    </div>
-  );
-}
 
 function StatCard({
   label,
@@ -55,15 +37,12 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className={`rounded-2xl border p-4 ${color}`}>
+    <div className={`rounded-xl border p-4 ${color}`}>
       <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
       <p className="mt-1 text-2xl font-bold">{value}</p>
     </div>
   );
 }
-
-
-
 
 // ── DASHBOARD PANEL ───────────────────────────────────────────────────────────
 function DashboardPanel({
@@ -143,30 +122,29 @@ function DashboardPanel({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Project Group Finder"
-        subtitle="Search by Year, Semester, Batch, and Specialization."
-      />
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">Project Group Finder</h1>
+      </div>
 
-      <div className="rounded-3xl border border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+      <div className="rounded-2xl border border-blue-200/60 bg-white/90 backdrop-blur-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)] relative overflow-hidden">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-900">Smart matching is enabled ✨</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="text-sm font-semibold text-blue-900">Smart matching is enabled ✨</p>
+            <p className="mt-1 text-sm text-blue-700/80">
               Filter students and send invites to build your group faster.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700">
-              Create Group
-            </button>
-            <button className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-orange-600">
-              View Invites
-            </button>
-            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-              Open Chat
-            </button>
+             <button className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700">
+               Create Group
+             </button>
+             <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
+               View Invites
+             </button>
+             <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
+               Open Chat
+             </button>
           </div>
         </div>
       </div>
@@ -196,6 +174,9 @@ function DashboardPanel({
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function GroupFinderUI({ user }: Props) {
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams?.get("tab") as NavKey) || "dashboard";
+
   const [avatarUrl, setAvatarUrl] = React.useState<string | undefined>(undefined);
 
   React.useEffect(() => {
@@ -231,10 +212,16 @@ export default function GroupFinderUI({ user }: Props) {
     groupStatus: "no_group",
   };
 
-  const [panel, setPanel] = React.useState<NavKey>("dashboard");
+  const [panel, setPanel] = React.useState<NavKey>(initialTab);
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
   const [myGroupId, setMyGroupId] = React.useState<string | null>(null);
   const [loadingGroup, setLoadingGroup] = React.useState(true);
+
+  React.useEffect(() => {
+    if (initialTab !== panel && ["dashboard", "project-group", "invites", "chat"].includes(initialTab)) {
+      setPanel(initialTab);
+    }
+  }, [initialTab]);
 
   React.useEffect(() => {
     const fetchMyGroup = async () => {
@@ -263,7 +250,12 @@ export default function GroupFinderUI({ user }: Props) {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-slate-50">
+    <div 
+      className="min-h-screen w-full bg-cover bg-fixed bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(to bottom, rgba(248, 250, 252, 0.7), rgba(248, 250, 252, 0.95)), url('/images/project-group-finder/group-finder-ui-background.png')`
+      }}
+    >
       <LeftSidebar
         active={panel}
         onChange={setPanel}
@@ -294,7 +286,7 @@ export default function GroupFinderUI({ user }: Props) {
               {panel === "dashboard" && <DashboardPanel myProfile={myProfile} />}
               {panel === "project-group" && (
                 loadingGroup ? (
-                  <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+                  <div className="flex h-64 items-center justify-center rounded-xl border border-slate-200 bg-white">
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
                   </div>
                 ) : myGroupId ? (
@@ -306,7 +298,7 @@ export default function GroupFinderUI({ user }: Props) {
                     }}
                   />
                 ) : (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+                  <div className="rounded-2xl border border-blue-100/50 bg-white/95 backdrop-blur-xl p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
                     <p className="text-lg font-medium text-slate-900">You are not in a group yet</p>
                     <p className="mt-2 text-sm text-slate-500">
                       Use the search dashboard to invite members and create a group, or wait for someone to invite you.
@@ -324,7 +316,7 @@ export default function GroupFinderUI({ user }: Props) {
               {panel === "chat" && myGroupId ? (
                 <ChatWindow groupId={myGroupId} />
               ) : panel === "chat" ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+                <div className="rounded-2xl border border-blue-100/50 bg-white/95 backdrop-blur-xl p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
                   <p className="text-lg font-medium text-slate-900">Group Chat Unavailable</p>
                   <p className="mt-2 text-sm text-slate-500">
                     You need to join or create a group to access the chat.

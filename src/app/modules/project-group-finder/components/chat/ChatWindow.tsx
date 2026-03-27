@@ -23,8 +23,14 @@ export default function ChatWindow({
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    function handleSend(text: string) {
-        sendMessage(text, currentUserName, currentUserImage);
+    async function handleSend({
+        text,
+        attachment,
+    }: {
+        text: string;
+        attachment?: { kind: "image" | "video" | "voice"; file: File };
+    }) {
+        await sendMessage(text, currentUserName, currentUserImage, attachment);
     }
 
     if (loading) {
@@ -41,7 +47,12 @@ export default function ChatWindow({
                 <h2 className="text-lg font-semibold text-slate-800">Group Chat</h2>
             </div>
 
-            <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
+            <div 
+                className="flex-1 space-y-3 overflow-y-auto p-4 bg-cover bg-center bg-no-repeat"
+                style={{
+                    backgroundImage: `linear-gradient(rgba(248, 250, 252, 0.85), rgba(248, 250, 252, 0.85)), url('/images/project-group-finder/group-finder-chat-background.jpg')`
+                }}
+            >
                 {messages.length === 0 ? (
                     <p className="text-sm text-slate-500">No messages yet.</p>
                 ) : (

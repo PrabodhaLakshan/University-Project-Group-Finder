@@ -248,7 +248,7 @@ export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDas
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 {/* Left Column: Group Info & Form */}
                 <div className="lg:col-span-2">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                    <div className="rounded-2xl border border-blue-100/50 bg-white/95 backdrop-blur-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)] sm:p-8">
                         {isEditing && isLeader ? (
                             <form onSubmit={handleUpdateGroup} className="space-y-5">
                                 <h2 className="text-xl font-bold text-slate-900">Edit Group Settings</h2>
@@ -357,7 +357,7 @@ export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDas
                 {/* Right Column: Members List & Settings */}
                 <div className="lg:col-span-1 space-y-6">
                     {/* Members List */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="rounded-2xl border border-blue-100/50 bg-white/95 backdrop-blur-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
                         <div className="mb-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-slate-900">Members</h3>
                             <span className="text-sm font-medium text-slate-500">
@@ -412,7 +412,7 @@ export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDas
                     </div>
 
                     {/* Group Setting */}
-                    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="rounded-2xl border border-blue-100/50 bg-white/95 backdrop-blur-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
                         <div className="mb-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-slate-900">Group Setting</h3>
                         </div>

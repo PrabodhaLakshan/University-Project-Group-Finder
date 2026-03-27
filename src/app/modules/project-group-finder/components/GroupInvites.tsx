@@ -20,6 +20,18 @@ type Invite = {
         avatar_url?: string | null;
         skills: string[];
     };
+    receiver: {
+        id: string;
+        name: string;
+        email: string;
+        specialization: string | null;
+        year: number | null;
+        semester: number | null;
+        avatar_path: string | null;
+        avatar_url?: string | null;
+        skills: string[];
+    } | null;
+    type: "sent" | "received";
     group: {
         id: string;
         name: string | null;
@@ -76,11 +88,15 @@ export default function GroupInvites() {
         fetchInvites();
     }, [router]);
 
-    const handleAction = async (inviteId: string, action: "accept" | "reject") => {
+    const handleAction = async (inviteId: string, action: "accept" | "reject" | "cancel") => {
         setActionLoading(inviteId);
         try {
             const token = localStorage.getItem("pgf_token");
-            const res = await fetch(`/api/project-group-finder/invites/${inviteId}/${action}`, {
+            
+            // Allow cancelling a sent invite by mapping "cancel" to "reject" or explicitly handling it
+            const apiAction = action === "cancel" ? "reject" : action;
+            
+            const res = await fetch(`/api/project-group-finder/invites/${inviteId}/${apiAction}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -94,9 +110,6 @@ export default function GroupInvites() {
             }
 
             if (action === "accept") {
-                // Navigate to the dashboard, maybe the user wants to stay on the same page,
-                // But since group dashboards are deleted, we might just alert them or reload.
-                // For now, reload the page or trigger a re-fetch of group status.
                 alert("Invite accepted! Group formed.");
                 window.location.reload();
             } else {
@@ -112,15 +125,15 @@ export default function GroupInvites() {
 
     if (loading) {
         return (
-            <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white">
-                <p className="text-slate-500">Loading invites...</p>
+            <div className="flex h-64 items-center justify-center rounded-2xl border border-blue-100/50 bg-white/95 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+                <p className="text-slate-500 font-medium">Loading invites...</p>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-red-600">
+            <div className="rounded-2xl border border-red-200 bg-red-50/90 backdrop-blur-xl p-6 text-center text-red-600 shadow-sm">
                 <p className="font-semibold">{error}</p>
                 <button
                     onClick={fetchInvites}
@@ -132,6 +145,9 @@ export default function GroupInvites() {
         );
     }
 
+    const receivedInvites = invites.filter((i) => i.type === "received");
+    const sentInvites = invites.filter((i) => i.type === "sent");
+
     return (
         <div className="space-y-6">
             <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -141,20 +157,24 @@ export default function GroupInvites() {
                 </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <section className="col-span-1 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:col-span-2">
-                    <h3 className="mb-4 text-sm font-bold text-slate-900">Received ({invites.length})</h3>
+            <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+                
+                {/* Received Invites Section */}
+                <section className="rounded-2xl border border-blue-100/50 bg-white/95 backdrop-blur-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+                    <h3 className="mb-4 text-sm font-bold text-slate-900 border-b border-slate-100/50 pb-3">
+                        Received Invites ({receivedInvites.length})
+                    </h3>
 
-                    {invites.length === 0 ? (
-                        <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-                            <p className="text-sm text-slate-500">No incoming invites right now.</p>
+                    {receivedInvites.length === 0 ? (
+                        <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+                            <p className="text-sm font-medium text-slate-500">No incoming invites right now.</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {invites.map((invite) => (
+                            {receivedInvites.map((invite) => (
                                 <div
                                     key={invite.id}
-                                    className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-5 transition-all sm:flex-row sm:items-center sm:justify-between"
+                                    className="flex flex-col gap-4 rounded-xl border border-blue-100/50 bg-blue-50/30 p-5 transition-all shadow-sm hover:shadow-md"
                                 >
                                     <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
                                         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white text-sm font-bold text-blue-600 shadow-sm">
@@ -172,23 +192,25 @@ export default function GroupInvites() {
                                         </div>
 
                                         <div>
-                                            <p className="font-medium text-slate-900">
-                                                <span className="font-bold">{invite.sender.name}</span> invited you to join
+                                            <p className="font-medium text-slate-900 leading-snug">
+                                                <span className="font-bold text-blue-900">{invite.sender.name}</span> invited you to join
                                                 {invite.group ? (
-                                                    <span className="font-bold"> {invite.group.name || "their group"}</span>
+                                                    <span className="font-bold text-blue-900"> {invite.group.name || "their group"}</span>
                                                 ) : (
                                                     " a new group"
                                                 )}
                                             </p>
 
-                                            <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                                            <div className="mt-1.5 flex flex-wrap gap-2 text-xs font-medium text-slate-500">
                                                 <span>Sent {new Date(invite.created_at).toLocaleDateString()}</span>
                                                 {invite.sender.specialization && <span>• {invite.sender.specialization}</span>}
                                             </div>
 
                                             {invite.group && invite.group.members.length > 0 && (
                                                 <div className="mt-3">
-                                                    <p className="mb-2 text-xs font-semibold text-slate-500">Current Members ({invite.group.members.length}/{invite.group.max_members})</p>
+                                                    <p className="mb-2 text-xs font-semibold text-slate-500">
+                                                        Current Members ({invite.group.members.length}/{invite.group.max_members})
+                                                    </p>
                                                     <div className="flex -space-x-2">
                                                         {invite.group.members.map((member) => (
                                                             <div
@@ -214,28 +236,105 @@ export default function GroupInvites() {
                                         </div>
                                     </div>
 
-                                    <div className="flex shrink-0 items-center gap-3 border-t border-slate-200 pt-4 sm:border-t-0 sm:pt-0">
+                                    <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-200/60 pt-4">
                                         <button
                                             type="button"
                                             onClick={() => router.push(`/project-group-finder/students/${invite.sender.id}`)}
-                                            className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 sm:flex-none"
+                                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:border-blue-300 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                         >
-                                            View Profile
+                                            View
                                         </button>
                                         <button
                                             onClick={() => handleAction(invite.id, "reject")}
                                             disabled={actionLoading === invite.id}
-                                            className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:opacity-50 sm:flex-none"
+                                            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-slate-200 disabled:opacity-50"
                                         >
                                             Decline
                                         </button>
                                         <button
                                             onClick={() => handleAction(invite.id, "accept")}
                                             disabled={actionLoading === invite.id}
-                                            className="flex-1 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:opacity-50 sm:flex-none"
+                                            className="rounded-xl bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 disabled:opacity-50"
                                         >
-                                            {actionLoading === invite.id ? "Accepting..." : "Accept"}
+                                            {actionLoading === invite.id ? "..." : "Accept"}
                                         </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
+                {/* Sent Invites Section */}
+                <section className="rounded-2xl border border-orange-100/50 bg-white/95 backdrop-blur-xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+                    <h3 className="mb-4 text-sm font-bold text-slate-900 border-b border-slate-100/50 pb-3">
+                        Sent Invites ({sentInvites.length})
+                    </h3>
+
+                    {sentInvites.length === 0 ? (
+                        <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 text-center">
+                            <p className="text-sm font-medium text-slate-500">You haven't sent any invites.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {sentInvites.map((invite) => (
+                                <div
+                                    key={invite.id}
+                                    className="flex flex-col gap-4 rounded-xl border border-orange-100/50 bg-orange-50/30 p-5 transition-all shadow-sm hover:shadow-md"
+                                >
+                                    <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white text-sm font-bold text-orange-600 shadow-sm">
+                                            {invite.receiver?.avatar_url ? (
+                                                <Image
+                                                    src={invite.receiver.avatar_url}
+                                                    alt={invite.receiver.name}
+                                                    className="h-full w-full object-cover"
+                                                    width={48}
+                                                    height={48}
+                                                />
+                                            ) : (
+                                                invite.receiver?.name.charAt(0).toUpperCase()
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <p className="font-medium text-slate-900 leading-snug">
+                                                You invited <span className="font-bold text-orange-900">{invite.receiver?.name}</span> to join
+                                                {invite.group ? (
+                                                    <span className="font-bold text-orange-900"> {invite.group.name || "your group"}</span>
+                                                ) : (
+                                                    " a new group"
+                                                )}
+                                            </p>
+
+                                            <div className="mt-1.5 flex flex-wrap gap-2 text-xs font-medium text-slate-500">
+                                                <span>Sent {new Date(invite.created_at).toLocaleDateString()}</span>
+                                                {invite.receiver?.specialization && <span>• {invite.receiver.specialization}</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-200/60 pt-4">
+                                        <span className="inline-flex items-center rounded-full border border-orange-200/60 bg-orange-100/50 px-2.5 py-0.5 text-[11px] font-semibold text-orange-800">
+                                            Pending Reply
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => router.push(`/project-group-finder/students/${invite.receiver?.id}`)}
+                                                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:border-blue-300 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            >
+                                                Profile
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAction(invite.id, "cancel")}
+                                                disabled={actionLoading === invite.id}
+                                                className="rounded-xl border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 disabled:opacity-50"
+                                            >
+                                                {actionLoading === invite.id ? "..." : "Cancel"}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}

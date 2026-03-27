@@ -29,10 +29,10 @@ function StatBox({
   return (
     <div
       className={[
-        "flex items-center gap-3 rounded-xl border p-3 transition",
+        "flex items-center gap-3 rounded-2xl border p-3 transition shadow-sm",
         accent
-          ? "border-blue-100 bg-blue-50"
-          : "border-slate-100 bg-slate-50",
+          ? "border-blue-200/60 bg-blue-50/80 backdrop-blur-md"
+          : "border-slate-200/50 bg-white/80 backdrop-blur-md",
       ].join(" ")}
     >
       <span className="text-xl">{icon}</span>
@@ -486,8 +486,8 @@ export default function ProfilePage() {
           />
 
           {/* Quick Stats card */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="border-b border-slate-100 px-5 py-4">
+          <div className="rounded-2xl border border-blue-100/50 bg-white/95 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden">
+            <div className="border-b border-slate-100/50 px-5 py-4">
               <p className="text-sm font-bold text-slate-900">Quick Stats</p>
             </div>
             <div className="p-4 grid grid-cols-2 gap-3">
@@ -506,8 +506,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Tip card */}
-          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+          <div className="rounded-2xl border border-amber-200/60 bg-amber-50/90 backdrop-blur-xl p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
             <p className="text-sm font-semibold text-amber-800">💡 Profile Tip</p>
             <p className="mt-1.5 text-xs text-amber-700 leading-relaxed">
               Keep your profile minimal and strong — only publish marks you are comfortable sharing. A verified mark sheet boosts your smart match score.
