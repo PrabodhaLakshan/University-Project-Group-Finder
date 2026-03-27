@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
-import { Menu, X, LogOut, MessageCircle, ChevronDown, Plus, ShoppingBag, TrendingUp, PackageOpen, Calendar, Clock3, UserPlus, MessageSquare, UsersRound, Users, BarChart3, Trophy } from "lucide-react";
+import { Menu, X, LogOut, ChevronDown, Plus, ShoppingBag, TrendingUp, PackageOpen, Calendar, Clock3, UserPlus, MessageSquare, UsersRound, Users, BarChart3, Trophy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NotificationBell } from "@/app/modules/uni-mart/components/NotificationBell";
 import { Oxanium } from "next/font/google";
@@ -72,6 +72,33 @@ export default function Navbar() {
       )}&background=e2e8f0&color=0f172a&size=96&font-size=0.4`
     : "";
 
+  const formatDisplayName = (name?: string | null, email?: string | null) => {
+    const source = (name || "").trim();
+    if (source) {
+      const parts = source.split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return `${parts[0]} ${parts[1].charAt(0).toUpperCase()}.`;
+      }
+      return parts[0];
+    }
+
+    const emailName = (email || "").split("@")[0];
+    return emailName || "User";
+  };
+
+  const maskEmailForDisplay = (email?: string | null) => {
+    if (!email) return "";
+    const [localPart, domainPart] = email.split("@");
+    if (!domainPart) return email;
+
+    const firstThree = localPart.slice(0, 3);
+    const lastBeforeAt = localPart.length > 3 ? localPart.slice(-1) : "";
+    return `${firstThree}**${lastBeforeAt}@${domainPart}`;
+  };
+
+  const displayName = formatDisplayName(user?.name, user?.email);
+  const displayEmail = maskEmailForDisplay(user?.email);
+
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -123,7 +150,7 @@ export default function Navbar() {
 
   return (
     <nav className={`${oxanium.className} sticky top-0 z-50 border-b border-white/60 bg-white/45 backdrop-blur-xl shadow-[0_8px_30px_rgba(15,23,42,0.08)]`}>
-      <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-between">
+      <div className="mx-auto max-w-7xl px-1.5 py-2 md:px-2 lg:px-1 flex items-center justify-between">
         
         {/* Logo */}
         <Link href="/" className="flex items-center">
@@ -436,15 +463,17 @@ export default function Navbar() {
                 )}
               </div>
 
-              <Link 
-                className="rounded-lg p-2 text-slate-700 hover:bg-white/70 hover:text-blue-600 transition" 
-                href="/messages"
-                aria-label="Messages"
-                title="Messages"
-              >
-                <MessageCircle size={20} />
-              </Link>
-              <NotificationBell />
+              <div className="flex items-center gap-1.5">
+                <Link 
+                  className="rounded-lg p-2 text-slate-700 hover:bg-white/70 hover:text-blue-600 transition" 
+                  href="/messages"
+                  aria-label="Messages"
+                  title="Messages"
+                >
+                  <MessageSquare size={20} />
+                </Link>
+                <NotificationBell />
+              </div>
 
               <div className="relative" ref={profileMenuRef}>
                 <button
@@ -457,8 +486,8 @@ export default function Navbar() {
                     className="h-9 w-9 rounded-full border border-slate-200 object-cover"
                   />
                   <div className="text-left leading-tight">
-                    <p className="max-w-[140px] truncate text-sm font-semibold text-slate-800">{user.name}</p>
-                    <p className="max-w-[140px] truncate text-xs text-slate-600">{user.email}</p>
+                    <p className="max-w-[140px] truncate text-sm font-semibold text-slate-800">{displayName}</p>
+                    <p className="max-w-[140px] truncate text-xs text-slate-600">{displayEmail}</p>
                   </div>
                   <ChevronDown size={16} className="text-slate-600" />
                 </button>
