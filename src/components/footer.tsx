@@ -354,6 +354,15 @@ export default function Footer() {
         <footer 
             className={`${oxanium.className} relative mt-20 overflow-hidden border-t border-white/10 bg-gradient-to-br from-[#0b1227] via-[#111b3a] to-[#0c1f3a] pt-20 pb-8 text-slate-300 antialiased selection:bg-blue-500/30 selection:text-white`}
         >
+            <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+                <Image
+                    src="/images/footer/footer_BG.png"
+                    alt=""
+                    fill
+                    sizes="100vw"
+                    className="object-cover object-center opacity-40"
+                />
+            </div>
             
             {/* Animated Background Effect */}
             <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">

@@ -1569,6 +1569,10 @@ const faqs = [
     {
         question: "How do I verify my account?",
         answer: "You will need to sign up using your official university email. A verification link will be sent to that address to activate your account securely."
+    },
+    {
+        question: "Can I edit or delete a post after publishing?",
+        answer: "Yes. You can manage your listings, posts, and shared resources from your profile dashboard, where editing or removing content is available anytime."
     }
 ];
 
@@ -1812,8 +1816,19 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Location</p>
-                                    <p className={`${oxanium.className} text-lg font-bold text-slate-900`}>Colombo, Sri Lanka</p>
+                                    <p className={`${oxanium.className} text-lg font-bold text-slate-900`}>SLIIT, New Kandy Road, Malabe.</p>
                                 </div>
+                            </div>
+                            <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-100">
+                                <iframe
+                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.7985117460157!2d79.96822486817395!3d6.914677496395934!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae256db1a6771c5%3A0x2c63e344ab9a7536!2sSri%20Lanka%20Institute%20of%20Information%20Technology!5e0!3m2!1sen!2slk!4v1774520135473!5m2!1sen!2slk"
+                                    className="h-52 w-full"
+                                    style={{ border: 0 }}
+                                    allowFullScreen
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer-when-downgrade"
+                                    title="SLIIT Location Map"
+                                />
                             </div>
                         </div>
                     </div>
@@ -1825,7 +1840,11 @@ export default function ContactPage() {
 
                         <div className="relative z-10 space-y-8">
                             <div>
-                                <h3 className={`${sora.className} text-2xl font-bold text-slate-900`}>Send us a message</h3>
+                                <div className="inline-flex items-center gap-3 mb-3">
+                                    <span className="h-[2px] w-10 bg-gradient-to-r from-blue-500 to-indigo-500" />
+                                    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Contact Form</span>
+                                </div>
+                                <h3 className={`${sora.className} text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-indigo-800 to-blue-700 md:text-4xl`}>Send us a message</h3>
                                 <p className="mt-2 text-sm text-slate-500">We'll get back to you within 24–48 hours.</p>
                             </div>
 
@@ -1939,13 +1958,13 @@ export default function ContactPage() {
                 <section id="faq" className="grid items-start gap-8 lg:grid-cols-5 lg:gap-12 mt-10">
                     
                     {/* Left Side: FAQs (60% - col-span-3) */}
-                    <div className="lg:col-span-3 space-y-8">
+                    <div className={`${oxanium.className} lg:col-span-3 space-y-8`}>
                         <div>
                             <div className="inline-flex items-center gap-3 mb-3">
                                 <span className="h-[2px] w-10 bg-gradient-to-r from-blue-500 to-indigo-500" />
                                 <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Knowledge Base</span>
                             </div>
-                            <h2 className={`${sora.className} text-3xl font-bold text-slate-900 md:text-4xl`}>
+                            <h2 className={`${sora.className} text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-indigo-800 to-blue-700 md:text-4xl`}>
                                 Frequently Asked <br className="hidden md:block" /> Questions
                             </h2>
                         </div>
@@ -1960,7 +1979,7 @@ export default function ContactPage() {
                                         onClick={() => toggleFaq(index)} 
                                         className="flex w-full items-center justify-between px-6 py-5 text-left outline-none"
                                     >
-                                        <span className={`font-semibold pr-4 transition-colors ${activeFaq === index ? 'text-blue-700' : 'text-slate-800'}`}>
+                                        <span className={`text-lg font-semibold pr-4 transition-colors ${activeFaq === index ? 'text-blue-700' : 'text-slate-800'}`}>
                                             {faq.question}
                                         </span>
                                         <div className={`flex flex-shrink-0 items-center justify-center h-8 w-8 rounded-full transition-colors ${activeFaq === index ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
@@ -1970,7 +1989,7 @@ export default function ContactPage() {
                                     <div 
                                         className={`transition-all duration-300 ease-in-out ${activeFaq === index ? 'max-h-[200px] opacity-100 pb-5' : 'max-h-0 opacity-0'}`}
                                     >
-                                        <p className="px-6 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-4 mt-1">
+                                        <p className="px-6 text-base text-slate-600 leading-relaxed border-t border-slate-100 pt-4 mt-1">
                                             {faq.answer}
                                         </p>
                                     </div>
@@ -2035,6 +2054,28 @@ export default function ContactPage() {
                             </div>
                         </div>
 
+                        <div className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/50 p-8 shadow-[0_10px_40px_rgba(0,0,0,0.04)] backdrop-blur-xl">
+                            <h4 className={`${sora.className} text-xl font-bold text-slate-900`}>Follow Us</h4>
+                            <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                                Stay connected with Uni Nexus on social media for updates and announcements.
+                            </p>
+
+                            <div className="mt-6 grid grid-cols-3 gap-3">
+                                <a href="#" className="group flex flex-col items-center justify-center gap-2 rounded-2xl bg-blue-50 px-4 py-4 border border-blue-100 transition-all hover:bg-[#1877F2] hover:border-[#1877F2] hover:shadow-lg hover:shadow-[#1877F2]/20">
+                                    <Facebook size={22} className="text-[#1877F2] transition-colors group-hover:text-white" />
+                                    <span className="text-xs font-bold text-slate-700 transition-colors group-hover:text-white">Facebook</span>
+                                </a>
+                                <a href="#" className="group flex flex-col items-center justify-center gap-2 rounded-2xl bg-pink-50 px-4 py-4 border border-pink-100 transition-all hover:bg-[#E1306C] hover:border-[#E1306C] hover:shadow-lg hover:shadow-[#E1306C]/20">
+                                    <Instagram size={22} className="text-[#E1306C] transition-colors group-hover:text-white" />
+                                    <span className="text-xs font-bold text-slate-700 transition-colors group-hover:text-white">Instagram</span>
+                                </a>
+                                <a href="#" className="group flex flex-col items-center justify-center gap-2 rounded-2xl bg-sky-50 px-4 py-4 border border-sky-100 transition-all hover:bg-[#0A66C2] hover:border-[#0A66C2] hover:shadow-lg hover:shadow-[#0A66C2]/20">
+                                    <Linkedin size={22} className="text-[#0A66C2] transition-colors group-hover:text-white" />
+                                    <span className="text-xs font-bold text-slate-700 transition-colors group-hover:text-white">LinkedIn</span>
+                                </a>
+                            </div>
+                        </div>
+
                     </div>
                 </section>
 
@@ -2045,20 +2086,6 @@ export default function ContactPage() {
                     <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-indigo-500 rounded-full mix-blend-screen filter blur-[100px] opacity-40"></div>
                     
                     <div className="relative z-10 max-w-2xl mx-auto space-y-10">
-                        
-                        <div className="space-y-4">
-                            <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">Join the Community</p>
-                            <div className="flex justify-center gap-4">
-                                {[Facebook, Instagram, Linkedin].map((Icon, idx) => (
-                                    <a key={idx} href="#" className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white transition-all hover:scale-110 hover:bg-white hover:text-slate-900">
-                                        <Icon size={20} />
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-
                         <div className="space-y-8">
                             <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight">Ready to join the network?</h2>
                             <p className="text-xl text-slate-300">
