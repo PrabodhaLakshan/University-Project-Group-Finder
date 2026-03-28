@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Search, Star, Clock, User, Filter, ArrowRight } from "lucide-react";
+import { Search, Star, Clock, User, Filter, ArrowRight, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 const MOCK_TUTORS = [
@@ -64,6 +64,15 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 flex flex-col pt-8">
       <div className="max-w-7xl mx-auto w-full space-y-8">
+        <div>
+          <Link
+            href="/tutor-connect"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-emerald-200 hover:text-emerald-700"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
 
         {/* Header section */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-[24px] p-8 sm:p-10 text-white shadow-[0_8px_30px_rgb(16,185,129,0.15)] relative overflow-hidden">
