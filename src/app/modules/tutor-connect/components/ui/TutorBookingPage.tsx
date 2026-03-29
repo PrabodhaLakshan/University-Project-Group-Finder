@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 const MOCK_TUTORS = [
   {
     id: 1,
-    name: "Sarah Jenkins",
+    name: "Nadeesha Perera",
     yearAndSem: "Year 4 Sem 1",
     rating: 4.9,
     reviews: 128,
@@ -22,12 +22,12 @@ const MOCK_TUTORS = [
     bio: "Passionate about creating modern, accessible web apps and helping students master frontend development. With over 8 years of industry experience, I bring real-world scenarios to my tutoring sessions.",
     imageColor: "from-blue-400 to-indigo-500",
     location: "student area",
-    languages: ["English", "Spanish"],
+    languages: ["English", "Sinhala"],
     education: "BSc Computer Science, MIT"
   },
   {
     id: 2,
-    name: "David Chen",
+    name: "Kasun Madushanka",
     yearAndSem: "Year 3 Sem 2",
     rating: 4.8,
     reviews: 94,
@@ -41,12 +41,12 @@ const MOCK_TUTORS = [
     bio: "Focuses on scalable backend architectures and interview preparation for top tech companies. I've conducted over 200 technical interviews.",
     imageColor: "from-emerald-400 to-teal-500",
     location: "student area",
-    languages: ["English", "Mandarin"],
+    languages: ["English", "Tamil"],
     education: "MSc Software Engineering, UC Berkeley"
   },
   {
     id: 3,
-    name: "Emily Rodriguez",
+    name: "Tharushi Senanayake",
     yearAndSem: "Year 2 Sem 2",
     rating: 5.0,
     reviews: 215,
@@ -61,11 +61,11 @@ const MOCK_TUTORS = [
     imageColor: "from-orange-400 to-rose-500",
     location: "student area",
     languages: ["English"],
-    education: "BA Interactive Media, NYU"
+    education: "Bsc Information Technology"
   },
   {
     id: 4,
-    name: "Marcus Johnson",
+    name: "Dulani Wickramasinghe",
     yearAndSem: "Year 4 Sem 2",
     rating: 4.7,
     reviews: 62,
@@ -79,8 +79,8 @@ const MOCK_TUTORS = [
     bio: "Making complex data problems simple to understand. Great for beginners starting their ML journey.",
     imageColor: "from-violet-400 to-purple-500",
     location: "student area",
-    languages: ["English", "French"],
-    education: "PhD Physics, Stanford"
+    languages: ["English", "sinhala"],
+    education: "diploma in IT"
   }
 ];
 

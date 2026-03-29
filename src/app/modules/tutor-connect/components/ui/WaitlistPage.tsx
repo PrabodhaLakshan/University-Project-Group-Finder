@@ -17,7 +17,7 @@ export default function WaitlistPage() {
   const waitlistRequests: WaitlistRequest[] = [
     {
       id: 1,
-      studentName: "Alice Johnson",
+      studentName: "Sahan Kavindu",
       subject: "Database Systems",
       requestedDate: "2025-03-10",
       requestedTime: "10:00 AM - 11:00 AM",
@@ -26,7 +26,7 @@ export default function WaitlistPage() {
     },
     {
       id: 2,
-      studentName: "Bob Smith",
+      studentName: "Dinuki Hansika",
       subject: "Data Structures",
       requestedDate: "2025-03-12",
       requestedTime: "2:00 PM - 3:00 PM",
@@ -35,7 +35,7 @@ export default function WaitlistPage() {
     },
     {
       id: 3,
-      studentName: "Carol Davis",
+      studentName: "Ashen Lakmal",
       subject: "Web Development",
       requestedDate: "2025-03-15",
       requestedTime: "4:00 PM - 5:00 PM",

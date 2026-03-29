@@ -1,12 +1,21 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { GraduationCap, CalendarDays, CheckCircle2, Clock, Zap, PlusCircle, ClipboardList, Users, TrendingUp } from "lucide-react";
+import { ArrowLeft, GraduationCap, CalendarDays, CheckCircle2, Clock, Zap, PlusCircle, ClipboardList, Users, TrendingUp } from "lucide-react";
 
 export default function TutorDashboard() {
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 flex flex-col pt-8">
       <div className="max-w-7xl mx-auto w-full space-y-8">
+        <div>
+          <Link
+            href="/tutor-connect"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-700"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Link>
+        </div>
 
         {/* Header with gradient background */}
         <div className="bg-gradient-to-r from-[#2563EB] to-[#1E40AF] rounded-[24px] p-8 sm:p-10 text-white shadow-[0_8px_30px_rgb(37,99,235,0.15)] relative overflow-hidden">

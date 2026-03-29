@@ -33,7 +33,7 @@ export default function StudentBookingsPage() {
   const bookings: Booking[] = [
     {
       id: 1,
-      tutorName: "Sarah Jenkins",
+      tutorName: "Nadeesha Perera",
       subject: "React & Next.js",
       date: "2025-03-10",
       time: "10:00 AM – 11:00 AM",
@@ -44,7 +44,7 @@ export default function StudentBookingsPage() {
     },
     {
       id: 2,
-      tutorName: "David Chen",
+      tutorName: "Kasun Madushanka",
       subject: "System Design",
       date: "2025-03-12",
       time: "2:00 PM – 3:30 PM",
@@ -55,7 +55,7 @@ export default function StudentBookingsPage() {
     },
     {
       id: 3,
-      tutorName: "Emily Rodriguez",
+      tutorName: "Tharushi Senanayake",
       subject: "CSS & Tailwind",
       date: "2025-03-08",
       time: "4:00 PM – 5:00 PM",
@@ -66,7 +66,7 @@ export default function StudentBookingsPage() {
     },
     {
       id: 4,
-      tutorName: "Marcus Johnson",
+      tutorName: "Dulani Wickramasinghe",
       subject: "Machine Learning",
       date: "2025-03-05",
       time: "3:00 PM – 4:00 PM",

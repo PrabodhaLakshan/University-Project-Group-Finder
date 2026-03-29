@@ -18,7 +18,7 @@ export default function FeedbackPage() {
   const feedbacks: Feedback[] = [
     {
       id: 1,
-      studentName: "Alice Johnson",
+      studentName: "Sahan Kavindu",
       subject: "Database Systems",
       rating: 5,
       date: "2025-03-08",
@@ -28,7 +28,7 @@ export default function FeedbackPage() {
     },
     {
       id: 2,
-      studentName: "Bob Smith",
+      studentName: "Dinuki Hansika",
       subject: "Data Structures",
       rating: 4,
       date: "2025-03-09",
@@ -38,7 +38,7 @@ export default function FeedbackPage() {
     },
     {
       id: 3,
-      studentName: "Carol Davis",
+      studentName: "Ashen Lakmal",
       subject: "Web Development",
       rating: 5,
       date: "2025-03-08",
@@ -48,7 +48,7 @@ export default function FeedbackPage() {
     },
     {
       id: 4,
-      studentName: "David Wilson",
+      studentName: "Pabasara Dilshan",
       subject: "Algorithm Design",
       rating: 4,
       date: "2025-03-10",
@@ -58,7 +58,7 @@ export default function FeedbackPage() {
     },
     {
       id: 5,
-      studentName: "Emma Thompson",
+      studentName: "Hasini Madubhashini",
       subject: "Machine Learning",
       rating: 5,
       date: "2025-03-05",
@@ -68,7 +68,7 @@ export default function FeedbackPage() {
     },
     {
       id: 6,
-      studentName: "Frank Miller",
+      studentName: "Thilina Sandaruwan",
       subject: "Python Programming",
       rating: 3,
       date: "2025-03-07",
