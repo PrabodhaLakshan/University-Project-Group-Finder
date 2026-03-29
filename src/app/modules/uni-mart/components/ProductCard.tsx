@@ -27,6 +27,13 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const condition = product.condition.toLowerCase();
+  const numericPrice = Number(String(product.price).replace(/,/g, ""));
+  const formattedPrice = Number.isFinite(numericPrice)
+    ? numericPrice.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : "0.00";
 
   const conditionBadgeStyles: Record<string, string> = {
     new: "bg-blue-600/95 text-white ring-1 ring-blue-300/60",
@@ -75,7 +82,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     fetchSellerStats();
   }, [product.sellerId]);
   return (
-    <Link href={`/uni-mart/products/${product.id}`}>
+    <Link href={`/modules/uni-mart/products/${product.id}`}>
       <div className={`${oxanium.className} group h-full cursor-pointer overflow-hidden rounded-2xl border border-white/70 bg-white/80 shadow-[0_10px_28px_rgba(15,23,42,0.08)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(37,99,235,0.16)]`}>
         {/* Product Image */}
         <div className="relative h-48 w-full bg-slate-100">
@@ -112,8 +119,8 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Price */}
           <div className="mb-4">
-            <p className="text-[1.75rem] font-bold leading-none text-indigo-600">
-              Rs. {product.price.toLocaleString()}
+            <p className="text-2xl font-bold leading-none text-orange-500">
+              Rs. {formattedPrice}
             </p>
           </div>
 
