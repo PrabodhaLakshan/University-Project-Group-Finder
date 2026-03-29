@@ -79,9 +79,9 @@ export default function StudentBookingsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Confirmed":  return "bg-emerald-50 text-emerald-600 border-emerald-200/60";
+      case "Confirmed":  return "bg-blue-50 text-blue-600 border-blue-200/60";
       case "Pending":    return "bg-amber-50 text-amber-600 border-amber-200/60";
-      case "Completed":  return "bg-blue-50 text-blue-600 border-blue-200/60";
+      case "Completed":  return "bg-indigo-50 text-indigo-600 border-indigo-200/60";
       case "Cancelled":  return "bg-red-50 text-red-600 border-red-200/60";
       default:           return "bg-slate-50 text-slate-600 border-slate-200/60";
     }
@@ -98,16 +98,16 @@ export default function StudentBookingsPage() {
   };
 
   const stats = [
-    { label: "Confirmed", color: "emerald", Icon: CheckCircle2, status: "Confirmed" },
-    { label: "Pending",   color: "amber",   Icon: Hourglass,    status: "Pending" },
-    { label: "Completed", color: "blue",    Icon: PartyPopper,  status: "Completed" },
-    { label: "Cancelled", color: "red",     Icon: XCircle,      status: "Cancelled" },
+    { label: "Confirmed", color: "blue", Icon: CheckCircle2, status: "Confirmed" },
+    { label: "Pending",   color: "amber",  Icon: Hourglass,    status: "Pending" },
+    { label: "Completed", color: "indigo", Icon: PartyPopper,  status: "Completed" },
+    { label: "Cancelled", color: "red",    Icon: XCircle,      status: "Cancelled" },
   ];
 
   const colorMap: Record<string, string> = {
-    emerald: "bg-emerald-50 text-emerald-500",
-    amber:   "bg-amber-50 text-amber-500",
     blue:    "bg-blue-50 text-blue-500",
+    amber:   "bg-amber-50 text-amber-500",
+    indigo:  "bg-indigo-50 text-indigo-500",
     red:     "bg-red-50 text-red-500",
   };
 
@@ -115,12 +115,12 @@ export default function StudentBookingsPage() {
     <div className="min-h-screen bg-slate-50/50 p-6 flex flex-col pt-8">
       <div className="max-w-7xl mx-auto w-full space-y-8">
 
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-[24px] p-8 sm:p-10 text-white shadow-[0_8px_30px_rgb(16,185,129,0.15)] relative overflow-hidden">
+        {/* Header - Updated to Blue Gradient */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-[24px] p-8 sm:p-10 text-white shadow-[0_8px_30px_rgb(37,99,235,0.15)] relative overflow-hidden">
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold tracking-tight mb-3">My Bookings</h1>
-              <p className="text-emerald-100/90 text-[17px] font-medium max-w-xl">
+              <p className="text-blue-100/90 text-[17px] font-medium max-w-xl">
                 Track your tutoring sessions and upcoming appointments.
               </p>
             </div>
@@ -129,14 +129,14 @@ export default function StudentBookingsPage() {
                 <div className="bg-white/20 p-2.5 rounded-xl mb-3">
                   <BookOpen className="w-7 h-7 text-white" />
                 </div>
-                <div className="text-sm font-semibold text-emerald-50 tracking-wide uppercase">
+                <div className="text-sm font-semibold text-blue-50 tracking-wide uppercase">
                   {bookings.length} Total Sessions
                 </div>
               </div>
             </div>
           </div>
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl opacity-50 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl opacity-50 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
         </div>
 
         {/* Stats Cards */}
@@ -161,23 +161,23 @@ export default function StudentBookingsPage() {
           {bookings.map((booking) => (
             <div
               key={booking.id}
-              className="bg-white rounded-[24px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-emerald-100/50 transition-all duration-300 overflow-hidden border border-slate-100/80 group relative"
+              className="bg-white rounded-[24px] shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-blue-100/50 transition-all duration-300 overflow-hidden border border-slate-100/80 group relative"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/0 to-emerald-50/0 group-hover:from-emerald-50/30 group-hover:to-transparent rounded-[24px] transition-colors duration-500 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 to-blue-50/0 group-hover:from-blue-50/30 group-hover:to-transparent rounded-[24px] transition-colors duration-500 pointer-events-none" />
               <div className="p-7 relative z-10">
 
                 {/* Top row */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-100 to-teal-200 flex items-center justify-center text-emerald-700 font-bold text-lg">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center text-blue-700 font-bold text-lg">
                       {booking.tutorName.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-slate-800 tracking-tight group-hover:text-emerald-600 transition-colors">
+                      <h3 className="text-xl font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">
                         {booking.tutorName}
                       </h3>
                       <div className="text-[14px] font-medium text-slate-500 mt-1 flex items-center">
-                        <BookOpen className="w-4 h-4 mr-1.5 text-emerald-500" />
+                        <BookOpen className="w-4 h-4 mr-1.5 text-blue-500" />
                         {booking.subject}
                       </div>
                     </div>
@@ -211,7 +211,7 @@ export default function StudentBookingsPage() {
 
                 {/* Notes */}
                 {booking.notes && (
-                  <div className="p-4 bg-yellow-50/50 rounded-[16px] border border-yellow-100 mb-6">
+                  <div className="p-4 bg-amber-50/40 rounded-[16px] border border-amber-100/50 mb-6">
                     <div className="flex items-center gap-1.5 text-[13px] font-bold text-amber-600 uppercase tracking-wider mb-1.5">
                       <FileText className="w-4 h-4" />
                       Notes
@@ -237,7 +237,7 @@ export default function StudentBookingsPage() {
                       <button className="flex items-center gap-2 px-5 py-2.5 text-[14px] bg-slate-800 text-white rounded-[12px] hover:bg-slate-900 transition-all font-semibold shadow-sm active:scale-[0.98]">
                         <MessageSquareQuote className="w-4 h-4" /> Leave Review
                       </button>
-                      <button className="flex items-center gap-2 px-5 py-2.5 text-[14px] bg-white text-emerald-600 border border-emerald-200 rounded-[12px] hover:bg-emerald-50 transition-all font-semibold active:scale-[0.98]">
+                      <button className="flex items-center gap-2 px-5 py-2.5 text-[14px] bg-white text-blue-600 border border-blue-200 rounded-[12px] hover:bg-blue-50 transition-all font-semibold active:scale-[0.98]">
                         <RefreshCw className="w-4 h-4" /> Book Again
                       </button>
                     </>

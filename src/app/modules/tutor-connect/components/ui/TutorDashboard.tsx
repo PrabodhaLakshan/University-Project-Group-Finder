@@ -137,30 +137,30 @@ export default function TutorDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <Link
               href="/tutor-connect/create-slot"
-              className="group bg-gradient-to-br from-[#2563EB] to-[#1E40AF] text-white p-6 rounded-[20px] shadow-sm hover:shadow-[0_8px_30px_rgb(37,99,235,0.2)] transition-all duration-300 hover:-translate-y-1"
+              className="group bg-gradient-to-br from-blue-50 to-blue-100/70 border border-blue-200/70 text-blue-950 p-6 rounded-[20px] shadow-sm hover:shadow-[0_8px_30px_rgb(37,99,235,0.12)] transition-all duration-300 hover:-translate-y-1"
             >
               <div className="flex items-center space-x-5">
-                <div className="bg-white/20 backdrop-blur-md rounded-xl p-3.5 shadow-sm">
-                  <PlusCircle className="w-6 h-6 text-white" />
+                <div className="bg-blue-200/70 rounded-xl p-3.5 shadow-sm">
+                  <PlusCircle className="w-6 h-6 text-blue-700" />
                 </div>
                 <div>
-                  <div className="font-bold text-[17px] mb-0.5 tracking-tight">Create New Slot</div>
-                  <div className="text-blue-100/90 text-[13.5px] font-medium">Add a new tutoring session</div>
+                  <div className="font-bold text-[17px] mb-0.5 tracking-tight group-hover:text-blue-800 transition-colors">Create New Slot</div>
+                  <div className="text-blue-700/80 text-[13.5px] font-medium">Add a new tutoring session</div>
                 </div>
               </div>
             </Link>
 
             <Link
               href="/tutor-connect/slots"
-              className="group bg-gradient-to-br from-[#22C55E] to-[#16A34A] text-white p-6 rounded-[20px] shadow-sm hover:shadow-[0_8px_30px_rgb(34,197,94,0.2)] transition-all duration-300 hover:-translate-y-1"
+              className="group bg-gradient-to-br from-emerald-50 to-emerald-100/70 border border-emerald-200/70 text-emerald-950 p-6 rounded-[20px] shadow-sm hover:shadow-[0_8px_30px_rgb(34,197,94,0.12)] transition-all duration-300 hover:-translate-y-1"
             >
               <div className="flex items-center space-x-5">
-                <div className="bg-white/20 backdrop-blur-md rounded-xl p-3.5 shadow-sm">
-                  <ClipboardList className="w-6 h-6 text-white" />
+                <div className="bg-emerald-200/70 rounded-xl p-3.5 shadow-sm">
+                  <ClipboardList className="w-6 h-6 text-emerald-700" />
                 </div>
                 <div>
-                  <div className="font-bold text-[17px] mb-0.5 tracking-tight">View All Slots</div>
-                  <div className="text-emerald-100/90 text-[13.5px] font-medium">Manage your schedule</div>
+                  <div className="font-bold text-[17px] mb-0.5 tracking-tight group-hover:text-emerald-800 transition-colors">View All Slots</div>
+                  <div className="text-emerald-700/80 text-[13.5px] font-medium">Manage your schedule</div>
                 </div>
               </div>
             </Link>

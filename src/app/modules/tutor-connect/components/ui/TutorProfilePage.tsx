@@ -42,7 +42,7 @@ type Props = {
 
 const gradientClasses = [
   "from-blue-400 to-indigo-500",
-  "from-emerald-400 to-teal-500",
+  "from-sky-400 to-blue-500",
   "from-orange-400 to-rose-500",
   "from-violet-400 to-purple-500",
   "from-cyan-400 to-sky-500",
@@ -167,7 +167,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
         <div>
           <Link
             href="/tutor-connect/student-dashboard"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-emerald-200 hover:text-emerald-700"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:text-blue-700"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Tutors</span>
@@ -189,7 +189,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
         {!loading && !error && tutor && (
           <>
             <div className="bg-white rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/80 overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-8 sm:p-10 text-white relative overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 sm:p-10 text-white relative overflow-hidden">
                 <div className="relative z-10 flex flex-col md:flex-row gap-8 md:items-center">
                   <div className="flex flex-col items-center md:items-start gap-4">
                     <div className={`w-28 h-28 rounded-full bg-gradient-to-br ${gradient} p-1 shadow-md`}>
@@ -220,18 +220,18 @@ export default function TutorProfilePage({ tutorId }: Props) {
                       </span>
                     </div>
 
-                    <p className="text-emerald-100 font-semibold text-[15px] mb-4">
+                    <p className="text-blue-100 font-semibold text-[15px] mb-4">
                       {tutor.yearAndSem}
                     </p>
 
-                    <p className="text-emerald-50/95 text-[15px] leading-relaxed max-w-3xl">
+                    <p className="text-blue-50/95 text-[15px] leading-relaxed max-w-3xl">
                       {tutor.bio || "No bio added yet."}
                     </p>
                   </div>
                 </div>
 
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl opacity-50 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-sky-400/20 rounded-full blur-3xl opacity-50 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
               </div>
 
               <div className="p-8 sm:p-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -289,7 +289,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
                             key={lang}
                             className="flex items-center gap-2 text-slate-700 font-medium"
                           >
-                            <Languages className="w-4 h-4 text-emerald-500" />
+                            <Languages className="w-4 h-4 text-blue-500" />
                             <span>{lang}</span>
                           </div>
                         ))}
@@ -305,15 +305,15 @@ export default function TutorProfilePage({ tutorId }: Props) {
                     </h2>
                     <div className="space-y-3 text-sm">
                       <div className="flex items-center gap-2 text-slate-700">
-                        <BadgeCheck className="w-4 h-4 text-emerald-500" />
+                        <BadgeCheck className="w-4 h-4 text-blue-500" />
                         <span>{tutor.reviews_count ?? 0} review(s)</span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-700">
-                        <BookOpen className="w-4 h-4 text-emerald-500" />
+                        <BookOpen className="w-4 h-4 text-blue-500" />
                         <span>{tutor.subjects.length} subject(s)</span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-700">
-                        <Clock className="w-4 h-4 text-emerald-500" />
+                        <Clock className="w-4 h-4 text-blue-500" />
                         <span>{tutor.slots.length} available slot(s)</span>
                       </div>
                     </div>
@@ -329,7 +329,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
             )}
 
             {bookingSuccess && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-[20px] p-4 text-emerald-700">
+              <div className="bg-blue-50 border border-blue-200 rounded-[20px] p-4 text-blue-700">
                 {bookingSuccess}
               </div>
             )}
@@ -345,7 +345,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
                   </p>
                 </div>
 
-                <div className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl text-sm font-bold border border-emerald-200">
+                <div className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-xl text-sm font-bold border border-blue-200">
                   {tutor.slots.length} Slot(s)
                 </div>
               </div>
@@ -369,7 +369,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div className="flex items-center p-3 rounded-[14px] bg-white border border-slate-100">
-                            <BookOpen className="w-4 h-4 text-emerald-500 mr-2.5" />
+                            <BookOpen className="w-4 h-4 text-blue-500 mr-2.5" />
                             <div>
                               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
                                 Subject
@@ -381,7 +381,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
                           </div>
 
                           <div className="flex items-center p-3 rounded-[14px] bg-white border border-slate-100">
-                            <CalendarDays className="w-4 h-4 text-emerald-500 mr-2.5" />
+                            <CalendarDays className="w-4 h-4 text-blue-500 mr-2.5" />
                             <div>
                               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
                                 Date
@@ -393,7 +393,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
                           </div>
 
                           <div className="flex items-center p-3 rounded-[14px] bg-white border border-slate-100">
-                            <Clock className="w-4 h-4 text-emerald-500 mr-2.5" />
+                            <Clock className="w-4 h-4 text-blue-500 mr-2.5" />
                             <div>
                               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
                                 Time
@@ -405,7 +405,13 @@ export default function TutorProfilePage({ tutorId }: Props) {
                           </div>
                         </div>
 
-                        <div className="flex justify-end">
+                        <div className="flex flex-col sm:flex-row justify-end gap-3">
+                          <button
+                            type="button"
+                            className="min-w-[150px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-5 py-3 rounded-xl text-sm font-bold transition-all border border-blue-200 shadow-sm"
+                          >
+                            Join Waitlist
+                          </button>
                           <button
                             onClick={() => handleBookNow(slot.id)}
                             disabled={bookingSlotId === slot.id}

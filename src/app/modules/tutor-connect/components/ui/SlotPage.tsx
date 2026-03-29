@@ -1,137 +1,3 @@
-// "use client";
-
-// import React from "react";
-// import { BookOpen, Calendar, Clock, Users, Edit3, XCircle, ArrowRightCircle, Sparkles } from "lucide-react";
-
-// type Slot = {
-//   id: number;
-//   subject: string;
-//   date: string;
-//   time: string;
-//   students: number;
-//   status: "Available" | "Full";
-// };
-
-// export default function SlotsPage() {
-//   const slots: Slot[] = [
-//     {
-//       id: 1,
-//       subject: "Database Systems",
-//       date: "2025-03-10",
-//       time: "10:00 AM - 11:00 AM",
-//       students: 2,
-//       status: "Available",
-//     },
-//     {
-//       id: 2,
-//       subject: "Data Structures",
-//       date: "2025-03-12",
-//       time: "2:00 PM - 3:00 PM",
-//       students: 5,
-//       status: "Full",
-//     },
-//     {
-//       id: 3,
-//       subject: "Web Development",
-//       date: "2025-03-15",
-//       time: "4:00 PM - 5:00 PM",
-//       students: 1,
-//       status: "Available",
-//     },
-//   ];
-
-//   return (
-//     <div className="w-full mx-auto space-y-8 mt-2">
-//       <div className="flex items-center justify-between mb-2 pb-4 border-b border-slate-100">
-//         <div>
-//           <h2 className="text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
-//             <Sparkles className="w-5 h-5 text-blue-500" />
-//             Active Slots
-//           </h2>
-//           <p className="text-slate-500 text-[14px] font-medium mt-1">Manage your upcoming tutoring availability</p>
-//         </div>
-//         <div className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-bold text-[13px] border border-blue-100/50 shadow-sm">
-//           {slots.length} Total
-//         </div>
-//       </div>
-
-//       <div className="space-y-4">
-//         {slots.map((slot) => (
-//           <div
-//             key={slot.id}
-//             className="group bg-white border border-slate-100/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-[20px] p-6 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-blue-100 transition-all duration-300 relative overflow-hidden"
-//           >
-//             {/* Subtle blue glow on hover */}
-//             <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 to-blue-50/0 group-hover:from-blue-50/50 group-hover:to-transparent rounded-[20px] transition-colors duration-500 pointer-events-none" />
-
-//             <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-4">
-//               <div className="flex-1 w-full space-y-4">
-//                 <div className="flex justify-between items-start">
-//                   <div className="flex items-center gap-3">
-//                     <div className="bg-slate-50 p-2.5 rounded-xl group-hover:bg-blue-50 transition-colors">
-//                       <BookOpen className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-//                     </div>
-//                     <h3 className="text-[17px] font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">
-//                       {slot.subject}
-//                     </h3>
-//                   </div>
-//                   <span
-//                     className={`shrink-0 px-3 py-1 text-[12px] uppercase tracking-wide rounded-full font-bold border ${
-//                       slot.status === "Available"
-//                         ? "bg-emerald-50/80 text-emerald-600 border-emerald-200"
-//                         : "bg-red-50 text-red-600 border-red-200"
-//                     }`}
-//                   >
-//                     {slot.status}
-//                   </span>
-//                 </div>
-
-//                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-//                   <div className="flex items-center p-2.5 rounded-[12px] bg-slate-50/80 border border-slate-100/80 group-hover:bg-white transition-colors">
-//                     <Calendar className="w-4 h-4 text-slate-400 mr-2.5" />
-//                     <span className="text-[14px] font-semibold text-slate-600">{slot.date}</span>
-//                   </div>
-
-//                   <div className="flex items-center p-2.5 rounded-[12px] bg-slate-50/80 border border-slate-100/80 group-hover:bg-white transition-colors">
-//                     <Clock className="w-4 h-4 text-slate-400 mr-2.5" />
-//                     <span className="text-[14px] font-semibold text-slate-600">{slot.time}</span>
-//                   </div>
-
-//                   <div className={`flex items-center p-2.5 rounded-[12px] bg-slate-50/80 border border-slate-100/80 group-hover:bg-white transition-colors ${slot.students > 0 ? "text-blue-600" : "text-slate-600"}`}>
-//                     <Users className={`w-4 h-4 mr-2.5 ${slot.students > 0 ? "text-blue-500" : "text-slate-400"}`} />
-//                     <span className="text-[14px] font-semibold">
-//                       {slot.students} student{slot.students !== 1 ? 's' : ''}
-//                     </span>
-//                   </div>
-//                 </div>
-//               </div>
-
-//               {/* Action Buttons Column */}
-//               <div className="flex sm:flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100 justify-end">
-//                 <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 text-[13.5px] font-semibold bg-white text-slate-600 border border-slate-200 rounded-[12px] hover:bg-slate-50 active:scale-[0.98] transition-all">
-//                   <Edit3 className="w-4 h-4 text-slate-400" />
-//                   <span className="hidden sm:inline">Edit</span>
-//                 </button>
-
-//                 <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 text-[13.5px] font-semibold bg-white text-red-500 border border-red-200 rounded-[12px] hover:bg-red-50 active:scale-[0.98] transition-all">
-//                   <XCircle className="w-4 h-4" />
-//                   <span className="hidden sm:inline">Cancel</span>
-//                 </button>
-
-//                 {slot.status === "Available" && (
-//                   <button className="flex-[2] sm:flex-none flex items-center justify-center gap-2 px-5 py-2 text-[13.5px] font-semibold bg-blue-500 text-white rounded-[12px] hover:bg-blue-600 shadow-sm hover:shadow-[0_4px_12px_rgb(37,99,235,0.2)] active:scale-[0.98] transition-all">
-//                     Details
-//                     <ArrowRightCircle className="w-4 h-4" />
-//                   </button>
-//                 )}
-//               </div>
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -143,6 +9,8 @@ import {
   XCircle,
   ArrowRightCircle,
   Sparkles,
+  Loader2,
+  Inbox,
 } from "lucide-react";
 import { getToken } from "@/lib/auth";
 
@@ -174,48 +42,35 @@ export default function SlotsPage() {
     try {
       setLoading(true);
       setError("");
-
       const token = getToken();
-
       if (!token) {
         setError("You are not logged in.");
         setLoading(false);
         return;
       }
-
       const res = await fetch("/api/tutor-connect/slots", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!res.ok) {
         const message = await res.text();
         setError(message || "Failed to load slots");
         setLoading(false);
         return;
       }
-
       const data: ApiSlot[] = await res.json();
-
       const formatted: UiSlot[] = data.map((slot) => {
         const dateObj = new Date(slot.slot_date);
         const timeObj = new Date(slot.slot_time);
-
         return {
           id: slot.id,
           subject: slot.subject,
-          date: dateObj.toLocaleDateString(),
-          time: timeObj.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          date: dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+          time: timeObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           students: slot.is_booked ? 1 : 0,
           status: slot.is_booked ? "Booked" : "Available",
         };
       });
-
       setSlots(formatted);
     } catch (err) {
       console.error("Load slots error:", err);
@@ -234,27 +89,20 @@ export default function SlotsPage() {
   const handleDelete = async (slotId: string) => {
     try {
       setDeletingId(slotId);
-
       const token = getToken();
-
       if (!token) {
         setError("You are not logged in.");
         return;
       }
-
       const res = await fetch(`/api/tutor-connect/slots/${slotId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!res.ok) {
         const message = await res.text();
         setError(message || "Failed to delete slot");
         return;
       }
-
       setSlots((prev) => prev.filter((slot) => slot.id !== slotId));
     } catch (err) {
       console.error("Delete slot error:", err);
@@ -265,124 +113,129 @@ export default function SlotsPage() {
   };
 
   return (
-    <div className="w-full mx-auto space-y-8 mt-2">
-      <div className="flex items-center justify-between mb-2 pb-4 border-b border-slate-100">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-blue-500" />
+    <div className="w-full max-w-5xl mx-auto space-y-8 py-6 px-4">
+      {/* --- HEADER SECTION --- */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-slate-200/60">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold tracking-wider uppercase mb-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            Tutor Dashboard
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">
             Active Slots
           </h2>
-          <p className="text-slate-500 text-[14px] font-medium mt-1">
-            Manage your upcoming tutoring availability
+          <p className="text-slate-500 font-medium">
+            Manage your teaching schedule and student bookings
           </p>
         </div>
 
-        <div className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-bold text-[13px] border border-blue-100/50 shadow-sm">
-          {totalSlots} Total
+        <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold">
+            {totalSlots} <span className="text-slate-400 font-medium ml-1">Total</span>
+          </div>
         </div>
       </div>
 
-      {loading && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center text-slate-500">
-          Loading slots...
+      {/* --- CONTENT SECTION --- */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white/50 rounded-[32px] border border-dashed border-slate-300">
+          <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
+          <p className="text-slate-500 font-medium animate-pulse">Syncing your schedule...</p>
         </div>
-      )}
-
-      {!loading && error && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-red-600">
-          {error}
+      ) : error ? (
+        <div className="bg-red-50 border border-red-100 rounded-[24px] p-6 flex items-center gap-4 text-red-700">
+          <div className="bg-red-100 p-2 rounded-full">
+            <XCircle className="w-6 h-6" />
+          </div>
+          <p className="font-semibold">{error}</p>
         </div>
-      )}
-
-      {!loading && !error && slots.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 p-10 text-center">
-          <h3 className="text-lg font-semibold text-slate-800 mb-2">No slots yet</h3>
-          <p className="text-slate-500">Create your first tutoring slot to see it here.</p>
+      ) : slots.length === 0 ? (
+        <div className="bg-white rounded-[32px] border border-slate-100 p-12 text-center shadow-sm">
+          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Inbox className="w-10 h-10 text-slate-300" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">No active slots found</h3>
+          <p className="text-slate-500 max-w-xs mx-auto mb-8">
+            You haven't scheduled any tutoring sessions yet. Start by adding your availability.
+          </p>
+          <button className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">
+            Create First Slot
+          </button>
         </div>
-      )}
-
-      {!loading && !error && slots.length > 0 && (
-        <div className="space-y-4">
+      ) : (
+        <div className="grid gap-5">
           {slots.map((slot) => (
             <div
               key={slot.id}
-              className="group bg-white border border-slate-100/80 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-[20px] p-6 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-blue-100 transition-all duration-300 relative overflow-hidden"
+              className="group relative bg-white border border-slate-200 rounded-[28px] p-2 transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:border-blue-200 overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 to-blue-50/0 group-hover:from-blue-50/50 group-hover:to-transparent rounded-[20px] transition-colors duration-500 pointer-events-none" />
-
-              <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div className="flex-1 w-full space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-slate-50 p-2.5 rounded-xl group-hover:bg-blue-50 transition-colors">
-                        <BookOpen className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                      </div>
-                      <h3 className="text-[17px] font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">
-                        {slot.subject}
-                      </h3>
-                    </div>
-
-                    <span
-                      className={`shrink-0 px-3 py-1 text-[12px] uppercase tracking-wide rounded-full font-bold border ${
-                        slot.status === "Available"
-                          ? "bg-emerald-50/80 text-emerald-600 border-emerald-200"
-                          : "bg-amber-50 text-amber-700 border-amber-200"
-                      }`}
-                    >
-                      {slot.status}
-                    </span>
+              {/* Decorative Background Blur */}
+              <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="relative z-10 p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center gap-6">
+                {/* Subject Icon & Title */}
+                <div className="flex items-center gap-5 flex-1">
+                  <div className="shrink-0 w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 transition-all duration-500 shadow-inner">
+                    <BookOpen className="w-6 h-6 text-slate-400 group-hover:text-white transition-colors" />
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="flex items-center p-2.5 rounded-[12px] bg-slate-50/80 border border-slate-100/80 group-hover:bg-white transition-colors">
-                      <Calendar className="w-4 h-4 text-slate-400 mr-2.5" />
-                      <span className="text-[14px] font-semibold text-slate-600">
-                        {slot.date}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center p-2.5 rounded-[12px] bg-slate-50/80 border border-slate-100/80 group-hover:bg-white transition-colors">
-                      <Clock className="w-4 h-4 text-slate-400 mr-2.5" />
-                      <span className="text-[14px] font-semibold text-slate-600">
-                        {slot.time}
-                      </span>
-                    </div>
-
-                    <div
-                      className={`flex items-center p-2.5 rounded-[12px] bg-slate-50/80 border border-slate-100/80 group-hover:bg-white transition-colors ${
-                        slot.students > 0 ? "text-blue-600" : "text-slate-600"
-                      }`}
-                    >
-                      <Users
-                        className={`w-4 h-4 mr-2.5 ${
-                          slot.students > 0 ? "text-blue-500" : "text-slate-400"
-                        }`}
-                      />
-                      <span className="text-[14px] font-semibold">
-                        {slot.students} student{slot.students !== 1 ? "s" : ""}
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                      {slot.subject}
+                    </h3>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className={`text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-lg border ${
+                        slot.status === "Available" 
+                          ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                          : "bg-amber-50 text-amber-600 border-amber-100"
+                      }`}>
+                        {slot.status}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex sm:flex-col gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100 justify-end">
-                  <button
-                    disabled
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 text-[13.5px] font-semibold bg-white text-slate-400 border border-slate-200 rounded-[12px] cursor-not-allowed"
-                  >
-                    <ArrowRightCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">Details</span>
-                  </button>
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-[1.5]">
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-slate-50/50 border border-slate-100 group-hover:bg-white transition-colors">
+                    <Calendar className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm font-bold text-slate-700">{slot.date}</span>
+                  </div>
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-slate-50/50 border border-slate-100 group-hover:bg-white transition-colors">
+                    <Clock className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm font-bold text-slate-700">{slot.time}</span>
+                  </div>
+                  <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors ${
+                    slot.students > 0 
+                      ? "bg-blue-50/50 border-blue-100 text-blue-700" 
+                      : "bg-slate-50/50 border-slate-100 text-slate-500"
+                  }`}>
+                    <Users className="w-4 h-4" />
+                    <span className="text-sm font-bold">
+                      {slot.students} Student{slot.students !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </div>
 
+                {/* Actions */}
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleDelete(slot.id)}
                     disabled={deletingId === slot.id}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 text-[13.5px] font-semibold bg-white text-red-500 border border-red-200 rounded-[12px] hover:bg-red-50 active:scale-[0.98] transition-all disabled:opacity-60"
+                    className="h-12 px-6 rounded-2xl font-bold text-sm bg-slate-50 text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
                   >
-                    <XCircle className="w-4 h-4" />
-                    <span className="hidden sm:inline">
-                      {deletingId === slot.id ? "Deleting..." : "Cancel"}
-                    </span>
+                    {deletingId === slot.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <XCircle className="w-4 h-4" />
+                    )}
+                    <span>{deletingId === slot.id ? "..." : "Cancel"}</span>
+                  </button>
+                  
+                  <button
+                    disabled
+                    className="h-12 w-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center opacity-20 cursor-not-allowed transition-all"
+                  >
+                    <ArrowRightCircle className="w-5 h-5" />
                   </button>
                 </div>
               </div>
