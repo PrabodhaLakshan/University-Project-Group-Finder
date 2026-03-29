@@ -206,14 +206,6 @@ export const Navbar = () => {
           )}
         </div>
 
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="text-red-500 font-bold text-xs hover:bg-red-50 rounded-xl px-4 py-6 transition-all active:scale-95 group"
-        >
-          <LogOut className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-          EXIT
-        </Button>
       </div>
     </>
   );
