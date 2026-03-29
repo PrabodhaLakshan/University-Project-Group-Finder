@@ -33,6 +33,11 @@ io.on("connection", (socket) => {
         io.to(roomName).emit("receive_message", message);
     });
 
+    socket.on("delete_message", ({ groupId, messageId }) => {
+        const roomName = `group:${groupId}`;
+        io.to(roomName).emit("message_deleted", { messageId });
+    });
+
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
     });

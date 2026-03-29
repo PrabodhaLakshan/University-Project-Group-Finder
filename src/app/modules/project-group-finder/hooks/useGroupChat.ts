@@ -49,10 +49,17 @@ export function useGroupChat(groupId: string, currentUserId: string) {
             setMessages((prev) => [...prev, message]);
         };
 
+        const handleMessageDeleted = ({ messageId }: { messageId?: string }) => {
+            if (!messageId) return;
+            setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+        };
+
         socket.on("receive_message", handleReceiveMessage);
+        socket.on("message_deleted", handleMessageDeleted);
 
         return () => {
             socket.off("receive_message", handleReceiveMessage);
+            socket.off("message_deleted", handleMessageDeleted);
         };
     }, [groupId]);
 
@@ -60,7 +67,8 @@ export function useGroupChat(groupId: string, currentUserId: string) {
         text: string,
         senderName?: string,
         senderImage?: string,
-        attachment?: SendAttachment
+        attachment?: SendAttachment,
+        replyToId?: string
     ) {
         const trimmed = text.trim();
         if (!trimmed && !attachment) return;
@@ -118,6 +126,7 @@ export function useGroupChat(groupId: string, currentUserId: string) {
                     attachment_bucket: uploadedAttachment?.bucket || null,
                     attachment_path: uploadedAttachment?.path || null,
                     attachment_name: uploadedAttachment?.name || null,
+                    reply_to_id: replyToId || null,
                 }),
             });
 
@@ -140,9 +149,44 @@ export function useGroupChat(groupId: string, currentUserId: string) {
         }
     }
 
+    async function deleteMessage(messageId: string) {
+        const trimmedId = messageId.trim();
+        if (!trimmedId) return false;
+
+        try {
+            const token = localStorage.getItem("pgf_token");
+            const headers: HeadersInit = {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            };
+
+            const res = await fetch(`/api/groups/${groupId}/messages`, {
+                method: "DELETE",
+                headers,
+                body: JSON.stringify({ message_id: trimmedId }),
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                console.error(data.message || "Failed to delete message");
+                return false;
+            }
+
+            setMessages((prev) => prev.filter((msg) => msg.id !== trimmedId));
+
+            const socket = getSocket();
+            socket.emit("delete_message", { groupId, messageId: trimmedId });
+            return true;
+        } catch (error) {
+            console.error("Delete message error:", error);
+            return false;
+        }
+    }
+
     return {
         messages,
         loading,
         sendMessage,
+        deleteMessage,
     };
 }

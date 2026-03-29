@@ -191,6 +191,7 @@ model group_messages {
   sender_name  String?  @db.VarChar(120)
   sender_image String?
   message      String
+  reply_to_id  String?  @db.Uuid
   created_at   DateTime @default(now())
 
   @@index([group_id, created_at])

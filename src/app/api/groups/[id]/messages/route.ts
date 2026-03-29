@@ -12,6 +12,10 @@ type StoredAttachmentPayload = {
     attachment_name?: string;
 };
 
+type DeleteMessageRequestBody = {
+    message_id?: string;
+};
+
 type GroupMessageRecord = {
     id: string;
     group_id: string;
@@ -19,6 +23,7 @@ type GroupMessageRecord = {
     sender_name: string | null;
     sender_image: string | null;
     message: string;
+    reply_to_id: string | null;
     created_at: Date;
 };
 
@@ -46,6 +51,35 @@ function parseStoredPayload(rawMessage: string): StoredAttachmentPayload | null 
     }
 }
 
+async function resolveReplyPreview(replyToId: string | null | undefined): Promise<{
+    reply_to_id: string | null;
+    reply_to_message: string | null;
+    reply_to_sender: string | null;
+}> {
+    if (!replyToId) {
+        return { reply_to_id: null, reply_to_message: null, reply_to_sender: null };
+    }
+
+    try {
+        const parent = await prisma.group_messages.findUnique({
+            where: { id: replyToId },
+        });
+        if (!parent) return { reply_to_id: replyToId, reply_to_message: null, reply_to_sender: null };
+
+        const parentRecord = parent as unknown as GroupMessageRecord;
+        const payload = parseStoredPayload(parentRecord.message);
+        const displayText = payload?.text || parentRecord.message;
+
+        return {
+            reply_to_id: replyToId,
+            reply_to_message: displayText?.slice(0, 120) || null,
+            reply_to_sender: parentRecord.sender_name || null,
+        };
+    } catch {
+        return { reply_to_id: replyToId, reply_to_message: null, reply_to_sender: null };
+    }
+}
+
 async function hydrateMessage(
     record: GroupMessageRecord,
     senderAvatarByUserId?: Map<string, string | null>
@@ -60,6 +94,8 @@ async function hydrateMessage(
     const avatarFromUserMap = toAvatarUrl(senderAvatarByUserId?.get(record.sender_id) || null);
     const resolvedSenderImage = avatarFromUserMap || avatarFromSender;
 
+    const replyPreview = await resolveReplyPreview(record.reply_to_id);
+
     if (!hasAttachment) {
         return {
             ...record,
@@ -70,6 +106,7 @@ async function hydrateMessage(
             attachment_name: null,
             attachment_bucket: null,
             attachment_path: null,
+            ...replyPreview,
             created_at: record.created_at.toISOString(),
         };
     }
@@ -87,6 +124,7 @@ async function hydrateMessage(
         attachment_name: payload?.attachment_name || null,
         attachment_bucket: payload?.attachment_bucket || null,
         attachment_path: payload?.attachment_path || null,
+        ...replyPreview,
         created_at: record.created_at.toISOString(),
     };
 }
@@ -221,6 +259,7 @@ export async function POST(
             attachment_bucket,
             attachment_path,
             attachment_name,
+            reply_to_id,
         } = body;
 
         if (sender_id !== currentUser.id) {
@@ -282,6 +321,7 @@ export async function POST(
                 sender_name: sender_name || null,
                 sender_image: effectiveSenderImage,
                 message: storedMessage,
+                reply_to_id: reply_to_id || null,
             },
         });
 
@@ -305,6 +345,107 @@ export async function POST(
             {
                 success: false,
                 message: "Failed to save message",
+            },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const currentUser = await requireUserFromRequest(req);
+        const { id: groupId } = await params;
+
+        if (!groupId || groupId === "undefined") {
+            return NextResponse.json(
+                { success: false, message: "Invalid group id" },
+                { status: 400 }
+            );
+        }
+        if (!isValidNumericGroupId(groupId)) {
+            return NextResponse.json(
+                { success: false, message: "Invalid group id format" },
+                { status: 400 }
+            );
+        }
+
+        const isMember = await ensureGroupMember(groupId, currentUser.id);
+        if (!isMember) {
+            return NextResponse.json(
+                { success: false, message: "Forbidden" },
+                { status: 403 }
+            );
+        }
+
+        const body = (await req.json()) as DeleteMessageRequestBody;
+        const messageId = String(body.message_id || "").trim();
+
+        if (!messageId) {
+            return NextResponse.json(
+                { success: false, message: "message_id is required" },
+                { status: 400 }
+            );
+        }
+
+        const existing = await prisma.group_messages.findUnique({
+            where: { id: messageId },
+        });
+
+        if (!existing) {
+            return NextResponse.json(
+                { success: false, message: "Message not found" },
+                { status: 404 }
+            );
+        }
+
+        const record = existing as unknown as GroupMessageRecord;
+        if (record.group_id !== groupId) {
+            return NextResponse.json(
+                { success: false, message: "Message does not belong to this group" },
+                { status: 400 }
+            );
+        }
+
+        if (record.sender_id !== currentUser.id) {
+            return NextResponse.json(
+                { success: false, message: "You can only delete your own messages" },
+                { status: 403 }
+            );
+        }
+
+        const payload = parseStoredPayload(record.message);
+        if (payload?.attachment_bucket && payload?.attachment_path) {
+            await supabaseAdmin.storage
+                .from(payload.attachment_bucket)
+                .remove([payload.attachment_path]);
+        }
+
+        await prisma.group_messages.delete({
+            where: { id: messageId },
+        });
+
+        return NextResponse.json({
+            success: true,
+            message: "Message deleted",
+            message_id: messageId,
+        });
+    } catch (error) {
+        console.error("DELETE message error:", error);
+
+        if (error instanceof Error && error.message === "UNAUTHORIZED") {
+            return NextResponse.json(
+                { success: false, message: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        return NextResponse.json(
+            {
+                success: false,
+                message: "Failed to delete message",
             },
             { status: 500 }
         );
