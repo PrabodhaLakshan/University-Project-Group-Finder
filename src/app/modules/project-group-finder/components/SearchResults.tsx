@@ -245,14 +245,20 @@ function SkeletonCard() {
 export default function SearchResults({
   results,
   loading,
+  hasSearched,
+  totalCount,
   onRequest,
+  onClearResults,
 }: {
   results: SearchResult[];
   loading?: boolean;
+  hasSearched?: boolean;
+  totalCount?: number;
   onRequest?: (studentId: string) => void;
+  onClearResults?: () => void;
 }) {
   // Don't render the section at all if no search was done
-  if (!loading && results.length === 0) return null;
+  if (!loading && results.length === 0 && !hasSearched) return null;
 
   return (
     <section>
@@ -260,20 +266,34 @@ export default function SearchResults({
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="text-base font-bold text-slate-900">Search Results</h3>
-          {!loading && results.length > 0 && (
+          {!loading && hasSearched && (
             <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
               {results.length} found
+              {typeof totalCount === "number" && totalCount !== results.length
+                ? ` of ${totalCount}`
+                : ""}
             </span>
           )}
         </div>
         {loading && (
           <span className="text-xs text-slate-500">Searching for matches...</span>
         )}
-        {!loading && results.length > 0 && (
-          <span className="text-xs text-slate-400">
-            Sorted by match score
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {!loading && results.length > 0 && (
+            <span className="text-xs text-slate-400">
+              Sorted by match score
+            </span>
+          )}
+          {hasSearched && onClearResults && (
+            <button
+              type="button"
+              onClick={onClearResults}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Loading skeletons */}
@@ -290,6 +310,15 @@ export default function SearchResults({
           {results.map((r) => (
             <ResultCard key={r.id} r={r} onRequest={onRequest} />
           ))}
+        </div>
+      )}
+
+      {!loading && hasSearched && results.length === 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+          <p className="text-sm font-semibold text-slate-700">No profiles match these filters</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Try clearing advanced filters or run another search.
+          </p>
         </div>
       )}
     </section>

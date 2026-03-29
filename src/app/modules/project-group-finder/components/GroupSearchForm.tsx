@@ -66,12 +66,14 @@ export default function GroupSearchForm({
   onChange,
   onSearch,
   onReset,
+  onClearResults,
   loading,
 }: {
   value: GroupSearchFilters;
   onChange: (next: GroupSearchFilters) => void;
   onSearch: (filters: GroupSearchFilters) => void;
   onReset?: () => void;
+  onClearResults?: () => void;
   loading?: boolean;
 }) {
   const setField = (name: string, v: string) => {
@@ -149,6 +151,15 @@ export default function GroupSearchForm({
             className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Reset
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onClearResults?.()}
+            disabled={!!loading}
+            className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Clear Results
           </button>
 
           <button
