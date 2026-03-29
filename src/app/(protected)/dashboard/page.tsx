@@ -1,6 +1,7 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/footer";
 import { useAuth } from "@/app/providers";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -180,6 +181,7 @@ export default function DashboardPage() {
         </div>
 
       </main>
+      <Footer />
     </div>
   );
 }

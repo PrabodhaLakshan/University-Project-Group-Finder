@@ -481,17 +481,7 @@ export default function Footer() {
                         &copy; {new Date().getFullYear()} Uni Nexus. All rights reserved.
                     </p>
                     
-                    <p className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
-                        Powered by 
-                        <a 
-                            href="#" 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className={`${oxanium.className} font-bold text-slate-300 transition-colors hover:text-blue-400`}
-                        >
-                            Easymaster IT Solutions
-                        </a>
-                    </p>
+                   
                 </div>
             </div>
         </footer>
