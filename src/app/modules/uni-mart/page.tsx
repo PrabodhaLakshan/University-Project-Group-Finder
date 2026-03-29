@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -246,16 +247,38 @@ export default function UniMartHome() {
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } },
   };
 
-  return (
-    <div className={`${inter.className} relative pb-10 min-h-screen`}>
+  const whyUseUniMart = [
+    {
+      title: "Students-Only Community",
+      description: "Buy and sell inside a trusted campus network with verified student profiles.",
+      icon: Users,
+      accent: "from-cyan-400 to-blue-500",
+    },
+    {
+      title: "Faster Deals, Better Prices",
+      description: "Discover affordable listings and close deals quickly through direct in-app chat.",
+      icon: Wallet,
+      accent: "from-amber-400 to-orange-500",
+    },
+    {
+      title: "Simple and Safe Workflow",
+      description: "Post, chat, and meet in public campus spots with clear safety guidance.",
+      icon: ShieldCheck,
+      accent: "from-emerald-400 to-teal-500",
+    },
+  ];
+
+return (
+    // -mt-2 md:-mt-4 use karala mulu page ekama udin thiyena Navbar eka gawatama pull karanawa.
+    <div className={`${inter.className} relative pb-0 min-h-screen -mt-2 md:-mt-10`}>
       
       {/* Background Layer */}
       <div className="absolute inset-0 -z-10 overflow-hidden bg-[radial-gradient(circle_at_top_right,#dbeafe,transparent_42%),radial-gradient(circle_at_bottom_left,#fef3c7,transparent_35%),linear-gradient(165deg,#fffdf8_0%,#eef7ff_45%,#ecfeff_100%)]">
       </div>
 
       {/* ================= FULL WIDTH HERO SECTION ================= */}
-      {/* Back button integrated inside here. Removed border-t to make it seamless with navbar */}
-      <section className="relative z-10 mb-12 w-[100vw] relative left-1/2 -ml-[50vw] bg-white/60 border-b border-white/80 shadow-[0_20px_50px_rgba(14,116,144,0.08)] backdrop-blur-2xl overflow-hidden min-h-[75vh] flex flex-col pt-6 pb-12 mt-0">
+      {/* pt-6 wenuwata pt-2 damma athule his ida adu karanna */}
+      <section className="relative z-10 mb-12 w-[100vw] relative left-1/2 -ml-[50vw] bg-white/60 border-b border-white/80 shadow-[0_20px_50px_rgba(14,116,144,0.08)] backdrop-blur-2xl overflow-hidden min-h-[75vh] flex flex-col pt-2 pb-12 mt-0">
         
         {/* Back Button Container inside Hero */}
         <div className="w-full max-w-[88rem] mx-auto px-3 sm:px-4 lg:px-6 mb-4 lg:mb-2">
@@ -267,7 +290,6 @@ export default function UniMartHome() {
             Back
           </button>
         </div>
-
         {/* Animated Background Gradients */}
         <motion.div 
           animate={{ x: [0, 50, 0], y: [0, -30, 0] }} 
@@ -559,6 +581,7 @@ export default function UniMartHome() {
         </div>
       </section>
       {/* ============================================================== */}
+{/* ============================================================== */}
 
       {/* Category Feed */}
       <section className="max-w-[88rem] mx-auto w-full px-3 sm:px-4 lg:px-6 relative z-10 mb-12 space-y-8">
@@ -720,7 +743,42 @@ export default function UniMartHome() {
         </div>
       </section>
 
-      <div className="relative left-1/2 right-1/2 w-screen -ml-[50vw] -mr-[50vw] [&>footer]:mt-0 [&>footer]:pt-14 [&>footer]:pb-0">
+      {/* Why Use Uni-Mart */}
+      <section className="relative z-10 mb-0 w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] overflow-hidden bg-white border-t border-slate-200/70">
+        <div className="mx-auto w-full max-w-[88rem] px-6 py-12 sm:px-8 lg:px-16">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className={`${oxanium.className} text-xs font-bold uppercase tracking-[0.18em] text-cyan-700`}>Why Use Uni-Mart</p>
+              <h3 className={`${oxanium.className} mt-2 text-3xl font-black text-slate-900`}>Built for smarter campus trading</h3>
+            </div>
+            <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-600">
+              Uni-Mart combines trusted student profiles, instant communication, and simple deal flow so you can trade confidently.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {whyUseUniMart.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.title}
+                  className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-slate-100 blur-2xl" />
+                  <div className={`relative mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${item.accent} text-white shadow-md`}>
+                    <Icon size={20} />
+                  </div>
+                  <h4 className={`${oxanium.className} relative text-lg font-bold text-slate-900`}>{item.title}</h4>
+                  <p className="relative mt-2 text-sm font-medium leading-relaxed text-slate-600">{item.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Standard Footer Section - Placed at the very end properly */}
+      <div className="relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] bg-white">
         <Footer />
       </div>
 
