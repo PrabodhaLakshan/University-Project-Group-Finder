@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Oxanium } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import ChatWindow from "@/app/modules/project-group-finder/components/chat/ChatWindow";
 import {
   getConversation,
   getConversations,
@@ -18,14 +19,12 @@ import {
   UsersRound,
   GraduationCap,
   BriefcaseBusiness,
-  Search,
   SendHorizontal,
   MessageCircle,
   ArrowLeft,
 } from "lucide-react";
 
 type ChatModuleKey = "marketplace" | "group-finder" | "tutor-connect" | "startup-connect";
-type ConversationFilter = "all" | "buyer" | "seller";
 type ModuleTheme = {
   title: string;
   searchPlaceholder: string;
@@ -61,10 +60,15 @@ const chatModules: Array<{
   enabled: boolean;
 }> = [
   { key: "marketplace", label: "Marketplace", icon: Store, enabled: true },
-  { key: "group-finder", label: "Group Finder", icon: UsersRound, enabled: false },
+  { key: "group-finder", label: "Group Finder", icon: UsersRound, enabled: true },
   { key: "tutor-connect", label: "Tutor Connect", icon: GraduationCap, enabled: false },
   { key: "startup-connect", label: "Startup Connect", icon: BriefcaseBusiness, enabled: false },
 ];
+
+type GroupFinderGroup = {
+  id: string;
+  name: string;
+};
 
 const oxanium = Oxanium({
   subsets: ["latin"],
@@ -190,12 +194,14 @@ export default function MessagesHubPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConversationLoading, setIsConversationLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<ConversationFilter>("all");
-  const [searchText, setSearchText] = useState("");
   const [messageText, setMessageText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [groupFinderGroups, setGroupFinderGroups] = useState<GroupFinderGroup[]>([]);
+  const [selectedGroupFinderId, setSelectedGroupFinderId] = useState<string | null>(null);
+  const [isGroupFinderLoading, setIsGroupFinderLoading] = useState(false);
+  const [groupFinderError, setGroupFinderError] = useState<string | null>(null);
 
   const currentUserId = useMemo(() => {
     try {
@@ -251,29 +257,83 @@ export default function MessagesHubPage() {
     return () => window.clearInterval(interval);
   }, [activeModule, loadConversations]);
 
-  const filteredConversations = useMemo(() => {
-    const roleFilteredConversations =
-      activeFilter === "all"
-        ? conversations
-        : conversations.filter((conversation) => conversation.viewerRole === activeFilter);
-
-    if (!searchText.trim()) {
-      return roleFilteredConversations;
+  const loadGroupFinderGroups = useCallback(async () => {
+    if (activeModule !== "group-finder") {
+      setGroupFinderGroups([]);
+      setSelectedGroupFinderId(null);
+      setGroupFinderError(null);
+      return;
     }
 
-    const term = searchText.toLowerCase();
-    return roleFilteredConversations.filter(
-      (conversation) =>
-        conversation.participantName.toLowerCase().includes(term) ||
-        conversation.productTitle.toLowerCase().includes(term) ||
-        (conversation.lastMessage || "").toLowerCase().includes(term)
-    );
-  }, [conversations, searchText, activeFilter]);
+    try {
+      setIsGroupFinderLoading(true);
+      setGroupFinderError(null);
+
+      const pgfToken = typeof window !== "undefined" ? localStorage.getItem("pgf_token") : null;
+      const fallbackToken = getToken();
+      if (!pgfToken && fallbackToken && typeof window !== "undefined") {
+        localStorage.setItem("pgf_token", fallbackToken);
+      }
+      const authToken = pgfToken || fallbackToken;
+
+      const myGroupRes = await fetch("/api/project-group-finder/my-group", {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+      });
+      const myGroupData = await myGroupRes.json();
+
+      if (!myGroupRes.ok) {
+        throw new Error(myGroupData.error || "Failed to load your group");
+      }
+
+      const groupId = myGroupData.groupId ? String(myGroupData.groupId) : null;
+
+      if (!groupId) {
+        setGroupFinderGroups([]);
+        setSelectedGroupFinderId(null);
+        return;
+      }
+
+      const groupRes = await fetch(`/api/project-group-finder/groups/${groupId}`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+      });
+      const groupData = await groupRes.json();
+
+      if (!groupRes.ok) {
+        throw new Error(groupData.error || "Failed to load group info");
+      }
+
+      const groupName = groupData.group?.name?.trim() || `Group #${groupId}`;
+      const nextGroups = [{ id: groupId, name: groupName }];
+      setGroupFinderGroups(nextGroups);
+      setSelectedGroupFinderId((current) => {
+        if (current && nextGroups.some((group) => group.id === current)) {
+          return current;
+        }
+        return nextGroups[0].id;
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load group finder chats";
+      setGroupFinderError(message);
+      setGroupFinderGroups([]);
+      setSelectedGroupFinderId(null);
+    } finally {
+      setIsGroupFinderLoading(false);
+    }
+  }, [activeModule]);
+
+  useEffect(() => {
+    loadGroupFinderGroups();
+  }, [loadGroupFinderGroups]);
+
+  const filteredConversations = useMemo(() => conversations, [conversations]);
 
   const selectedConversation =
     filteredConversations.find((conversation) => conversation.id === selectedConversationId) ??
     filteredConversations[0] ??
     null;
+
+  const selectedGroupFinder =
+    groupFinderGroups.find((group) => group.id === selectedGroupFinderId) ?? groupFinderGroups[0] ?? null;
 
   useEffect(() => {
     if (activeModule !== "marketplace") {
@@ -414,6 +474,9 @@ export default function MessagesHubPage() {
 
   const filteredUnreadCount = filteredConversations.reduce((total, conversation) => total + conversation.unreadCount, 0);
   const activeTheme = moduleThemes[activeModule];
+  const sidebarPrimaryCount = activeModule === "group-finder" ? groupFinderGroups.length : filteredConversations.length;
+  const sidebarSecondaryCount = activeModule === "group-finder" ? (selectedGroupFinder ? 1 : 0) : filteredUnreadCount;
+  const sidebarSecondaryLabel = activeModule === "marketplace" ? "unread" : "active";
 
   return (
     <div className={`${oxanium.className} relative h-screen overflow-hidden bg-gradient-to-br from-[#eef2ff] via-[#e8ecff] to-[#dfe6ff] antialiased`}>
@@ -474,64 +537,61 @@ export default function MessagesHubPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h1 className="text-[1.95rem] font-black leading-tight tracking-[-0.02em] text-slate-900">{activeTheme.title}</h1>
-                <p className="mt-1 text-[13px] font-medium leading-5 text-slate-500">{filteredConversations.length} chats • {filteredUnreadCount} unread</p>
+                <p className="mt-1 text-[13px] font-medium leading-5 text-slate-500">{sidebarPrimaryCount} chats • {sidebarSecondaryCount} {sidebarSecondaryLabel}</p>
               </div>
               <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] shadow-sm ${activeTheme.accentSoftBg} ${activeTheme.accentSoftBorder} ${activeTheme.accentText}`}>
                 Live
               </span>
             </div>
-
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white/95 px-4 py-3 shadow-sm shadow-slate-200/60 ring-1 ring-white">
-              <Search size={19} className="text-slate-400" />
-              <input
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder={activeTheme.searchPlaceholder}
-                className="w-full bg-transparent text-[14px] font-medium leading-5 text-slate-700 outline-none placeholder:font-normal placeholder:text-slate-400"
-              />
-            </label>
-
-            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-1.5 shadow-sm shadow-slate-200/60">
-              <div className="grid grid-cols-3 gap-1.5 text-[13px] font-semibold">
-              <button
-                type="button"
-                onClick={() => setActiveFilter("all")}
-                  className={`rounded-xl px-3 py-2.5 leading-5 transition ${
-                  activeFilter === "all"
-                    ? `${activeTheme.filterActiveBg} ${activeTheme.filterActiveHoverBg} text-white shadow-md ${activeTheme.filterActiveShadow}`
-                      : "bg-transparent text-slate-700 hover:bg-slate-100"
-                }`}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveFilter("buyer")}
-                  className={`rounded-xl px-3 py-2.5 leading-5 transition ${
-                  activeFilter === "buyer"
-                    ? `${activeTheme.filterActiveBg} ${activeTheme.filterActiveHoverBg} text-white shadow-md ${activeTheme.filterActiveShadow}`
-                      : "bg-transparent text-slate-700 hover:bg-slate-100"
-                }`}
-              >
-                As a buyer
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveFilter("seller")}
-                  className={`rounded-xl px-3 py-2.5 leading-5 transition ${
-                  activeFilter === "seller"
-                    ? `${activeTheme.filterActiveBg} ${activeTheme.filterActiveHoverBg} text-white shadow-md ${activeTheme.filterActiveShadow}`
-                      : "bg-transparent text-slate-700 hover:bg-slate-100"
-                }`}
-              >
-                As a seller
-              </button>
-              </div>
-            </div>
           </div>
 
           <div className="relative z-10 mt-5 flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-color:#c7d2fe_transparent] [scrollbar-width:thin]">
-            {activeModule !== "marketplace" && (
+            {activeModule === "group-finder" && isGroupFinderLoading && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-[14px] leading-6 text-slate-500">
+                Loading your project group...
+              </div>
+            )}
+
+            {activeModule === "group-finder" && !isGroupFinderLoading && groupFinderError && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-[14px] leading-6 text-red-600">{groupFinderError}</div>
+            )}
+
+            {activeModule === "group-finder" && !isGroupFinderLoading && !groupFinderError && groupFinderGroups.length === 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-[14px] leading-6 text-slate-500">
+                You are not in a project group yet.
+              </div>
+            )}
+
+            {activeModule === "group-finder" &&
+              !isGroupFinderLoading &&
+              !groupFinderError &&
+              groupFinderGroups.map((group) => {
+                const isSelected = selectedGroupFinder?.id === group.id;
+                return (
+                  <button
+                    key={group.id}
+                    type="button"
+                    onClick={() => setSelectedGroupFinderId(group.id)}
+                    className={`group w-full rounded-2xl border p-4 text-left transition-all ${
+                      isSelected
+                        ? `${activeTheme.selectedCardBorder} bg-white ${activeTheme.selectedCardShadow} ring-1 ring-white`
+                        : "border-slate-200 bg-white/90 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-amber-100 text-amber-700 ring-1 ring-amber-200/70">
+                        <UsersRound size={24} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[17px] font-bold leading-6 tracking-[-0.01em] text-slate-900">{group.name}</p>
+                        <p className="mt-1 text-[13px] leading-5 text-slate-500">Project Group Finder chat</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+
+            {activeModule !== "marketplace" && activeModule !== "group-finder" && (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 text-[14px] leading-6 text-slate-600">
                 {chatModules.find((module) => module.key === activeModule)?.label} chats will be added later.
               </div>
@@ -549,11 +609,7 @@ export default function MessagesHubPage() {
 
             {activeModule === "marketplace" && !isLoading && !error && filteredConversations.length === 0 && (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 text-[14px] leading-6 text-slate-500">
-                {activeFilter === "all"
-                  ? "No marketplace conversations found."
-                  : activeFilter === "buyer"
-                    ? "No buyer conversations found."
-                    : "No seller conversations found."}
+                No marketplace conversations found.
               </div>
             )}
 
@@ -628,7 +684,29 @@ export default function MessagesHubPage() {
           <div className={`pointer-events-none absolute -bottom-8 left-4 h-28 w-28 rounded-full blur-2xl ${activeTheme.accentSoftBg}`} />
 
           <div className={`relative z-10 mx-4 mt-4 shrink-0 rounded-2xl border border-slate-200/80 p-4 shadow-sm backdrop-blur-md md:mx-5 md:mt-5 md:p-5 ${activeTheme.rightHeaderBg}`}>
-            {selectedConversation ? (
+            {activeModule === "group-finder" ? (
+              selectedGroupFinder ? (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 ring-2 ring-white">
+                      <UsersRound size={24} />
+                    </div>
+                    <div>
+                      <h2 className="text-[1.35rem] font-bold leading-tight tracking-[-0.01em] text-slate-900">{selectedGroupFinder.name}</h2>
+                      <p className="text-[13px] font-medium leading-5 text-slate-600">Project Group Finder</p>
+                    </div>
+                  </div>
+                  <div>
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${activeTheme.accentSoftBorder} ${activeTheme.accentSoftBg} ${activeTheme.accentText}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${activeTheme.accentDotBg}`} />
+                      Active
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <h2 className="text-xl font-semibold tracking-[-0.01em] text-slate-700">Select a group to open chat</h2>
+              )
+            ) : selectedConversation ? (
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="relative h-14 w-14 overflow-hidden rounded-full bg-slate-200 ring-2 ring-white">
@@ -658,7 +736,17 @@ export default function MessagesHubPage() {
           </div>
 
           <div className="relative z-10 min-h-0 flex-1 overflow-hidden p-4 md:p-5">
-            {activeModule !== "marketplace" ? (
+            {activeModule === "group-finder" ? (
+              selectedGroupFinder ? (
+                <div className={`h-full min-h-0 rounded-2xl border bg-white/85 p-2 shadow-sm ${activeTheme.accentSoftBorder}`}>
+                  <ChatWindow groupId={selectedGroupFinder.id} />
+                </div>
+              ) : (
+                <div className={`rounded-2xl border bg-white/80 p-6 text-[14px] leading-6 text-slate-600 ${activeTheme.accentSoftBorder}`}>
+                  No group selected.
+                </div>
+              )
+            ) : activeModule !== "marketplace" ? (
               <div className={`rounded-2xl border bg-white/80 p-6 text-[14px] leading-6 text-slate-600 shadow-sm ${activeTheme.accentSoftBorder}`}>
                 {activeTheme.title} module chats will be enabled soon.
               </div>
@@ -726,42 +814,44 @@ export default function MessagesHubPage() {
             )}
           </div>
 
-          <div className={`relative z-10 mx-4 mb-4 flex items-center gap-3 rounded-2xl border border-white/55 bg-white/35 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl md:mx-5 md:mb-5`}>
-            <input
-              type="text"
-              value={messageText}
-              onChange={(event) => setMessageText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  handleSendMessage();
+          {activeModule !== "group-finder" && (
+            <div className={`relative z-10 mx-4 mb-4 flex items-center gap-3 rounded-2xl border border-white/55 bg-white/35 p-4 shadow-[0_10px_30px_rgba(15,23,42,0.12)] backdrop-blur-xl md:mx-5 md:mb-5`}>
+              <input
+                type="text"
+                value={messageText}
+                onChange={(event) => setMessageText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                disabled={activeModule !== "marketplace" || !selectedConversation || isConversationLoading}
+                placeholder={
+                  activeModule !== "marketplace"
+                    ? "Messaging will be available soon"
+                    : selectedConversation
+                      ? "Type your message..."
+                      : "Select a conversation"
                 }
-              }}
-              disabled={activeModule !== "marketplace" || !selectedConversation || isConversationLoading}
-              placeholder={
-                activeModule !== "marketplace"
-                  ? "Messaging will be available soon"
-                  : selectedConversation
-                    ? "Type your message..."
-                    : "Select a conversation"
-              }
-              className={`flex-1 rounded-2xl border border-white/60 bg-white/65 px-5 py-3 text-[15px] font-medium leading-6 text-slate-700 outline-none placeholder:text-[14px] placeholder:font-normal placeholder:text-slate-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-white/40 ${activeTheme.rightComposerFocusBorder} ${activeTheme.rightComposerFocusRing}`}
-            />
-            <button
-              type="button"
-              onClick={handleSendMessage}
-              disabled={
-                activeModule !== "marketplace" ||
-                !selectedConversation ||
-                !messageText.trim() ||
-                isSending ||
-                isConversationLoading
-              }
-              className={`rounded-full p-3 text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-400 ${activeTheme.sendButtonBg} ${activeTheme.sendButtonHoverBg}`}
-            >
-              <SendHorizontal size={20} />
-            </button>
-          </div>
+                className={`flex-1 rounded-2xl border border-white/60 bg-white/65 px-5 py-3 text-[15px] font-medium leading-6 text-slate-700 outline-none placeholder:text-[14px] placeholder:font-normal placeholder:text-slate-400 focus:ring-2 disabled:cursor-not-allowed disabled:bg-white/40 ${activeTheme.rightComposerFocusBorder} ${activeTheme.rightComposerFocusRing}`}
+              />
+              <button
+                type="button"
+                onClick={handleSendMessage}
+                disabled={
+                  activeModule !== "marketplace" ||
+                  !selectedConversation ||
+                  !messageText.trim() ||
+                  isSending ||
+                  isConversationLoading
+                }
+                className={`rounded-full p-3 text-white shadow-lg transition disabled:cursor-not-allowed disabled:bg-slate-400 ${activeTheme.sendButtonBg} ${activeTheme.sendButtonHoverBg}`}
+              >
+                <SendHorizontal size={20} />
+              </button>
+            </div>
+          )}
         </section>
       </main>
     </div>
