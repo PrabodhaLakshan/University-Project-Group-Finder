@@ -92,11 +92,8 @@ export default function GroupInvites() {
         setActionLoading(inviteId);
         try {
             const token = localStorage.getItem("pgf_token");
-            
-            // Allow cancelling a sent invite by mapping "cancel" to "reject" or explicitly handling it
-            const apiAction = action === "cancel" ? "reject" : action;
-            
-            const res = await fetch(`/api/project-group-finder/invites/${inviteId}/${apiAction}`, {
+
+            const res = await fetch(`/api/project-group-finder/invites/${inviteId}/${action}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,
