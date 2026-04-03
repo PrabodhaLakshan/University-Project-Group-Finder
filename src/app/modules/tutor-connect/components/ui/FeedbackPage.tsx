@@ -1,139 +1,264 @@
 "use client";
 
-import React, { useState } from "react";
-import { 
-  Star, MessageSquareQuote, BarChart3, BookOpen, Calendar, Clock, 
-  ThumbsUp, MessageCircle, AlertCircle, ChevronLeft, ChevronRight,
-  TrendingUp, ShieldCheck, Users, Activity
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Star,
+  MessageSquareQuote,
+  BarChart3,
+  BookOpen,
+  Calendar,
+  Clock,
+  ThumbsUp,
+  MessageCircle,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  TrendingUp,
+  ShieldCheck,
+  Users,
+  Activity,
 } from "lucide-react";
+import { getToken } from "@/lib/auth";
 
-type Feedback = {
-  id: number;
+type FeedbackItem = {
+  id: string;
   studentName: string;
   subject: string;
   rating: number;
   date: string;
-  comment: string;
+  comment: string | null;
   sessionDate: string;
   helpful: number;
 };
 
 export default function FeedbackPage() {
-  const feedbacks: Feedback[] = [
-    { id: 1, studentName: "Sahan Kavindu", subject: "Database Systems", rating: 5, date: "2025-03-08", sessionDate: "2025-03-10", comment: "Excellent tutor! Explained complex SQL concepts in a very clear and understandable way. The examples were practical and helped me grasp database design principles quickly.", helpful: 12 },
-    { id: 2, studentName: "Dinuki Hansika", subject: "Data Structures", rating: 4, date: "2025-03-09", sessionDate: "2025-03-12", comment: "Great session on linked lists and trees. The visual diagrams were very helpful. Would have liked more practice problems, but overall very satisfied.", helpful: 8 },
-    { id: 3, studentName: "Ashen Lakmal", subject: "Web Development", rating: 5, date: "2025-03-08", sessionDate: "2025-03-08", comment: "Amazing tutor! Made React hooks so easy to understand. The hands-on approach and real-time coding examples were exactly what I needed. Highly recommend!", helpful: 15 },
-    { id: 4, studentName: "Pabasara Dilshan", subject: "Algorithm Design", rating: 4, date: "2025-03-10", sessionDate: "2025-03-15", comment: "Very knowledgeable about algorithms. The dynamic programming explanation was thorough. Sometimes goes a bit fast, but always willing to slow down and clarify.", helpful: 6 },
-    { id: 5, studentName: "Hasini Madubhashini", subject: "Machine Learning", rating: 5, date: "2025-03-05", sessionDate: "2025-03-03", comment: "Outstanding teaching style! Breaks down complex ML concepts into simple, digestible parts. The practical examples with real datasets were incredibly valuable.", helpful: 18 },
-    { id: 6, studentName: "Thilina Sandaruwan", subject: "Python Programming", rating: 3, date: "2025-03-07", sessionDate: "2025-03-05", comment: "Good coverage of Python basics, but the session felt a bit rushed. More time on object-oriented concepts would have been helpful.", helpful: 3 },
-  ];
-
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
   const cardsPerPage = 3;
+
+  useEffect(() => {
+    const loadFeedbacks = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const token = getToken();
+
+        if (!token) {
+          setError("You are not logged in.");
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch("/api/tutor-connect/feedback", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          const message = await res.text();
+          setError(message || "Failed to load feedback");
+          setLoading(false);
+          return;
+        }
+
+        const data = await res.json();
+
+        const formatted: FeedbackItem[] = data.map((item: any) => ({
+          id: item.id,
+          studentName: item.studentName,
+          subject: item.subject,
+          rating: item.rating,
+          date: formatDate(item.date),
+          sessionDate: formatDate(item.sessionDate),
+          comment: item.comment,
+          helpful: item.helpful ?? 0,
+        }));
+
+        setFeedbacks(formatted);
+      } catch (err) {
+        console.error("Load feedback error:", err);
+        setError("Something went wrong while loading feedback.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFeedbacks();
+  }, []);
+
   const indexOfLastCard = currentPage * cardsPerPage;
   const indexOfFirstCard = indexOfLastCard - cardsPerPage;
   const currentFeedbacks = feedbacks.slice(indexOfFirstCard, indexOfLastCard);
   const totalPages = Math.ceil(feedbacks.length / cardsPerPage);
 
-  const averageRating = (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1);
+  const averageRating = feedbacks.length
+    ? (
+        feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length
+      ).toFixed(1)
+    : "0.0";
 
-  const ratingDistribution = [5, 4, 3, 2, 1].map(rating => ({
-    rating,
-    count: feedbacks.filter(f => f.rating === rating).length,
-    percentage: (feedbacks.filter(f => f.rating === rating).length / feedbacks.length) * 100
-  }));
+  const ratingDistribution = [5, 4, 3, 2, 1].map((rating) => {
+    const count = feedbacks.filter((f) => f.rating === rating).length;
+    return {
+      rating,
+      count,
+      percentage: feedbacks.length ? (count / feedbacks.length) * 100 : 0,
+    };
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50/50 p-6 flex flex-col pt-8">
+        <div className="max-w-6xl mx-auto w-full">
+          <div className="bg-white rounded-[24px] border border-slate-100 p-10 text-center shadow-sm text-slate-500">
+            Loading feedback...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 flex flex-col pt-8">
       <div className="max-w-6xl mx-auto w-full space-y-8">
-        
-        {/* Header - Blue Theme */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-[24px] p-8 sm:p-10 text-white shadow-xl relative overflow-hidden">
           <div className="relative z-10 flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight mb-3">Ratings & Feedback</h1>
-              <p className="text-blue-100/90 text-[17px] font-medium max-w-xl">Monitor your teaching performance and student satisfaction levels.</p>
+              <h1 className="text-4xl font-bold tracking-tight mb-3">
+                Ratings & Feedback
+              </h1>
+              <p className="text-blue-100/90 text-[17px] font-medium max-w-xl">
+                Monitor your teaching performance and student satisfaction levels.
+              </p>
             </div>
             <div className="hidden md:flex bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10 flex-col items-center min-w-[140px]">
               <div className="bg-white/20 p-2.5 rounded-xl mb-3">
                 <Star className="w-7 h-7 text-yellow-300 fill-yellow-300" />
               </div>
               <div className="text-2xl font-bold">{averageRating}</div>
-              <div className="text-xs font-semibold uppercase opacity-80">Avg Rating</div>
+              <div className="text-xs font-semibold uppercase opacity-80">
+                Avg Rating
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid - All Blue/Slate */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-[20px] p-4 text-red-600">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { label: "Overall Rating", value: averageRating, sub: `Based on ${feedbacks.length} reviews`, icon: Star, color: "text-blue-500", bg: "bg-blue-50" },
-            { label: "Total Reviews", value: feedbacks.length, sub: "Student feedback received", icon: MessageSquareQuote, color: "text-blue-600", bg: "bg-blue-50" },
-            { label: "Response Rate", value: "87%", sub: "Students who left feedback", icon: BarChart3, color: "text-blue-700", bg: "bg-blue-50" },
+            {
+              label: "Overall Rating",
+              value: averageRating,
+              sub: `Based on ${feedbacks.length} reviews`,
+              icon: Star,
+              color: "text-blue-500",
+              bg: "bg-blue-50",
+            },
+            {
+              label: "Total Reviews",
+              value: feedbacks.length,
+              sub: "Student feedback received",
+              icon: MessageSquareQuote,
+              color: "text-blue-600",
+              bg: "bg-blue-50",
+            },
+            {
+              label: "Response Rate",
+              value: feedbacks.length ? "100%" : "0%",
+              sub: "Visible feedback records",
+              icon: BarChart3,
+              color: "text-blue-700",
+              bg: "bg-blue-50",
+            },
           ].map((stat, i) => (
-            <div key={i} className="bg-white rounded-[24px] p-7 border border-slate-100 shadow-sm hover:shadow-md transition-all">
+            <div
+              key={i}
+              className="bg-white rounded-[24px] p-7 border border-slate-100 shadow-sm hover:shadow-md transition-all"
+            >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{stat.label}</h3>
-                <div className={`${stat.bg} p-2.5 rounded-xl`}><stat.icon className={`w-5 h-5 ${stat.color}`} /></div>
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  {stat.label}
+                </h3>
+                <div className={`${stat.bg} p-2.5 rounded-xl`}>
+                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                </div>
               </div>
-              <div className="text-4xl font-bold text-slate-800 mb-1">{stat.value}</div>
+              <div className="text-4xl font-bold text-slate-800 mb-1">
+                {stat.value}
+              </div>
               <div className="text-sm font-medium text-slate-500">{stat.sub}</div>
             </div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
-          {/* Sidebar Area */}
           <div className="space-y-6">
-            {/* Rating Distribution */}
             <div className="bg-white rounded-[24px] shadow-sm p-8 border border-slate-100">
-              <h3 className="text-lg font-bold text-slate-800 mb-6 tracking-tight">Rating Distribution</h3>
+              <h3 className="text-lg font-bold text-slate-800 mb-6 tracking-tight">
+                Rating Distribution
+              </h3>
               <div className="space-y-4">
                 {ratingDistribution.map(({ rating, count, percentage }) => (
                   <div key={rating} className="flex items-center gap-3">
                     <div className="flex items-center gap-1 w-8 shrink-0">
-                      <span className="text-sm font-bold text-slate-600">{rating}</span>
+                      <span className="text-sm font-bold text-slate-600">
+                        {rating}
+                      </span>
                       <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                     </div>
                     <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${percentage}%` }} />
+                      <div
+                        className="bg-blue-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      />
                     </div>
-                    <span className="text-xs font-bold text-slate-400 w-6 text-right">{count}</span>
+                    <span className="text-xs font-bold text-slate-400 w-6 text-right">
+                      {count}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Performance Insights Card */}
             <div className="bg-white rounded-[24px] p-7 border border-slate-100 shadow-sm relative overflow-hidden">
               <div className="flex items-center gap-2 mb-5 text-blue-600 font-bold text-sm uppercase tracking-wide">
                 <TrendingUp className="w-4 h-4" />
                 Teaching Insights
               </div>
               <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5 font-bold text-slate-500">
-                    <span>Web Development</span>
-                    <span className="text-blue-600">98% Success</span>
+                {feedbacks.slice(0, 2).map((item, index) => (
+                  <div key={item.id}>
+                    <div className="flex justify-between text-xs mb-1.5 font-bold text-slate-500">
+                      <span>{item.subject}</span>
+                      <span className="text-blue-600">
+                        {Math.min(100, item.rating * 20)}% Success
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${index === 0 ? "bg-blue-600" : "bg-blue-400"}`}
+                        style={{ width: `${Math.min(100, item.rating * 20)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="bg-blue-600 h-full w-[98%]" />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5 font-bold text-slate-500">
-                    <span>Database Systems</span>
-                    <span className="text-blue-500">92% Success</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="bg-blue-400 h-full w-[92%]" />
-                  </div>
-                </div>
+                ))}
+                {feedbacks.length === 0 && (
+                  <p className="text-sm text-slate-500">No feedback insights yet.</p>
+                )}
               </div>
             </div>
 
-            {/* Student Trust Card */}
             <div className="bg-blue-600 rounded-[24px] p-7 text-white shadow-lg shadow-blue-200 relative overflow-hidden">
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-4">
@@ -143,13 +268,17 @@ export default function FeedbackPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white/10 rounded-2xl p-3 border border-white/10">
                     <Users className="w-4 h-4 mb-1 opacity-70" />
-                    <div className="text-xl font-bold">45+</div>
-                    <div className="text-[10px] uppercase font-bold opacity-60 text-blue-100">Repeat Students</div>
+                    <div className="text-xl font-bold">{feedbacks.length}</div>
+                    <div className="text-[10px] uppercase font-bold opacity-60 text-blue-100">
+                      Reviewers
+                    </div>
                   </div>
                   <div className="bg-white/10 rounded-2xl p-3 border border-white/10">
                     <Activity className="w-4 h-4 mb-1 opacity-70" />
-                    <div className="text-xl font-bold">12m</div>
-                    <div className="text-[10px] uppercase font-bold opacity-60 text-blue-100">Avg Response</div>
+                    <div className="text-xl font-bold">{averageRating}</div>
+                    <div className="text-[10px] uppercase font-bold opacity-60 text-blue-100">
+                      Avg Score
+                    </div>
                   </div>
                 </div>
               </div>
@@ -157,66 +286,122 @@ export default function FeedbackPage() {
             </div>
           </div>
 
-          {/* Feedback List Section */}
           <div className="lg:col-span-2 space-y-6">
-            <h3 className="text-xl font-bold text-slate-800 tracking-tight">Recent Feedback</h3>
-            
-            <div className="space-y-4">
-              {currentFeedbacks.map((feedback) => (
-                <div key={feedback.id} className="bg-white rounded-[24px] p-7 border border-slate-100 hover:border-blue-200 shadow-sm transition-all group">
-                  <div className="flex flex-col sm:flex-row justify-between gap-4 mb-5">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-lg border border-blue-100">
-                        {feedback.studentName.charAt(0)}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-800 text-lg">{feedback.studentName}</h3>
-                        <div className="text-xs font-bold text-blue-600 flex items-center gap-1.5 mt-0.5 bg-blue-50/50 px-2 py-0.5 rounded-md w-fit">
-                          <BookOpen className="w-3.5 h-3.5" /> {feedback.subject}
+            <h3 className="text-xl font-bold text-slate-800 tracking-tight">
+              Recent Feedback
+            </h3>
+
+            {currentFeedbacks.length === 0 ? (
+              <div className="bg-white rounded-[24px] border border-slate-100 p-10 text-center shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                  No feedback yet
+                </h3>
+                <p className="text-slate-500">
+                  Student feedback will appear here after completed sessions.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {currentFeedbacks.map((feedback) => (
+                  <div
+                    key={feedback.id}
+                    className="bg-white rounded-[24px] p-7 border border-slate-100 hover:border-blue-200 shadow-sm transition-all group"
+                  >
+                    <div className="flex flex-col sm:flex-row justify-between gap-4 mb-5">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-lg border border-blue-100">
+                          {feedback.studentName.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-800 text-lg">
+                            {feedback.studentName}
+                          </h3>
+                          <div className="text-xs font-bold text-blue-600 flex items-center gap-1.5 mt-0.5 bg-blue-50/50 px-2 py-0.5 rounded-md w-fit">
+                            <BookOpen className="w-3.5 h-3.5" /> {feedback.subject}
+                          </div>
                         </div>
                       </div>
+                      <div className="px-4 py-1.5 rounded-full font-bold border border-blue-100 bg-blue-50 text-blue-700 flex items-center gap-1.5 text-xs">
+                        {feedback.rating}.0{" "}
+                        <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                      </div>
                     </div>
-                    <div className="px-4 py-1.5 rounded-full font-bold border border-blue-100 bg-blue-50 text-blue-700 flex items-center gap-1.5 text-xs">
-                      {feedback.rating}.0 <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+
+                    <p className="text-[15px] text-slate-600 mb-6 leading-relaxed bg-slate-50/80 p-5 rounded-2xl italic border border-slate-100">
+                      "{feedback.comment || "No comment provided."}"
+                    </p>
+
+                    <div className="flex flex-wrap gap-5 text-xs text-slate-400 font-bold mb-6 border-b border-slate-50 pb-6">
+                      <div className="flex items-center gap-2 bg-slate-100/50 px-3 py-1.5 rounded-lg">
+                        <Calendar className="w-4 h-4 text-blue-500" /> Session:{" "}
+                        <span className="text-slate-700">{feedback.sessionDate}</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-slate-100/50 px-3 py-1.5 rounded-lg">
+                        <Clock className="w-4 h-4 text-blue-500" /> Reviewed:{" "}
+                        <span className="text-slate-700">{feedback.date}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <p className="text-[15px] text-slate-600 mb-6 leading-relaxed bg-slate-50/80 p-5 rounded-2xl italic border border-slate-100">
-                    "{feedback.comment}"
-                  </p>
-
-                  <div className="flex flex-wrap gap-5 text-xs text-slate-400 font-bold mb-6 border-b border-slate-50 pb-6">
-                    <div className="flex items-center gap-2 bg-slate-100/50 px-3 py-1.5 rounded-lg"><Calendar className="w-4 h-4 text-blue-500" /> Session: <span className="text-slate-700">{feedback.sessionDate}</span></div>
-                    <div className="flex items-center gap-2 bg-slate-100/50 px-3 py-1.5 rounded-lg"><Clock className="w-4 h-4 text-blue-500" /> Reviewed: <span className="text-slate-700">{feedback.date}</span></div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <button className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors">
-                      <ThumbsUp className="w-4 h-4" /> Helpful ({feedback.helpful})
-                    </button>
-                    <div className="flex gap-2">
-                      <button className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-100">
-                        <MessageCircle className="w-4 h-4" /> Reply
+                    <div className="flex items-center justify-between">
+                      <button
+                        disabled
+                        className="flex items-center gap-2 text-xs font-bold text-blue-600 opacity-70 px-4 py-2 rounded-xl"
+                      >
+                        <ThumbsUp className="w-4 h-4" /> Helpful ({feedback.helpful})
                       </button>
-                      <button className="p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl border border-slate-100 transition-colors">
-                        <AlertCircle className="w-4 h-4" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          disabled
+                          className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold bg-blue-600 text-white rounded-xl opacity-70"
+                        >
+                          <MessageCircle className="w-4 h-4" /> Reply
+                        </button>
+                        <button
+                          disabled
+                          className="p-2.5 text-slate-400 rounded-xl border border-slate-100 opacity-70"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 pt-6">
-                <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-2.5 rounded-xl border border-slate-200 bg-white disabled:opacity-40 hover:bg-slate-50 transition-all shadow-sm"><ChevronLeft className="w-5 h-5" /></button>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-2.5 rounded-xl border border-slate-200 bg-white disabled:opacity-40 hover:bg-slate-50 transition-all shadow-sm"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
                 <div className="flex gap-2">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-                    <button key={num} onClick={() => setCurrentPage(num)} className={`w-11 h-11 rounded-xl font-bold transition-all ${currentPage === num ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-white border border-slate-200 text-slate-600 hover:border-blue-400"}`}>{num}</button>
+                    <button
+                      key={num}
+                      onClick={() => setCurrentPage(num)}
+                      className={`w-11 h-11 rounded-xl font-bold transition-all ${
+                        currentPage === num
+                          ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                          : "bg-white border border-slate-200 text-slate-600 hover:border-blue-400"
+                      }`}
+                    >
+                      {num}
+                    </button>
                   ))}
                 </div>
-                <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="p-2.5 rounded-xl border border-slate-200 bg-white disabled:opacity-40 hover:bg-slate-50 transition-all shadow-sm"><ChevronRight className="w-5 h-5" /></button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="p-2.5 rounded-xl border border-slate-200 bg-white disabled:opacity-40 hover:bg-slate-50 transition-all shadow-sm"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
             )}
           </div>
@@ -224,4 +409,12 @@ export default function FeedbackPage() {
       </div>
     </div>
   );
+}
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString([], {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }

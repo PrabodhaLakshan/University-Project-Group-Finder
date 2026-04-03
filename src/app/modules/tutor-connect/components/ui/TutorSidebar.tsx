@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, CalendarRange, PlusCircle, BookOpenCheck, Users, MessageSquareQuote, GraduationCap } from "lucide-react";
-
+ 
 const links = [
   { name: "Dashboard", href: "/tutor-connect/dashboard", icon: LayoutDashboard },
   { name: "Slots", href: "/tutor-connect/slots", icon: CalendarRange },
@@ -61,18 +61,8 @@ export default function TutorSidebar() {
         })}
       </nav>
 
-      {/* Footer / User Profile Area (Placeholder for modern UI) */}
-      <div className="mt-auto pt-6 border-t border-slate-100">
-        <div className="flex items-center gap-3 px-3 py-3 rounded-[16px] hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-500 font-bold border border-slate-200/50 shadow-sm shrink-0">
-            NP
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-[14px] font-bold text-slate-800 truncate">Nadeesha Perera</h3>
-            <p className="text-[12px] font-medium text-slate-400 truncate">Pro Instructor</p>
-          </div>
-        </div>
-      </div>
+      
+       
     </div>
   );
 }

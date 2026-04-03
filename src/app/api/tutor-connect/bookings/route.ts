@@ -22,7 +22,6 @@ export async function POST(req: Request) {
         id: slot_id,
       },
       include: {
-        tutors: true,
         tutor_bookings: true,
       },
     });
@@ -31,12 +30,12 @@ export async function POST(req: Request) {
       return new Response("Slot not found", { status: 404 });
     }
 
-    if (slot.is_booked) {
-      return new Response("This slot is already booked", { status: 400 });
-    }
-
     if (slot.tutor_student_id === decoded.student_id) {
       return new Response("You cannot book your own slot", { status: 400 });
+    }
+
+    if (slot.is_booked) {
+      return new Response("This slot is already booked", { status: 400 });
     }
 
     const existingBooking = await prisma.tutor_bookings.findFirst({
