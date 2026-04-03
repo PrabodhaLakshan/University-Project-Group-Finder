@@ -50,13 +50,21 @@ export const StartupUI = ({ onPostGigClick }: { onPostGigClick: () => void }) =>
               </ul>
             </CardHeader>
 
-            <CardContent className="pb-8 pt-4 px-6">
+            <CardContent className="pb-8 pt-4 px-6 space-y-3">
               <Button
                 onClick={onPostGigClick}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-100 transition-all active:scale-95"
+                className="w-full mx-auto bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm md:text-base py-3 md:py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-100 transition-all hover:-translate-y-0.5 active:scale-95"
               >
                 Create Account <ArrowRight className="w-4 h-4" />
               </Button>
+
+              <Link href="/startup-connect/dashboard">
+                <Button
+                  className="w-full max-w-xs mx-auto bg-white text-orange-600 hover:bg-orange-50 font-semibold text-xs md:text-sm py-3 md:py-4 rounded-2xl border border-orange-200 shadow-sm transition-all hover:-translate-y-0.5 active:scale-95"
+                >
+                  Already have an account? Login
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 

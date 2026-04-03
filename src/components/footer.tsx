@@ -354,6 +354,15 @@ export default function Footer() {
         <footer 
             className={`${oxanium.className} relative mt-20 overflow-hidden border-t border-white/10 bg-gradient-to-br from-[#0b1227] via-[#111b3a] to-[#0c1f3a] pt-20 pb-8 text-slate-300 antialiased selection:bg-blue-500/30 selection:text-white`}
         >
+            <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+                <Image
+                    src="/images/footer/footer_BG.png"
+                    alt=""
+                    fill
+                    sizes="100vw"
+                    className="object-cover object-center opacity-40"
+                />
+            </div>
             
             {/* Animated Background Effect */}
             <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -472,17 +481,7 @@ export default function Footer() {
                         &copy; {new Date().getFullYear()} Uni Nexus. All rights reserved.
                     </p>
                     
-                    <p className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
-                        Powered by 
-                        <a 
-                            href="#" 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className={`${oxanium.className} font-bold text-slate-300 transition-colors hover:text-blue-400`}
-                        >
-                            Easymaster IT Solutions
-                        </a>
-                    </p>
+                   
                 </div>
             </div>
         </footer>

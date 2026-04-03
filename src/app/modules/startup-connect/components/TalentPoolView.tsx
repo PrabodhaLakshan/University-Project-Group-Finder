@@ -32,7 +32,7 @@ export const TalentPoolView = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto mt-20">
+    <div className="min-h-screen bg-slate-100 p-8 max-w-7xl mx-auto mt-20">
       <div className="flex flex-col mb-10">
         <h1 className="text-4xl font-black  text-slate-900 tracking-tighter uppercase">
           Top <span className="text-orange-500">Talent</span> Pool
@@ -48,7 +48,7 @@ export const TalentPoolView = () => {
           return (
           <Card
             key={student.id}
-            className="relative p-6 border-none bg-white rounded-[40px] shadow-2xl shadow-slate-100 hover:-translate-y-2 hover:bg-slate-50 transition-all duration-300 group before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-[44px] before:bg-white/70 before:blur-xl"
+            className="relative p-6 border border-white/90 bg-white rounded-[40px] shadow-[0_22px_60px_rgba(15,23,42,0.22)] hover:-translate-y-2 hover:shadow-[0_26px_70px_rgba(15,23,42,0.28)] transition-all duration-300 group before:content-[''] before:absolute before:inset-0 before:-z-10 before:rounded-[44px] before:bg-white before:opacity-90 before:blur-2xl"
           >
             <div className="flex items-start justify-between gap-4 mb-6">
               <div className="flex items-center gap-4">
@@ -56,7 +56,7 @@ export const TalentPoolView = () => {
                 {student.name.charAt(0)}
               </div>
               <div>
-                <h3 className="font-black italic text-slate-900 uppercase leading-none">{student.name}</h3>
+                <h3 className="font-black text-slate-900 uppercase leading-none">{student.name}</h3>
                 <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{student.role}</p>
               </div>
             </div>

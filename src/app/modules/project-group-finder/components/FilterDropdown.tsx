@@ -50,8 +50,8 @@ export default function FilterDropdown({
             "text-sm outline-none transition-all duration-150",
             "disabled:cursor-not-allowed disabled:opacity-50",
             hasValue
-              ? "border-blue-300 bg-blue-50 text-blue-900 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
+              ? "border-blue-200 bg-white text-slate-800 font-medium focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100",
           ].join(" ")}
         >
           <option value="" className="text-slate-400">

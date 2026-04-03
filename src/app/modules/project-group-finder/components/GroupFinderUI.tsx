@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 
 import GroupSearchForm, { GroupSearchFilters } from "./GroupSearchForm";
 import ProfileCard, { StudentProfile } from "./ProfileCard";
@@ -15,57 +16,54 @@ type Props = {
   user: { id: string; name: string; email: string; student_id: string };
 };
 
-// ── Mock group members ────────────────────────────────────────────────────────
-// Later meka DB/API eken ganna puluwan
-const GROUP_MEMBERS = [
-  { id: "m1", name: "Praboda Lakshan", role: "Leader", gpa: 3.4, avatar: "PL", color: "bg-blue-500" },
-  { id: "m2", name: "Nimal Perera", role: "Member", gpa: 3.65, avatar: "NP", color: "bg-green-500" },
-  { id: "m3", name: "Imasha Silva", role: "Member", gpa: 3.78, avatar: "IS", color: "bg-indigo-500" },
-  { id: "m4", name: "Kasun Fernando", role: "Member", gpa: 3.2, avatar: "KF", color: "bg-orange-500" },
-];
+const DASHBOARD_STATE_KEY = "pgf_dashboard_state_v2";
 
-// ── Shared UI helpers ─────────────────────────────────────────────────────────
-function PageHeader({
-  title,
-  subtitle,
-  action,
-}: {
-  title: string;
-  subtitle: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{title}</h1>
-        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-      </div>
-      {action}
-    </div>
+type AdvancedFilters = {
+  smartMatch: "all" | "strong" | "medium";
+  stack: "all" | "mern" | "next" | "java" | "python" | "mobile";
+  language: "all" | "js-ts" | "java" | "python" | "kotlin" | "swift";
+  appType: "all" | "web" | "mobile";
+};
+
+const DEFAULT_ADVANCED_FILTERS: AdvancedFilters = {
+  smartMatch: "all",
+  stack: "all",
+  language: "all",
+  appType: "all",
+};
+
+const STACK_KEYWORDS: Record<Exclude<AdvancedFilters["stack"], "all">, string[]> = {
+  mern: ["mongo", "mongodb", "express", "react", "node", "mern"],
+  next: ["next", "next.js", "react", "typescript"],
+  java: ["java", "spring", "spring boot"],
+  python: ["python", "django", "flask", "fastapi"],
+  mobile: ["flutter", "react native", "android", "kotlin", "swift", "mobile"],
+};
+
+const LANGUAGE_KEYWORDS: Record<Exclude<AdvancedFilters["language"], "all">, string[]> = {
+  "js-ts": ["javascript", "typescript", "js", "ts"],
+  java: ["java"],
+  python: ["python"],
+  kotlin: ["kotlin"],
+  swift: ["swift"],
+};
+
+const APP_TYPE_KEYWORDS: Record<Exclude<AdvancedFilters["appType"], "all">, string[]> = {
+  web: ["web", "frontend", "backend", "fullstack", "next", "react", "angular", "vue"],
+  mobile: ["mobile", "android", "ios", "flutter", "react native", "kotlin", "swift"],
+};
+
+function normalizeSkill(value: string) {
+  return value.toLowerCase().trim();
+}
+
+function hasAnyKeyword(skills: string[], keywords: string[]) {
+  const normalizedSkills = skills.map(normalizeSkill);
+  return keywords.some((keyword) =>
+    normalizedSkills.some((skill) => skill.includes(keyword))
   );
 }
 
-function StatCard({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string | number;
-  color: string;
-}) {
-  return (
-    <div className={`rounded-2xl border p-4 ${color}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
-      <p className="mt-1 text-2xl font-bold">{value}</p>
-    </div>
-  );
-}
-
-
-
-
-// ── DASHBOARD PANEL ───────────────────────────────────────────────────────────
 function DashboardPanel({
   myProfile,
 }: {
@@ -77,9 +75,69 @@ function DashboardPanel({
     batch: "",
     specialization: "",
   });
-
   const [loading, setLoading] = React.useState(false);
   const [results, setResults] = React.useState<SearchResult[]>([]);
+  const [hasSearched, setHasSearched] = React.useState(false);
+  const [advancedFilters, setAdvancedFilters] = React.useState<AdvancedFilters>(
+    DEFAULT_ADVANCED_FILTERS
+  );
+
+  React.useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DASHBOARD_STATE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as {
+        filters?: GroupSearchFilters;
+        results?: SearchResult[];
+        hasSearched?: boolean;
+        advancedFilters?: AdvancedFilters;
+      };
+
+      if (parsed.filters) setFilters(parsed.filters);
+      if (Array.isArray(parsed.results)) setResults(parsed.results);
+      if (typeof parsed.hasSearched === "boolean") setHasSearched(parsed.hasSearched);
+      if (parsed.advancedFilters) setAdvancedFilters(parsed.advancedFilters);
+    } catch (error) {
+      console.error("Failed to restore dashboard state:", error);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    const state = {
+      filters,
+      results,
+      hasSearched,
+      advancedFilters,
+    };
+    sessionStorage.setItem(DASHBOARD_STATE_KEY, JSON.stringify(state));
+  }, [filters, results, hasSearched, advancedFilters]);
+
+  const filteredResults = React.useMemo(() => {
+    return results.filter((result) => {
+      if (result.isInGroup) return false;
+
+      if (advancedFilters.smartMatch === "strong" && result.matchScore < 70) return false;
+      if (advancedFilters.smartMatch === "medium" && result.matchScore < 50) return false;
+
+      if (advancedFilters.stack !== "all") {
+        const stackKeywords = STACK_KEYWORDS[advancedFilters.stack];
+        if (!hasAnyKeyword(result.skills || [], stackKeywords)) return false;
+      }
+
+      if (advancedFilters.language !== "all") {
+        const languageKeywords = LANGUAGE_KEYWORDS[advancedFilters.language];
+        if (!hasAnyKeyword(result.skills || [], languageKeywords)) return false;
+      }
+
+      if (advancedFilters.appType !== "all") {
+        const appTypeKeywords = APP_TYPE_KEYWORDS[advancedFilters.appType];
+        if (!hasAnyKeyword(result.skills || [], appTypeKeywords)) return false;
+      }
+
+      return true;
+    });
+  }, [results, advancedFilters]);
 
   const handleSearch = async (currentFilters: GroupSearchFilters) => {
     try {
@@ -95,10 +153,12 @@ function DashboardPanel({
       const token = localStorage.getItem("pgf_token");
       const res = await fetch(`/api/project-group-finder/search?${params.toString()}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       const data = await res.json();
+
+      setHasSearched(true);
 
       if (!res.ok) {
         console.error(data.error || "Search failed");
@@ -109,10 +169,17 @@ function DashboardPanel({
       setResults(data.results || []);
     } catch (error) {
       console.error("Search error:", error);
+      setHasSearched(true);
       setResults([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearResults = () => {
+    setResults([]);
+    setHasSearched(false);
+    setAdvancedFilters(DEFAULT_ADVANCED_FILTERS);
   };
 
   const handleInvite = async (studentId: string) => {
@@ -143,28 +210,27 @@ function DashboardPanel({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Project Group Finder"
-        subtitle="Search by Year, Semester, Batch, and Specialization."
-      />
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">Project Group Finder</h1>
+      </div>
 
-      <div className="rounded-3xl border border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+      <div className="relative overflow-hidden rounded-2xl border border-blue-200/60 bg-white/90 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold text-slate-900">Smart matching is enabled ✨</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="text-sm font-semibold text-blue-900">Smart matching is enabled</p>
+            <p className="mt-1 text-sm text-blue-700/80">
               Filter students and send invites to build your group faster.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700">
+            <button className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700">
               Create Group
             </button>
-            <button className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-orange-600">
+            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
               View Invites
             </button>
-            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
               Open Chat
             </button>
           </div>
@@ -177,7 +243,12 @@ function DashboardPanel({
             value={filters}
             onChange={setFilters}
             onSearch={handleSearch}
-            onReset={() => setResults([])}
+            onReset={() => {
+              setResults([]);
+              setHasSearched(false);
+              setAdvancedFilters(DEFAULT_ADVANCED_FILTERS);
+            }}
+            onClearResults={clearResults}
             loading={loading}
           />
         </div>
@@ -185,17 +256,117 @@ function DashboardPanel({
         <ProfileCard profile={myProfile} />
       </div>
 
+      {hasSearched && filteredResults.length > 0 && (
+        <section className="rounded-2xl border border-blue-100/60 bg-white/95 p-4 shadow-sm backdrop-blur-xl">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h4 className="text-sm font-bold text-slate-800">Smart Result Filters</h4>
+            <button
+              type="button"
+              onClick={() => setAdvancedFilters(DEFAULT_ADVANCED_FILTERS)}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Reset Filters
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <label className="space-y-1">
+              <span className="text-xs font-semibold text-slate-500">Smart Matching</span>
+              <select
+                value={advancedFilters.smartMatch}
+                onChange={(e) =>
+                  setAdvancedFilters((prev) => ({
+                    ...prev,
+                    smartMatch: e.target.value as AdvancedFilters["smartMatch"],
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-400"
+              >
+                <option value="all">All</option>
+                <option value="strong">Strong Match (70%+)</option>
+                <option value="medium">Medium Match (50%+)</option>
+              </select>
+            </label>
+
+            <label className="space-y-1">
+              <span className="text-xs font-semibold text-slate-500">What Is Your Stack</span>
+              <select
+                value={advancedFilters.stack}
+                onChange={(e) =>
+                  setAdvancedFilters((prev) => ({
+                    ...prev,
+                    stack: e.target.value as AdvancedFilters["stack"],
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-400"
+              >
+                <option value="all">Any Stack</option>
+                <option value="mern">MERN</option>
+                <option value="next">Next.js</option>
+                <option value="java">Java / Spring</option>
+                <option value="python">Python</option>
+                <option value="mobile">Flutter / React Native</option>
+              </select>
+            </label>
+
+            <label className="space-y-1">
+              <span className="text-xs font-semibold text-slate-500">Languages</span>
+              <select
+                value={advancedFilters.language}
+                onChange={(e) =>
+                  setAdvancedFilters((prev) => ({
+                    ...prev,
+                    language: e.target.value as AdvancedFilters["language"],
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-400"
+              >
+                <option value="all">Any Language</option>
+                <option value="js-ts">JavaScript / TypeScript</option>
+                <option value="java">Java</option>
+                <option value="python">Python</option>
+                <option value="kotlin">Kotlin</option>
+                <option value="swift">Swift</option>
+              </select>
+            </label>
+
+            <label className="space-y-1">
+              <span className="text-xs font-semibold text-slate-500">Mobile App / Web App</span>
+              <select
+                value={advancedFilters.appType}
+                onChange={(e) =>
+                  setAdvancedFilters((prev) => ({
+                    ...prev,
+                    appType: e.target.value as AdvancedFilters["appType"],
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-400"
+              >
+                <option value="all">All</option>
+                <option value="web">Web App</option>
+                <option value="mobile">Mobile App</option>
+              </select>
+            </label>
+          </div>
+        </section>
+      )}
+
       <SearchResults
-        results={results}
+        results={filteredResults}
         loading={loading}
+        hasSearched={hasSearched}
+        totalCount={filteredResults.length}
         onRequest={handleInvite}
+        onClearResults={clearResults}
       />
     </div>
   );
 }
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function GroupFinderUI({ user }: Props) {
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams?.get("tab") as NavKey) || "dashboard";
+
   const [avatarUrl, setAvatarUrl] = React.useState<string | undefined>(undefined);
 
   React.useEffect(() => {
@@ -231,10 +402,16 @@ export default function GroupFinderUI({ user }: Props) {
     groupStatus: "no_group",
   };
 
-  const [panel, setPanel] = React.useState<NavKey>("dashboard");
+  const [panel, setPanel] = React.useState<NavKey>(initialTab);
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
   const [myGroupId, setMyGroupId] = React.useState<string | null>(null);
   const [loadingGroup, setLoadingGroup] = React.useState(true);
+
+  React.useEffect(() => {
+    if (["dashboard", "project-group", "invites", "chat"].includes(initialTab)) {
+      setPanel(initialTab);
+    }
+  }, [initialTab]);
 
   React.useEffect(() => {
     const fetchMyGroup = async () => {
@@ -244,8 +421,8 @@ export default function GroupFinderUI({ user }: Props) {
 
         const res = await fetch("/api/project-group-finder/my-group", {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
         const data = await res.json();
 
@@ -263,7 +440,12 @@ export default function GroupFinderUI({ user }: Props) {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-slate-50">
+    <div
+      className="min-h-screen w-full bg-cover bg-fixed bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(to bottom, rgba(248, 250, 252, 0.7), rgba(248, 250, 252, 0.95)), url('/images/project-group-finder/group-finder-ui-background.png')`,
+      }}
+    >
       <LeftSidebar
         active={panel}
         onChange={setPanel}
@@ -279,7 +461,7 @@ export default function GroupFinderUI({ user }: Props) {
               onClick={() => setMobileSidebarOpen(true)}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
             >
-              ☰ Group Space
+              Group Space
             </button>
           </div>
 
@@ -292,10 +474,10 @@ export default function GroupFinderUI({ user }: Props) {
               transition={{ duration: 0.18 }}
             >
               {panel === "dashboard" && <DashboardPanel myProfile={myProfile} />}
-              {panel === "project-group" && (
-                loadingGroup ? (
-                  <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+              {panel === "project-group" &&
+                (loadingGroup ? (
+                  <div className="flex h-64 items-center justify-center rounded-xl border border-slate-200 bg-white">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
                   </div>
                 ) : myGroupId ? (
                   <GroupDashboardPage
@@ -306,7 +488,7 @@ export default function GroupFinderUI({ user }: Props) {
                     }}
                   />
                 ) : (
-                  <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+                  <div className="rounded-2xl border border-blue-100/50 bg-white/95 p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl">
                     <p className="text-lg font-medium text-slate-900">You are not in a group yet</p>
                     <p className="mt-2 text-sm text-slate-500">
                       Use the search dashboard to invite members and create a group, or wait for someone to invite you.
@@ -318,17 +500,14 @@ export default function GroupFinderUI({ user }: Props) {
                       Go to Search
                     </button>
                   </div>
-                )
-              )}
+                ))}
               {panel === "invites" && <GroupInvites />}
               {panel === "chat" && myGroupId ? (
                 <ChatWindow groupId={myGroupId} />
               ) : panel === "chat" ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+                <div className="rounded-2xl border border-blue-100/50 bg-white/95 p-12 text-center shadow-[0_8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl">
                   <p className="text-lg font-medium text-slate-900">Group Chat Unavailable</p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    You need to join or create a group to access the chat.
-                  </p>
+                  <p className="mt-2 text-sm text-slate-500">You need to join or create a group to access the chat.</p>
                 </div>
               ) : null}
             </motion.div>

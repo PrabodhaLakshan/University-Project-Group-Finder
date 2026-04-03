@@ -208,8 +208,11 @@ export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
         </div>
 
         <DialogFooter>
-          <Button onClick={handlePublish} className="bg-sky-600 hover:bg-sky-700 text-white rounded-2xl w-full py-7 font-black text-lg">
-            PUBLISH PROJECT
+          <Button
+            onClick={handlePublish}
+            className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl w-full py-4 md:py-6 font-black text-sm md:text-base"
+          >
+            Publish Project
           </Button>
         </DialogFooter>
       </DialogContent>

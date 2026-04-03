@@ -1,4 +1,3 @@
-// components/groupFinder/ProfileCard.tsx
 "use client";
 
 import * as React from "react";
@@ -19,12 +18,19 @@ export type StudentProfile = {
   groupStatus?: "pending" | "no_group" | "in_group";
 };
 
+function getSkillTone(skill: string) {
+  const key = skill.trim().toLowerCase();
+  if (key.includes("react")) return "bg-violet-100 text-violet-700 border-violet-200";
+  if (key.includes("next")) return "bg-sky-100 text-sky-700 border-sky-200";
+  if (key.includes("tailwind")) return "bg-amber-100 text-amber-700 border-amber-200";
+  if (key.includes("java")) return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  return "bg-slate-100 text-slate-700 border-slate-200";
+}
+
 function SkillBadge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700">
-      {children}
-    </span>
-  );
+  const tone = typeof children === "string" ? getSkillTone(children) : "bg-slate-100 text-slate-700 border-slate-200";
+
+  return <span className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${tone}`}>{children}</span>;
 }
 
 function StatBox({
@@ -37,25 +43,9 @@ function StatBox({
   accent?: boolean;
 }) {
   return (
-    <div
-      className={[
-        "rounded-xl border p-3 text-center",
-        accent
-          ? "border-blue-100 bg-blue-50"
-          : "border-slate-100 bg-slate-50",
-      ].join(" ")}
-    >
-      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-        {label}
-      </p>
-      <p
-        className={[
-          "mt-0.5 text-base font-bold",
-          accent ? "text-blue-700" : "text-slate-800",
-        ].join(" ")}
-      >
-        {value}
-      </p>
+    <div className={["rounded-xl border p-3 text-center", accent ? "border-blue-100 bg-blue-50" : "border-slate-100 bg-slate-50"].join(" ")}>
+      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className={["mt-0.5 text-base font-bold", accent ? "text-blue-700" : "text-slate-800"].join(" ")}>{value}</p>
     </div>
   );
 }
@@ -67,7 +57,6 @@ export default function ProfileCard({
 }) {
   const router = useRouter();
 
-  // Initials for avatar fallback
   const initials = profile.name
     .split(" ")
     .map((w) => w[0])
@@ -76,75 +65,48 @@ export default function ProfileCard({
     .toUpperCase();
 
   return (
-    <aside className="sticky top-6 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      {/* Top color band */}
-      <div className="h-16 bg-gradient-to-r from-blue-500 to-indigo-600" />
+    <aside className="sticky top-6 overflow-hidden rounded-2xl border border-blue-100/50 bg-white/95 shadow-[0_8px_30px_rgba(0,0,0,0.04)] backdrop-blur-xl">
+      <div className="pointer-events-none absolute left-0 right-0 top-0 z-0 h-40 bg-gradient-to-b from-sky-400/20 to-transparent" />
 
-      {/* Avatar — overlaps the band */}
-      <div className="relative -mt-8 px-5">
-        <div className="h-16 w-16 overflow-hidden rounded-2xl border-4 border-white shadow-md bg-blue-100 flex items-center justify-center">
+      <div className="relative z-10 px-5 pb-2 pt-6">
+        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border-2 border-slate-100 bg-slate-50 shadow-sm">
           {profile.imageUrl ? (
-            <img
-              alt={profile.name}
-              src={profile.imageUrl}
-              className="h-full w-full object-cover"
-            />
+            <img alt={profile.name} src={profile.imageUrl} className="h-full w-full object-cover" />
           ) : (
             <span className="text-lg font-bold text-blue-600">{initials}</span>
           )}
         </div>
       </div>
 
-      {/* Info */}
-      <div className="px-5 pb-5 pt-3">
+      <div className="relative z-10 px-5 pb-5 pt-1">
         <p className="text-base font-bold text-slate-900">{profile.name}</p>
         <p className="text-sm text-slate-500">{profile.specialization}</p>
 
-        {/* Stats row */}
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <StatBox label="GPA" value={profile.gpa?.toFixed(2) ?? "—"} accent />
-          <StatBox label="Availability" value={profile.availability ?? "—"} />
+          <StatBox label="GPA" value={profile.gpa?.toFixed(2) ?? "-"} accent />
+          <StatBox label="Availability" value={profile.availability ?? "-"} />
         </div>
 
-        {/* Meta tags */}
         {(profile.year || profile.semester || profile.batch) && (
           <div className="mt-4 flex flex-wrap gap-1.5">
-            {profile.year && (
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-                Y{profile.year}
-              </span>
-            )}
-            {profile.semester && (
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-                S{profile.semester}
-              </span>
-            )}
-            {profile.batch && (
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-                {profile.batch}
-              </span>
-            )}
+            {profile.year && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">Y{profile.year}</span>}
+            {profile.semester && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">S{profile.semester}</span>}
+            {profile.batch && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{profile.batch}</span>}
           </div>
         )}
 
-        {/* Skills */}
         {profile.skills.length > 0 && (
           <div className="mt-4">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              Skills
-            </p>
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Skills</p>
             <div className="flex flex-wrap gap-1.5">
               {profile.skills.slice(0, 8).map((s) => (
                 <SkillBadge key={s}>{s}</SkillBadge>
               ))}
-              {profile.skills.length > 8 && (
-                <SkillBadge>+{profile.skills.length - 8}</SkillBadge>
-              )}
+              {profile.skills.length > 8 && <SkillBadge>+{profile.skills.length - 8}</SkillBadge>}
             </div>
           </div>
         )}
 
-        {/* CTA */}
         <button
           type="button"
           onClick={() => router.push("/project-group-finder/profile")}

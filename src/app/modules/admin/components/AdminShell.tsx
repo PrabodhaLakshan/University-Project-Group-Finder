@@ -13,12 +13,42 @@ export function AdminShell({ children }: AdminShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-slate-900">
+    <div className="admin-shell-root">
       <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="lg:pl-[280px]">
+      <div className="admin-shell-main">
         <AdminNavbar onOpenSidebar={() => setSidebarOpen(true)} />
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">{children}</main>
+        <main className="admin-shell-content">{children}</main>
       </div>
+
+      <style>{`
+        .admin-shell-root {
+          min-height: 100vh;
+          background: #F4F6FB;
+          display: flex;
+          font-family: 'Inter', system-ui, sans-serif;
+        }
+        .admin-shell-main {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+        }
+        @media (min-width: 1024px) {
+          .admin-shell-main {
+            padding-left: 280px;
+          }
+        }
+        .admin-shell-content {
+          flex: 1;
+          max-width: 1400px;
+          width: 100%;
+          margin: 0 auto;
+          padding: 2rem 1.5rem;
+        }
+        @media (min-width: 640px) {
+          .admin-shell-content { padding: 2rem; }
+        }
+      `}</style>
     </div>
   );
 }

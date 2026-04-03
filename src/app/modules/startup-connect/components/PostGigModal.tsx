@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { X, DollarSign, Calendar, Zap } from "lucide-react";
+import { X, DollarSign, Calendar, Zap, Plus } from "lucide-react";
 
 export interface GigFormValues {
   id?: number;
@@ -12,6 +12,7 @@ export interface GigFormValues {
   budget: string;
   deadline: string;
   description: string;
+   skills: string[];
 }
 
 interface PostGigModalProps {
@@ -26,6 +27,8 @@ export const PostGigModal = ({ isOpen, onClose, initialGig, onSubmitGig }: PostG
   const [budget, setBudget] = useState("");
   const [deadline, setDeadline] = useState("");
   const [description, setDescription] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
   const [errors, setErrors] = useState<{
@@ -33,6 +36,7 @@ export const PostGigModal = ({ isOpen, onClose, initialGig, onSubmitGig }: PostG
     budget?: string;
     deadline?: string;
     description?: string;
+    skills?: string;
   }>({});
 
  
@@ -50,18 +54,41 @@ export const PostGigModal = ({ isOpen, onClose, initialGig, onSubmitGig }: PostG
       setBudget(initialGig.budget || "");
       setDeadline(initialGig.deadline || "");
       setDescription(initialGig.description || "");
+      setSkills(initialGig.skills || []);
     } else {
       setTitle("");
       setBudget("");
       setDeadline("");
       setDescription("");
+      setSkills([]);
     }
+
+    setSkillInput("");
 
     setErrors({});
     setShowSuccess(false);
   }, [isOpen, initialGig]);
 
   if (!isOpen) return null;
+
+  const handleAddSkill = () => {
+    const trimmed = skillInput.trim();
+    if (!trimmed) return;
+
+    const exists = skills.some((s) => s.toLowerCase() === trimmed.toLowerCase());
+    if (exists) {
+      setSkillInput("");
+      return;
+    }
+
+    setSkills((prev) => [...prev, trimmed]);
+    setSkillInput("");
+    setErrors((prev) => ({ ...prev, skills: undefined }));
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setSkills((prev) => prev.filter((skill) => skill !== skillToRemove));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +134,11 @@ export const PostGigModal = ({ isOpen, onClose, initialGig, onSubmitGig }: PostG
       newErrors.description = "Description is too long (Max 1000 chars).";
     }
 
+    // 5. Skills Validation
+    if (!skills.length) {
+      newErrors.skills = "Please add at least one required skill.";
+    }
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
@@ -116,6 +148,7 @@ export const PostGigModal = ({ isOpen, onClose, initialGig, onSubmitGig }: PostG
         budget,
         deadline,
         description: trimmedDescription,
+        skills,
       };
 
       if (onSubmitGig) {
@@ -128,27 +161,27 @@ export const PostGigModal = ({ isOpen, onClose, initialGig, onSubmitGig }: PostG
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <Card className="max-w-2xl w-full bg-white rounded-[40px] shadow-2xl border-none p-10 relative overflow-hidden">
-        
-        {/* Decorative background element */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-orange-100 rounded-full blur-3xl opacity-50" />
+      <Card className="max-w-2xl w-full bg-white rounded-[40px] shadow-2xl border-none relative overflow-hidden">
+        <div className="max-h-[calc(100vh-4rem)] md:max-h-[calc(100vh-6rem)] overflow-y-auto p-6 md:p-10">
+          {/* Decorative background element */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-orange-100 rounded-full blur-3xl opacity-50" />
 
-        {/* Close Button */}
-        <button onClick={onClose} className="absolute top-8 right-8 text-gray-400 hover:text-orange-600 transition-colors z-10">
-          <X size={24} strokeWidth={3} />
-        </button>
+          {/* Close Button */}
+          <button onClick={onClose} className="absolute top-8 right-8 text-gray-400 hover:text-orange-600 transition-colors z-10">
+            <X size={24} strokeWidth={3} />
+          </button>
 
-        <div className="mb-10 flex items-center gap-4 relative">
-          <div className="w-14 h-14 bg-blue-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-            <Zap size={24} fill="currentColor" />
+          <div className="mb-10 flex items-center gap-4 relative">
+            <div className="w-14 h-14 bg-blue-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+              <Zap size={24} fill="currentColor" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black tracking-tighter text-gray-950">Post a New <span className="text-orange-600">Gig</span></h2>
+              <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em]">Hire the best campus talent</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-3xl font-black tracking-tighter text-gray-950">Post a New <span className="text-orange-600">Gig</span></h2>
-            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em]">Hire the best campus talent</p>
-          </div>
-        </div>
 
-        <form className="space-y-6 relative" onSubmit={handleSubmit}>
+          <form className="space-y-6 relative" onSubmit={handleSubmit}>
           {/* Gig Title */}
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-blue-700 ml-1">Gig Title</label>
@@ -194,9 +227,60 @@ export const PostGigModal = ({ isOpen, onClose, initialGig, onSubmitGig }: PostG
             </div>
           </div>
 
+          {/* Required Skills */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-blue-700 ml-1">Required Skills</label>
+            <div className="relative">
+              <Input
+                placeholder="e.g. React, TypeScript"
+                className="rounded-2xl border-gray-100 bg-gray-50/50 py-7 pr-14 font-bold text-gray-700 focus:ring-2 focus:ring-blue-500"
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddSkill();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleAddSkill}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl bg-blue-700 text-white p-2 hover:bg-blue-800 transition-colors active:scale-95 flex items-center justify-center"
+                aria-label="Add skill"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            {errors.skills && (
+              <p className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.skills}</p>
+            )}
+
+            {skills.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-1">
+                {skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="inline-flex items-center gap-1 rounded-full bg-blue-600 text-white text-xs font-semibold px-3 py-1"
+                  >
+                    {skill}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill)}
+                      className="ml-1 hover:text-orange-200 focus:outline-none"
+                      aria-label={`Remove ${skill}`}
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Description */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-blue-700 ml-1">Gig Description & Skills Required</label>
+            <label className="text-[10px] font-black uppercase text-blue-700 ml-1">Gig Description</label>
             <Textarea
               placeholder="Tell students what you need..."
               className="rounded-2xl border-gray-100 bg-gray-50/50 font-bold min-h-35 pt-5 text-gray-700"
@@ -206,23 +290,24 @@ export const PostGigModal = ({ isOpen, onClose, initialGig, onSubmitGig }: PostG
             {errors.description && <p className="text-xs font-semibold text-red-500 mt-1 ml-1">{errors.description}</p>}
           </div>
 
-          {/* Buttons */}
-          <div className="pt-4 flex gap-4">
-             <Button
-               type="button"
-               onClick={onClose}
-               className="flex-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 py-4 md:py-6 rounded-xl md:rounded-2xl font-black text-sm md:text-base transition-all active:scale-95 border-none"
-             >
-               Cancel
-             </Button>
-             <Button
-               type="submit"
-               className="flex-0.5 bg-blue-700 hover:bg-blue-800 text-white py-4 md:py-6 rounded-xl font-black text-sm md:text-base shadow-xl shadow-blue-100 transition-all active:scale-95"
-             >
-               Publish Opportunity
-             </Button>
-          </div>
-        </form>
+            {/* Buttons */}
+            <div className="pt-4 flex gap-4">
+               <Button
+                 type="button"
+                 onClick={onClose}
+                 className="flex-0.5 bg-gray-100 hover:bg-gray-200 text-gray-600 py-4 md:py-6 rounded-xl md:rounded-2xl font-black text-sm md:text-base transition-all active:scale-95 border-none"
+               >
+                 Cancel
+               </Button>
+               <Button
+                 type="submit"
+                 className="flex-0.5 bg-blue-700 hover:bg-blue-800 text-white py-4 md:py-6 rounded-xl font-black text-sm md:text-base shadow-xl shadow-blue-100 transition-all active:scale-95"
+               >
+                 Publish Opportunity
+               </Button>
+            </div>
+          </form>
+        </div>
 
         {showSuccess && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-sm">

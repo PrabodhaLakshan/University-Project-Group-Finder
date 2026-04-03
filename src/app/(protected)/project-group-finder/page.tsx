@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import Navbar from "@/components/Navbar";
+
 import GroupFinderUI from "@/app/modules/project-group-finder/components/GroupFinderUI";
 
 export default function ProjectGroupFinderPage() {
@@ -22,6 +23,7 @@ export default function ProjectGroupFinderPage() {
     <div className="min-h-screen bg-slate-50">
       <Navbar />
       <GroupFinderUI user={user} />
+     
     </div>
   );
 }

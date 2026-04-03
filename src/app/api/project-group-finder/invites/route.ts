@@ -9,7 +9,10 @@ export async function GET(req: Request) {
 
         const invites = await prisma.project_group_invites.findMany({
             where: {
-                receiver_id: currentUser.id,
+                OR: [
+                    { receiver_id: currentUser.id },
+                    { sender_id: currentUser.id },
+                ],
                 status: "pending",
             },
             orderBy: {
@@ -17,6 +20,20 @@ export async function GET(req: Request) {
             },
             include: {
                 users_project_group_invites_sender_idTousers: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        specialization: true,
+                        year: true,
+                        semester: true,
+                        avatar_path: true,
+                        github_url: true,
+                        linkedin_url: true,
+                        skills: true,
+                    },
+                },
+                users_project_group_invites_receiver_idTousers: {
                     select: {
                         id: true,
                         name: true,
@@ -69,10 +86,17 @@ export async function GET(req: Request) {
                 status: invite.status,
                 created_at: invite.created_at,
                 group_id: invite.group_id?.toString() ?? null,
+                type: invite.sender_id === currentUser.id ? "sent" : "received",
                 sender: {
                     ...invite.users_project_group_invites_sender_idTousers,
                     avatar_url: getAvatarUrl(invite.users_project_group_invites_sender_idTousers.avatar_path),
                 },
+                receiver: invite.users_project_group_invites_receiver_idTousers
+                    ? {
+                        ...invite.users_project_group_invites_receiver_idTousers,
+                        avatar_url: getAvatarUrl(invite.users_project_group_invites_receiver_idTousers.avatar_path),
+                    }
+                    : null,
                 group: invite.project_group
                     ? {
                         id: invite.project_group.id.toString(),

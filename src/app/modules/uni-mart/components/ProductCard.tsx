@@ -27,6 +27,13 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const condition = product.condition.toLowerCase();
+  const numericPrice = Number(String(product.price).replace(/,/g, ""));
+  const formattedPrice = Number.isFinite(numericPrice)
+    ? numericPrice.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : "0.00";
 
   const conditionBadgeStyles: Record<string, string> = {
     new: "bg-blue-600/95 text-white ring-1 ring-blue-300/60",
@@ -112,8 +119,8 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Price */}
           <div className="mb-4">
-            <p className="text-[1.75rem] font-bold leading-none text-indigo-600">
-              Rs. {product.price.toLocaleString()}
+            <p className="text-2xl font-bold leading-none text-orange-500">
+              Rs. {formattedPrice}
             </p>
           </div>
 

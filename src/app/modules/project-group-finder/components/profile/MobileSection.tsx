@@ -17,7 +17,7 @@ const btnGhost =
   "rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100";
 
 function normalizePhone(value: string) {
-  return value.replace(/[\s-]/g, "");
+  return value.replace(/\D/g, "");
 }
 
 function validateSriLankanMobile(value: string) {
@@ -25,26 +25,19 @@ function validateSriLankanMobile(value: string) {
 
   if (!cleaned) return "";
 
-  const valid =
-    /^07\d{8}$/.test(cleaned) ||
-    /^\+947\d{8}$/.test(cleaned) ||
-    /^947\d{8}$/.test(cleaned);
+  if (!cleaned.startsWith("0")) {
+    return "Mobile number must start with 0.";
+  }
 
-  if (!valid) {
-    return "Enter a valid Sri Lankan mobile number.";
+  if (cleaned.length !== 10) {
+    return "Mobile number must be exactly 10 digits.";
   }
 
   return "";
 }
 
 function formatPhoneForSave(value: string) {
-  const cleaned = normalizePhone(value.trim());
-
-  if (/^\+947\d{8}$/.test(cleaned)) return cleaned;
-  if (/^947\d{8}$/.test(cleaned)) return `+${cleaned}`;
-  if (/^07\d{8}$/.test(cleaned)) return cleaned;
-
-  return cleaned;
+  return normalizePhone(value.trim());
 }
 
 export default function MobileSection({
@@ -86,9 +79,16 @@ export default function MobileSection({
           <div>
             <input
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => {
+                const next = normalizePhone(e.target.value).slice(0, 10);
+                if (next.length > 0 && !next.startsWith("0")) {
+                  return;
+                }
+                setDraft(next);
+              }}
               placeholder="07XXXXXXXX"
               type="tel"
+              maxLength={10}
               className={`${inputCls} ${hasError ? inputErrorCls : ""}`}
             />
             {error && <p className="mt-1 text-xs text-red-500">{error}</p>}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prismaClient";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { isValidEmail, normalizeEmail } from "@/lib/validation";
+import { isValidSliitEmail, normalizeEmail } from "@/lib/validation";
 
 export async function POST(req: Request) {
   try {
@@ -14,8 +14,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
     }
 
-    if (!isValidEmail(email)) {
-      return NextResponse.json({ message: "Invalid email format" }, { status: 400 });
+    if (!isValidSliitEmail(email)) {
+      return NextResponse.json({ message: "Email must end with @my.sliit.lk" }, { status: 400 });
     }
 
     const user = await prisma.users.findFirst({

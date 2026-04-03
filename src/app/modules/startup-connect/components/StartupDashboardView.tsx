@@ -34,6 +34,7 @@ type Gig = {
   budget: string;
   deadline: string;
   description: string;
+  skills: string[];
 };
 
 const TALENT_ITEMS: TalentItem[] = [
@@ -52,6 +53,52 @@ const INITIAL_RECENT_WORKS: RecentWorkItem[] = [
     date: "Mar 2026",
     images: ["https://images.unsplash.com/photo-1461749280684-dccba630e2f6?q=80&w=2070"],
   },
+  {
+    id: 2,
+    title: "Startup Talent Matcher",
+    description: "AI-assisted matching engine that connects startups with the best campus talent.",
+    github: "https://github.com",
+    demo: "https://example.com",
+    date: "Feb 2026",
+    images: ["https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2070"],
+  },
+  {
+    id: 3,
+    title: "Founder CRM Lite",
+    description: "Lightweight CRM to track founder–student conversations and gig pipelines.",
+    github: "https://github.com",
+    demo: "https://example.com",
+    date: "Jan 2026",
+    images: ["https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2070"],
+  },
+  {
+    id: 4,
+    title: "Uni Payments Microservice",
+    description: "Secure microservice for handling milestone-based gig payouts.",
+    github: "https://github.com",
+    demo: "https://example.com",
+    date: "Dec 2025",
+    images: ["https://images.unsplash.com/photo-1556740749-887f6717d7e4?q=80&w=2070"],
+  },
+  {
+    id: 5,
+    title: "Insight Analytics Dashboard",
+    description: "Real-time dashboard showing gig performance and student engagement.",
+    github: "https://github.com",
+    demo: "https://example.com",
+    date: "Nov 2025",
+    images: ["https://images.unsplash.com/photo-1553877522-43269d4ea984?q=80&w=2070"],
+  },
+  {
+    id: 6,
+    title: "Mentor Booking Portal",
+    description: "Scheduling tool for booking mentoring sessions between founders and students.",
+    github: "https://github.com",
+    demo: "https://example.com",
+    date: "Oct 2025",
+    images: ["https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=2070"],
+  },
+  
 ];
 
 const CERTIFICATE_IMAGE_SOURCES = [
@@ -173,6 +220,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
                 budget: gig.budget,
                 deadline: gig.deadline,
                 description: gig.description,
+                skills: gig.skills,
               }
             : existing
         );
@@ -186,6 +234,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
           budget: gig.budget,
           deadline: gig.deadline,
           description: gig.description,
+          skills: gig.skills,
         },
         ...prev,
       ];
@@ -459,7 +508,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
                 <span className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center"><div className="w-1.5 h-1.5 rounded-full bg-blue-700" /></span>
                 Company Vision
             </h3>
-            <p className="text-xl md:text-2xl font-bold text-slate-700 italic leading-relaxed">
+            <p className="text-xl md:text-2xl font-bold text-slate-700 leading-relaxed">
               "{startupProfile.about || "Empowering the next generation of campus innovators through meaningful opportunities."}"
             </p>
           </Card>
@@ -527,21 +576,21 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
             <AddProjectModal onAddProject={handleAddRecentWork} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {recentWorks.map((work) => (
-              <Card key={work.id} className="group overflow-hidden rounded-[35px] border-none bg-white shadow-xl shadow-slate-200/40 hover:shadow-2xl hover:shadow-blue-200/30 transition-all duration-500 border-b-8 border-blue-700">
-                <div className="relative aspect-video overflow-hidden">
-                  <img src={work.images[0]} alt={work.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black text-blue-700 shadow-sm uppercase">{work.date}</div>
+              <Card key={work.id} className="group overflow-hidden rounded-[24px] border-none bg-white shadow-md shadow-slate-200/60 hover:shadow-xl hover:shadow-blue-200/40 transition-all duration-300 border-b-4 border-blue-700">
+                <div className="relative h-32 sm:h-36 overflow-hidden">
+                  <img src={work.images[0]} alt={work.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-blue-700 shadow-sm uppercase">{work.date}</div>
                 </div>
-                <div className="p-8">
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{work.title}</h3>
-                  <p className="text-slate-500 font-bold text-sm mt-3 leading-relaxed min-h-12">{work.description}</p>
-                  <div className="flex gap-3 mt-8">
-                    <Button variant="outline" className="flex-1 rounded-2xl border-slate-200 font-black text-[10px] uppercase h-12 hover:bg-slate-50" onClick={() => work.github && window.open(work.github, "_blank")}>
+                <div className="p-4 sm:p-5">
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight line-clamp-2">{work.title}</h3>
+                  <p className="text-slate-500 font-bold text-xs mt-2 leading-relaxed line-clamp-3">{work.description}</p>
+                  <div className="flex gap-2 mt-4">
+                    <Button variant="outline" className="flex-1 rounded-2xl border-slate-200 font-black text-[9px] uppercase h-9 hover:bg-slate-50" onClick={() => work.github && window.open(work.github, "_blank")}>
                       <Github size={16} className="mr-2" /> Repository
                     </Button>
-                    <Button className="flex-1 bg-blue-700 hover:bg-blue-800 text-white rounded-2xl font-black text-[10px] uppercase h-12 shadow-lg shadow-blue-100" onClick={() => work.demo && window.open(work.demo, "_blank")}>
+                    <Button className="flex-1 bg-blue-700 hover:bg-blue-800 text-white rounded-2xl font-black text-[9px] uppercase h-9 shadow-md shadow-blue-100" onClick={() => work.demo && window.open(work.demo, "_blank")}>
                       View Project <ExternalLink size={16} className="ml-2" />
                     </Button>
                   </div>
@@ -600,7 +649,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
                       </div>
                     </div>
 
-                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-700 font-black text-2xl italic mb-4 shadow-inner">
+                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-700 font-black text-2xl mb-4 shadow-inner">
                         {student.name.charAt(0)}
                     </div>
                     <h3 className="text-lg font-black uppercase text-slate-900 tracking-tight">{student.name}</h3>

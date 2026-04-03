@@ -13,6 +13,15 @@ type ProfileData = {
   student_id: string;
   name: string;
   email: string;
+  bio: string;
+  mobile_no: string;
+  skills: string[];
+  specialization: string;
+  year: string;
+  semester: string;
+  group_number: string;
+  github_url: string;
+  linkedin_url: string;
 };
 
 const INITIAL_PROFILE: ProfileData = {
@@ -20,6 +29,15 @@ const INITIAL_PROFILE: ProfileData = {
   student_id: "",
   name: "",
   email: "",
+  bio: "",
+  mobile_no: "",
+  skills: [],
+  specialization: "",
+  year: "",
+  semester: "",
+  group_number: "",
+  github_url: "",
+  linkedin_url: "",
 };
 
 export default function ProfilePage() {
@@ -30,6 +48,15 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [bio, setBio] = useState("");
+  const [mobileNo, setMobileNo] = useState("");
+  const [skillsText, setSkillsText] = useState("");
+  const [specialization, setSpecialization] = useState("");
+  const [year, setYear] = useState("");
+  const [semester, setSemester] = useState("");
+  const [groupNumber, setGroupNumber] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +91,27 @@ export default function ProfilePage() {
           throw new Error(data.error || "Failed to load profile");
         }
 
-        setProfile(data.user);
+        setProfile((prev) => ({
+          ...prev,
+          id: data.user.id,
+          student_id: data.user.student_id,
+          name: data.user.name,
+          email: data.user.email,
+        }));
         setName(data.user.name || "");
+
+        const pgfRes = await fetch(`/api/project-group-finder/profile?userId=${data.user.id}`);
+        const pgfData = pgfRes.ok ? await pgfRes.json() : null;
+
+        setBio(pgfData?.bio || "");
+        setMobileNo(pgfData?.mobile_no || "");
+        setSkillsText(Array.isArray(pgfData?.skills) ? pgfData.skills.join(", ") : "");
+        setSpecialization(pgfData?.specialization || "");
+        setYear(pgfData?.year ? String(pgfData.year) : "");
+        setSemester(pgfData?.semester ? String(pgfData.semester) : "");
+        setGroupNumber(pgfData?.group_number || "");
+        setGithubUrl(pgfData?.github_url || "");
+        setLinkedinUrl(pgfData?.linkedin_url || "");
       } catch (err: any) {
         setError(err.message || "Failed to load profile");
       } finally {
@@ -118,7 +164,50 @@ export default function ProfilePage() {
         throw new Error(data.error || "Failed to update profile");
       }
 
-      setProfile(data.user);
+      const parsedSkills = skillsText
+        .split(",")
+        .map((skill) => skill.trim())
+        .filter(Boolean);
+
+      const pgfRes = await fetch(`/api/project-group-finder/profile?userId=${data.user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bio: bio || null,
+          mobile_no: mobileNo || null,
+          skills: parsedSkills,
+          specialization: specialization || null,
+          year: year ? Number(year) : null,
+          semester: semester ? Number(semester) : null,
+          group_number: groupNumber || null,
+          github_url: githubUrl || null,
+          linkedin_url: linkedinUrl || null,
+        }),
+      });
+
+      if (!pgfRes.ok) {
+        const pgfData = await pgfRes.json().catch(() => ({}));
+        throw new Error(pgfData.error || "Failed to update profile details");
+      }
+
+      setProfile((prev) => ({
+        ...prev,
+        id: data.user.id,
+        student_id: data.user.student_id,
+        name: data.user.name,
+        email: data.user.email,
+        bio,
+        mobile_no: mobileNo,
+        skills: parsedSkills,
+        specialization,
+        year,
+        semester,
+        group_number: groupNumber,
+        github_url: githubUrl,
+        linkedin_url: linkedinUrl,
+      }));
       setName(data.user.name || "");
       setNewPassword("");
       setConfirmPassword("");
@@ -201,6 +290,109 @@ export default function ProfilePage() {
                     placeholder="Enter your name"
                     maxLength={100}
                   />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Bio</label>
+                  <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="Tell us about yourself"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Mobile Number</label>
+                  <input
+                    type="text"
+                    value={mobileNo}
+                    onChange={(e) => setMobileNo(e.target.value)}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="07XXXXXXXX"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Technical Skills</label>
+                  <input
+                    type="text"
+                    value={skillsText}
+                    onChange={(e) => setSkillsText(e.target.value)}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="React, Node.js, Python (comma separated)"
+                  />
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Specialization</label>
+                    <input
+                      type="text"
+                      value={specialization}
+                      onChange={(e) => setSpecialization(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder="Software Engineering"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Group Number</label>
+                    <input
+                      type="text"
+                      value={groupNumber}
+                      onChange={(e) => setGroupNumber(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder="Group 01"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Year</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={6}
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder="3"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">Semester</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={2}
+                      value={semester}
+                      onChange={(e) => setSemester(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder="1"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">GitHub Link</label>
+                    <input
+                      type="url"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder="https://github.com/username"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">LinkedIn Link</label>
+                    <input
+                      type="url"
+                      value={linkedinUrl}
+                      onChange={(e) => setLinkedinUrl(e.target.value)}
+                      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder="https://linkedin.com/in/username"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">

@@ -1,12 +1,38 @@
+
+
 "use client";
 
-import { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createProduct } from "../services/product.service";
 import { productSchema } from "../validations";
 import { ZodError } from "zod";
-import { Upload, X, ArrowLeft } from "lucide-react";
-import { Oxanium, Inter } from "next/font/google";
+import { Upload, X, ArrowLeft, ChevronDown, Check } from "lucide-react";
+import { Oxanium, Inter, Poppins } from "next/font/google";
+import Footer from "@/components/footer";
+import {
+  BookOpen,
+  ChevronRight,
+  CreditCard,
+  Headphones,
+  Laptop,
+  LayoutGrid,
+  MessageCircle,
+  Package,
+  Phone,
+  Plus,
+  Receipt,
+  Search,
+  ShieldCheck,
+  ShoppingBag,
+  ShoppingCart,
+  TrendingUp,
+  User,
+  Users,
+  Wallet,
+  Zap,
+} from "lucide-react";
 
 const oxanium = Oxanium({
   subsets: ["latin"],
@@ -16,6 +42,11 @@ const oxanium = Oxanium({
 const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
 });
 
 const CATEGORIES = [
@@ -32,6 +63,102 @@ const CATEGORIES = [
 
 const CONDITIONS = ["new", "used", "refurbished"];
 
+const CAMPUS_LOCATIONS = [
+  "SLIIT UNI - Malabe",
+  "SLIIT Metro - Colombo 03",
+  "SLIIT Matara Center - Matara",
+  "SLIIT Kandy UNI - Kandy",
+  "SLIIT Kurunegala Center - Kurunegala",
+  "SLIIT Jaffna Center - Jaffna",
+];
+
+type SelectOption = {
+  value: string;
+  label: string;
+};
+
+type ModernSelectProps = {
+  name: string;
+  value: string;
+  onChange: (nextValue: string) => void;
+  placeholder: string;
+  options: SelectOption[];
+};
+
+function ModernSelect({ name, value, onChange, placeholder, options }: ModernSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input type="hidden" name={name} value={value} />
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="w-full rounded-xl border border-slate-200/80 bg-white/85 px-4 py-2.5 pr-11 text-left shadow-sm backdrop-blur-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-blue-400"
+      >
+        <span className={value ? "text-slate-900" : "text-slate-500"}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          size={18}
+          className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-30 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-[0_16px_40px_rgba(15,23,42,0.18)] backdrop-blur-md">
+          {options.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                  isSelected
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <span>{option.label}</span>
+                {isSelected && <Check size={16} className="text-blue-600" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PostItemPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +169,7 @@ export default function PostItemPage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    price: "",
+    price: "" as string | number,
     category: "",
     condition: "used" as "new" | "used" | "refurbished",
     location: "",
@@ -50,16 +177,71 @@ export default function PostItemPage() {
   });
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    let parsedValue: string | number = value;
+
+    // --- Live Validation & Formatting logic ---
+    let errorMsg = "";
+
+    if (name === "title") {
+      if (value.length > 0 && value.length < 10) errorMsg = "Title must be at least 10 characters long.";
+      if (value.length > 80) errorMsg = "Title cannot exceed 80 characters.";
+    }
+
+    if (name === "description") {
+      if (value.length > 0 && value.length < 20) errorMsg = "Description must be at least 20 characters long.";
+      
+      // Regex to detect mobile numbers (SL format or general 10 digits) and emails
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+      const phoneRegex = /(?:\+94|0)[0-9]{2}[-\s]?[0-9]{3}[-\s]?[0-9]{4}/; 
+      
+      if (emailRegex.test(value) || phoneRegex.test(value)) {
+        errorMsg = "Contact info (mobile numbers and emails) are not allowed in the description.";
+      }
+    }
+
+    if (name === "price") {
+      // Prevent entering decimals or negative signs by strictly matching digits only
+      const noDecimalValue = value.replace(/[^0-9]/g, '');
+      parsedValue = noDecimalValue ? Number(noDecimalValue) : "";
+
+      const numValue = Number(parsedValue);
+      if (parsedValue !== "" && numValue <= 0) {
+        errorMsg = "Price must be greater than zero.";
+      } else if (numValue > 1500000) {
+        errorMsg = "Maximum price limit is Rs. 1,500,000.00";
+      }
+    }
+
+    // Update form state
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "price" ? (value ? parseFloat(value) : "") : value,
+      [name]: parsedValue,
     }));
-    // Clear error for this field
+
+    // Update errors state dynamically
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      if (errorMsg) {
+        newErrors[name] = errorMsg;
+      } else {
+        delete newErrors[name];
+      }
+      return newErrors;
+    });
+  };
+
+  const handleSelectChange = (
+    name: "category" | "condition" | "location",
+    value: string
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "condition" ? (value as "new" | "used" | "refurbished") : value,
+    }));
+
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -73,10 +255,35 @@ export default function PostItemPage() {
     const files = e.target.files;
     if (!files) return;
 
-    // In a real app, you'd upload to a server/storage service
-    // For now, we'll create data URLs
-    for (let i = 0; i < Math.min(files.length, 5); i++) {
+    let newErrors = { ...errors };
+    delete newErrors.images; // Clear previous image errors
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB limit
+    const currentImagesCount = uploadedImages.length;
+    let addedCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      if (currentImagesCount + addedCount >= 5) {
+        newErrors.images = "You can only upload a maximum of 5 images.";
+        break;
+      }
+
       const file = files[i];
+
+      // File Type Check
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        newErrors.images = "Invalid file type. Only JPG, JPEG, PNG, and WEBP are allowed.";
+        continue;
+      }
+
+      // File Size Check (5MB)
+      if (file.size > maxSize) {
+        newErrors.images = "Image is too large. Max 5MB allowed";
+        continue;
+      }
+
+      // Read valid files
       const reader = new FileReader();
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
@@ -87,7 +294,13 @@ export default function PostItemPage() {
         }));
       };
       reader.readAsDataURL(file);
+      addedCount++;
     }
+
+    setErrors(newErrors);
+    
+    // Reset input value to allow selecting the same file again if it was removed
+    e.target.value = '';
   };
 
   const removeImage = (index: number) => {
@@ -104,14 +317,26 @@ export default function PostItemPage() {
     setErrors({});
 
     try {
-      // Validate form data
+      // Get the exact number value
+      const rawPrice = typeof formData.price === "number" ? formData.price : 0;
+      
+      // Formatting price to exactly 2 decimal places (e.g., 1000 -> "1000.00")
+      const formattedPrice = rawPrice.toFixed(2); 
+
+      // Validate form data through schema (Schema validates it as a Number)
       const validatedData = productSchema.parse({
         ...formData,
-        price: typeof formData.price === "string" ? 0 : formData.price,
+        price: Number(formattedPrice),
       });
 
+      // API Payload overrides price with the exact "1000.00" string so the DB receives the .00 correctly.
+      const apiPayload = {
+        ...validatedData,
+        price: formattedPrice, 
+      };
+
       // Create product
-      await createProduct(validatedData);
+      await createProduct(apiPayload as any);
 
       // Success - redirect to products page
       router.push("/modules/uni-mart/my-items");
@@ -125,7 +350,6 @@ export default function PostItemPage() {
         });
         setErrors(newErrors);
       } else if (error instanceof Error) {
-        // Show the actual error message from the API
         console.error("Error message:", error.message);
         setErrors({ submit: error.message || "Failed to create product. Please try again." });
       } else {
@@ -137,24 +361,36 @@ export default function PostItemPage() {
     }
   };
 
-  const formValidation = productSchema.safeParse({
-    ...formData,
-    price: typeof formData.price === "string" ? 0 : formData.price,
-  });
-  const isFormValid = formValidation.success;
+  // --- Step Validations ---
   const stepOneValid =
-    formData.title.trim().length >= 3 &&
-    formData.description.trim().length >= 10 &&
-    formData.category.trim().length > 0;
+    formData.title.trim().length >= 10 &&
+    formData.title.trim().length <= 80 &&
+    formData.description.trim().length >= 20 &&
+    !/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(formData.description) && // No emails
+    !/(?:\+94|0)[0-9]{2}[-\s]?[0-9]{3}[-\s]?[0-9]{4}/.test(formData.description) && // No phone numbers
+    formData.category.trim().length > 0 &&
+    formData.condition.trim().length > 0 &&
+    formData.location.trim().length > 0 && // Location is now strictly required
+    !errors.title &&
+    !errors.description;
+
   const stepTwoValid =
-    typeof formData.price !== "string" && formData.price > 0 && formData.images.length >= 1;
+    typeof formData.price === 'number' &&
+    formData.price > 0 &&
+    formData.price <= 1500000 &&
+    formData.images.length >= 1 &&
+    formData.images.length <= 5 &&
+    !errors.price &&
+    !errors.images;
+
+  // Calculate Progress value
   const progressChecks = [
-    formData.title.trim().length > 0,
-    formData.description.trim().length > 0,
+    formData.title.trim().length >= 10 && formData.title.trim().length <= 80,
+    formData.description.trim().length >= 20 && !errors.description,
     formData.category.trim().length > 0,
     formData.location.trim().length > 0,
-    typeof formData.price !== "string" && formData.price > 0,
-    formData.images.length > 0,
+    typeof formData.price === 'number' && formData.price > 0 && formData.price <= 1500000,
+    formData.images.length >= 1,
   ];
   const progressValue = Math.round(
     (progressChecks.filter(Boolean).length / progressChecks.length) * 100
@@ -246,8 +482,9 @@ export default function PostItemPage() {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    placeholder="What are you selling today?"
-                    className="w-full rounded-lg border border-white/70 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/80"
+                    maxLength={80}
+                    placeholder="What are you selling today? (Max 80 chars)"
+                    className={`w-full rounded-lg border bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/80 ${errors.title ? 'border-red-400' : 'border-white/70'}`}
                   />
                   {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
                 </div>
@@ -258,10 +495,9 @@ export default function PostItemPage() {
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    placeholder="Tell buyers what makes this item useful and its condition."
+                    placeholder="Tell buyers what makes this item useful and its condition. (Min 20 chars, no contact info)"
                     rows={5}
-                    minLength={10}
-                    className="w-full rounded-lg border border-white/70 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/80"
+                    className={`w-full rounded-lg border bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/80 ${errors.description ? 'border-red-400' : 'border-white/70'}`}
                   />
                   {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
                 </div>
@@ -269,49 +505,47 @@ export default function PostItemPage() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
                     <label className={`${oxanium.className} mb-2 block text-base font-medium text-gray-700`}>Category *</label>
-                    <select
+                    <ModernSelect
                       name="category"
                       value={formData.category}
-                      onChange={handleInputChange}
-                      className="w-full rounded-lg border border-white/70 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/80"
-                    >
-                      <option value="">Pick the best category for your item</option>
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(nextValue) => handleSelectChange("category", nextValue)}
+                      placeholder="Pick the best category"
+                      options={CATEGORIES.map((category) => ({
+                        value: category,
+                        label: category,
+                      }))}
+                    />
                     {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category}</p>}
                   </div>
 
                   <div>
                     <label className={`${oxanium.className} mb-2 block text-base font-medium text-gray-700`}>Condition *</label>
-                    <select
+                    <ModernSelect
                       name="condition"
                       value={formData.condition}
-                      onChange={handleInputChange}
-                      className="w-full rounded-lg border border-white/70 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/80"
-                    >
-                      {CONDITIONS.map((cond) => (
-                        <option key={cond} value={cond}>
-                          {cond.charAt(0).toUpperCase() + cond.slice(1)}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(nextValue) => handleSelectChange("condition", nextValue)}
+                      placeholder="Select item condition"
+                      options={CONDITIONS.map((condition) => ({
+                        value: condition,
+                        label: condition.charAt(0).toUpperCase() + condition.slice(1),
+                      }))}
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className={`${oxanium.className} mb-2 block text-base font-medium text-gray-700`}>Location</label>
-                  <input
-                    type="text"
+                  <label className={`${oxanium.className} mb-2 block text-base font-medium text-gray-700`}>Location *</label>
+                  <ModernSelect
                     name="location"
                     value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="Where can the buyer meet you on campus?"
-                    className="w-full rounded-lg border border-white/70 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/80"
+                    onChange={(nextValue) => handleSelectChange("location", nextValue)}
+                    placeholder="Select campus location"
+                    options={CAMPUS_LOCATIONS.map((location) => ({
+                      value: location,
+                      label: location,
+                    }))}
                   />
+                  {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
                 </div>
               </>
             )}
@@ -325,26 +559,29 @@ export default function PostItemPage() {
                   <input
                     type="number"
                     name="price"
+                    min="1"
+                    max="1500000"
+                    step="1"
                     value={formData.price}
                     onChange={handleInputChange}
-                    placeholder="How much are you asking (Rs.)?"
-                    className="w-full rounded-lg border border-white/70 bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/80"
+                    placeholder="How much are you asking (Rs.)? Whole numbers only."
+                    className={`w-full rounded-lg border bg-white/70 px-4 py-2 shadow-sm backdrop-blur-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/80 ${errors.price ? 'border-red-400' : 'border-white/70'}`}
                   />
                   {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price}</p>}
                 </div>
 
                 <div>
-                  <label className={`${oxanium.className} mb-2 block text-base font-medium text-gray-700`}>Images (Max 5) *</label>
+                  <label className={`${oxanium.className} mb-2 block text-base font-medium text-gray-700`}>Images (Min 1, Max 5) *</label>
 
                   {uploadedImages.length < 5 && (
-                    <label className="cursor-pointer rounded-lg border-2 border-dashed border-white/70 bg-white/50 p-8 text-center transition-colors hover:border-blue-400/80 hover:bg-white/65">
+                    <label className="cursor-pointer rounded-lg border-2 border-dashed border-white/70 bg-white/50 p-8 text-center transition-colors hover:border-blue-400/80 hover:bg-white/65 flex flex-col items-center">
                       <Upload className="mx-auto mb-2 text-slate-500" size={32} />
                       <p className="font-medium text-slate-700">Click to upload or drag images</p>
-                      <p className="text-sm text-slate-600">PNG, JPG, GIF up to 10MB</p>
+                      <p className="text-sm text-slate-600">JPG, PNG, WEBP up to 5MB</p>
                       <input
                         type="file"
                         multiple
-                        accept="image/*"
+                        accept="image/jpeg, image/jpg, image/png, image/webp"
                         onChange={handleImageUpload}
                         className="hidden"
                       />
@@ -372,7 +609,7 @@ export default function PostItemPage() {
                     </div>
                   )}
 
-                  {errors.images && <p className="mt-1 text-sm text-red-500">{errors.images}</p>}
+                  {errors.images && <p className="mt-2 text-sm font-medium text-red-500">{errors.images}</p>}
                 </div>
 
                 {errors.submit && (
@@ -413,7 +650,7 @@ export default function PostItemPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isLoading || !isFormValid || !stepTwoValid}
+                    disabled={isLoading || !stepTwoValid}
                     className="flex-1 rounded-lg bg-blue-600/90 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                   >
                     {isLoading ? "Posting..." : "Post Item"}

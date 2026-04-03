@@ -84,7 +84,7 @@ export const ApplyGigModal = ({
           <>
             <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
               <div>
-                <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none tracking-tighter">Apply for <span className="text-sky-600">Gig</span></h3>
+                <h3 className="text-xl font-black   text-slate-900 leading-none tracking-tighter">Apply for <span className="text-sky-600">Gig</span></h3>
                 <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-widest">{gigTitle}</p>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-white rounded-xl transition-colors text-slate-400"><X size={20} /></button>

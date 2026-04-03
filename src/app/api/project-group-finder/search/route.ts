@@ -37,16 +37,24 @@ export async function GET(req: NextRequest) {
             },
         });
 
+        const currentSkills = (currentUser.skills || []).map((s) => s.toLowerCase().trim());
+
         const results = students.map((student) => {
-            const skills = student.user_skills?.map((item: any) => item.skill_id).filter(Boolean) || [];
+            const skills = (student.skills || []).filter(Boolean);
+            const normalizedSkills = skills.map((s) => s.toLowerCase().trim());
 
-            const matchedSkills: string[] = [];
+            const matchedSkills: string[] = skills.filter((skill, idx) =>
+                currentSkills.includes(normalizedSkills[idx])
+            );
 
-            let matchScore = 50;
+            let matchScore = 35;
 
             if (student.year?.toString() === year) matchScore += 10;
             if (student.semester?.toString() === semester) matchScore += 10;
             if (student.specialization === specialization) matchScore += 15;
+            if (matchedSkills.length > 0) {
+                matchScore += Math.min(30, matchedSkills.length * 6);
+            }
 
             let imageUrl: string | undefined = undefined;
             if (student.avatar_path) {
@@ -57,7 +65,7 @@ export async function GET(req: NextRequest) {
             }
 
             const typedStudent = student as any;
-            const isInGroup = typedStudent.project_group_members !== null;
+            const isInGroup = (typedStudent.project_group_members?.length || 0) > 0;
             const hasPendingInvite = typedStudent.project_group_invites_project_group_invites_receiver_idTousers.length > 0;
 
             return {
@@ -68,6 +76,7 @@ export async function GET(req: NextRequest) {
                 specialization: student.specialization || "Not specified",
                 year: student.year?.toString(),
                 semester: student.semester?.toString(),
+                batch: student.group_number || undefined,
                 skills,
                 matchedSkills,
                 matchScore: Math.min(matchScore, 100),

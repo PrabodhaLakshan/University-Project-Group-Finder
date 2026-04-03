@@ -106,7 +106,7 @@ const team = [
     {
         role: "Marketplace Module",
         name: "Member 2",
-        image: "/images/aboutus/member4.png",
+        image: "/images/aboutus/member2.png",
         github: "https://github.com/member2",
         linkedin: "https://www.linkedin.com/in/member2",
     },
@@ -120,7 +120,7 @@ const team = [
     {
         role: "Tutoring & Freelance",
         name: "Member 4",
-        image: "/images/aboutus/member2.png",
+        image: "/images/aboutus/member4.png",
         github: "https://github.com/member4",
         linkedin: "https://www.linkedin.com/in/member4",
     },
