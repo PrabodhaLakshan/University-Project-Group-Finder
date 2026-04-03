@@ -102,6 +102,42 @@ export async function sendInviteNotification(params: {
   return response.json();
 }
 
+/** Founder → student message (stored as notification; shows company in title). */
+export async function sendApplicantChatMessage(params: {
+  receiverId: string;
+  companyName: string;
+  message: string;
+  gigTitle?: string;
+}) {
+  const company = params.companyName.trim() || "Startup";
+  const body = params.gigTitle?.trim()
+    ? `[${params.gigTitle}] ${params.message}`
+    : params.message;
+  const title = `Message from ${company}`.slice(0, 120);
+  const response = await fetch("/api/notifications", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      receiverId: params.receiverId,
+      type: "alert",
+      title,
+      message: body.slice(0, 500),
+      meta: {
+        companyName: company,
+        gigTitle: params.gigTitle ?? null,
+        kind: "applicant_chat",
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const err = (await response.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || "Failed to send message");
+  }
+
+  return response.json();
+}
+
 export async function sendApplicationNotification(params: {
   receiverId: string;
   gigTitle: string;

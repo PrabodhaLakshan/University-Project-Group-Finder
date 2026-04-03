@@ -36,13 +36,45 @@ function formatExpectedDeadlineLabel(createdAt: Date | null | undefined) {
 
 export async function GET() {
   try {
-    const rows = await prisma.gigs.findMany({
-      where: { status: "OPEN" },
-      orderBy: { created_at: "desc" },
-      include: {
-        companies: true,
-      },
-    });
+    let rows: any[] = [];
+
+    try {
+      rows = await prisma.gigs.findMany({
+        where: { status: "OPEN" },
+        orderBy: { created_at: "desc" },
+        include: {
+          companies: true,
+        },
+      });
+    } catch (gigsErr) {
+      console.error("BROWSE_GIGS_FIND_MANY_ERROR:", gigsErr);
+
+      const fallback = await prisma.gigs.findMany({
+        where: { status: "OPEN" },
+        orderBy: { created_at: "desc" },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          created_at: true,
+          companies: {
+            select: {
+              id: true,
+              name: true,
+              industry: true,
+              location: true,
+            },
+          },
+        },
+      });
+
+      rows = fallback.map((gig) => ({
+        ...gig,
+        budget: null,
+        requirements: [],
+        status: "OPEN",
+      }));
+    }
 
     const mapped = rows.map((gig) => {
       const industry = gig.companies?.industry ?? "";

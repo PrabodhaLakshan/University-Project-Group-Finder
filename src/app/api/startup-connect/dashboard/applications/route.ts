@@ -20,7 +20,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    let gigs: Awaited<ReturnType<typeof prisma.gigs.findMany>> = [];
+    let gigs: any[] = [];
     try {
       gigs = await prisma.gigs.findMany({
         where: { company_id: companyId },
@@ -55,7 +55,49 @@ export async function GET(req: Request) {
       });
     } catch (err) {
       console.error("STARTUP_DASHBOARD_APPLICATIONS_QUERY_ERROR:", err);
-      return NextResponse.json({ success: true, data: [] });
+
+      // Fallback for older databases that might be missing newer columns
+      const fallback = await prisma.gigs.findMany({
+        where: { company_id: companyId },
+        orderBy: { created_at: "desc" },
+        select: {
+          id: true,
+          title: true,
+          created_at: true,
+          gig_applications: {
+            select: {
+              id: true,
+              status: true,
+              created_at: true,
+              users: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      gigs = fallback.map((gig) => ({
+        ...gig,
+        budget: null,
+        gig_applications: gig.gig_applications.map((app: any) => ({
+          ...app,
+          motivation: "",
+          resume_url: "",
+          users: {
+            skills: [],
+            bio: "",
+            specialization: "",
+            rating: null,
+            github_url: "",
+            linkedin_url: "",
+            ...(app.users ?? {}),
+          },
+        })),
+      }));
     }
 
     const data = gigs.map((gig) => ({
