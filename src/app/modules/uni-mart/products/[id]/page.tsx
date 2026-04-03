@@ -83,6 +83,20 @@ export default function ProductDetailsPage() {
     { value: "1", label: "1 Star" },
   ];
 
+  function formatPrice(value: number | string) {
+    const numericValue =
+      typeof value === "number"
+        ? value
+        : Number(String(value).replace(/[^0-9.-]/g, ""));
+
+    return Number.isFinite(numericValue)
+      ? `Rs. ${numericValue.toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`
+      : "Rs. 0.00";
+  }
+
   const selectedSortLabel = sortOptions.find((option) => option.value === reviewSort)?.label || "Sort";
   const selectedFilterLabel = filterOptions.find((option) => option.value === reviewFilterStar)?.label || "All Star";
 
@@ -205,7 +219,7 @@ export default function ProductDetailsPage() {
     if (confirm("Are you sure you want to delete this product?")) {
       try {
         await deleteProduct(product.id);
-        router.push("/uni-mart/my-items");
+        router.push("/modules/uni-mart/my-items");
       } catch (error) {
         console.error("Failed to delete product:", error);
         alert("Failed to delete product");
@@ -438,8 +452,8 @@ export default function ProductDetailsPage() {
             </h1>
 
             <div className="mb-6 flex items-end justify-between gap-3">
-              <p className={`${oxanium.className} text-4xl font-bold text-blue-600`}>
-                Rs. {product.price.toLocaleString()}
+              <p className={`${oxanium.className} text-4xl font-bold text-orange-500`}>
+                {formatPrice(product.price)}
               </p>
               <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${productStatusClass}`}>
                 {productStatusLabel}
