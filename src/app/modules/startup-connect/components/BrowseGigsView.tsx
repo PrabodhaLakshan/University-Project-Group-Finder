@@ -231,8 +231,12 @@ export const BrowseGigsView = () => {
             </div>
 
             <div className="space-y-3 mb-8">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                <DollarSign size={14} className="text-blue-700" /> {gig.budget}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-emerald-100/80 bg-emerald-50/50 px-3 py-2.5 text-slate-800">
+                <DollarSign size={16} className="shrink-0 text-emerald-600" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700/90">Budget / price</p>
+                  <p className="text-sm font-black tracking-tight text-slate-900">{gig.budget}</p>
+                </div>
               </div>
               {gig.expectedDeadline && (
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-700">

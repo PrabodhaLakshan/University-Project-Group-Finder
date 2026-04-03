@@ -3,11 +3,23 @@ import { prisma } from "@/lib/prismaClient";
 
 export const runtime = "nodejs";
 
-function formatBudget(value: { toString: () => string } | null | undefined) {
-  if (value == null) return "LKR —";
-  const n = parseFloat(value.toString());
-  if (!Number.isFinite(n)) return "LKR —";
-  return `LKR ${n.toLocaleString("en-LK", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+function formatBudget(value: unknown): string {
+  if (value == null || value === "") return "Not specified";
+  let n: number;
+  if (typeof value === "number") {
+    n = value;
+  } else if (typeof value === "bigint") {
+    n = Number(value);
+  } else if (typeof value === "string") {
+    n = parseFloat(value.replace(/[^0-9.-]/g, ""));
+  } else if (typeof value === "object" && value !== null && "toString" in value) {
+    n = parseFloat(String(value).replace(/[^0-9.-]/g, ""));
+  } else {
+    return "Not specified";
+  }
+  if (!Number.isFinite(n) || n <= 0) return "Not specified";
+  const rounded = Math.round(n);
+  return `LKR ${rounded.toLocaleString("en-LK", { maximumFractionDigits: 0 })}`;
 }
 
 function deriveLevel(requirementCount: number) {
@@ -38,13 +50,29 @@ export async function GET() {
   try {
     let rows: any[] = [];
 
+    const gigSelect = {
+      id: true,
+      title: true,
+      description: true,
+      requirements: true,
+      budget: true,
+      status: true,
+      created_at: true,
+      companies: {
+        select: {
+          id: true,
+          name: true,
+          industry: true,
+          location: true,
+        },
+      },
+    } as const;
+
     try {
       rows = await prisma.gigs.findMany({
         where: { status: "OPEN" },
         orderBy: { created_at: "desc" },
-        include: {
-          companies: true,
-        },
+        select: gigSelect,
       });
     } catch (gigsErr) {
       console.error("BROWSE_GIGS_FIND_MANY_ERROR:", gigsErr);
@@ -56,6 +84,9 @@ export async function GET() {
           id: true,
           title: true,
           description: true,
+          requirements: true,
+          budget: true,
+          status: true,
           created_at: true,
           companies: {
             select: {
@@ -70,9 +101,7 @@ export async function GET() {
 
       rows = fallback.map((gig) => ({
         ...gig,
-        budget: null,
-        requirements: [],
-        status: "OPEN",
+        status: gig.status ?? "OPEN",
       }));
     }
 
@@ -91,7 +120,7 @@ export async function GET() {
         startupId,
         category,
         description: gig.description,
-        budget: formatBudget(gig.budget as any),
+        budget: formatBudget(gig.budget),
         type: gig.companies?.location ?? "Remote",
         level: deriveLevel(Array.isArray(gig.requirements) ? gig.requirements.length : 0),
         postedLabel: formatPostedLabel(gig.created_at),
