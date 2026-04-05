@@ -7,7 +7,9 @@ export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   try {
-    const companyId = await resolveCompanyId(req);
+    const url = new URL(req.url);
+    const explicitCompanyId = url.searchParams.get("companyId") ?? undefined;
+    const companyId = await resolveCompanyId(req, explicitCompanyId);
     if (!companyId) {
       return NextResponse.json({ success: true, data: [] });
     }
