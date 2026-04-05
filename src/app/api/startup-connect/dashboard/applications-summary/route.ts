@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     }
 
     const gigs = await prisma.gigs.findMany({
-      where: { company_id: companyId },
+      where: { company_id: companyId, NOT: { status: "CLOSED" } },
       select: { id: true },
     });
     const ids = gigs.map((g) => g.id);
