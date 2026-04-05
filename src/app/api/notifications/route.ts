@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prismaClient";
 import { verifyToken } from "@/lib/auth";
+import { COMPANY_UUID_RE } from "@/app/api/startup-connect/_shared";
 import {
   hasLengthBetween,
   isAllowedNotificationType,
@@ -129,6 +130,17 @@ export async function POST(req: Request) {
     return Response.json({ message: "Invalid title or message length" }, { status: 400 });
   }
 
+  let actualReceiverId = receiverId;
+  if (COMPANY_UUID_RE.test(receiverId)) {
+    const company = await prisma.companies.findUnique({
+      where: { id: receiverId },
+      select: { owner_id: true },
+    });
+    if (company?.owner_id) {
+      actualReceiverId = company.owner_id;
+    }
+  }
+
   const senderId = payload?.userId || body.senderId || "system";
   const id = crypto.randomUUID();
 
@@ -138,7 +150,7 @@ export async function POST(req: Request) {
       VALUES ($1, $2, $3, $4, $5, $6, FALSE, $7::jsonb)
     `,
     id,
-    receiverId,
+    actualReceiverId,
     String(senderId),
     type,
     title,

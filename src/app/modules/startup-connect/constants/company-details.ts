@@ -1,5 +1,5 @@
 export type CompanyReview = {
-  id: number;
+  id: number | string;
   customer: string;
   rating: number;
   comment: string;

@@ -38,5 +38,12 @@ export function hasLengthBetween(value: string, min: number, max: number) {
 }
 
 export function isAllowedNotificationType(type: string) {
-  return ["application", "invite", "system", "alert"].includes(type);
+  return [
+    "application",
+    "application_accepted",
+    "application_rejected",
+    "invite",
+    "system",
+    "alert",
+  ].includes(type);
 }

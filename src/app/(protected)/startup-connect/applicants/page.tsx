@@ -3,7 +3,9 @@ import { DashboardLayout } from "@/app/modules/startup-connect/components/Dashbo
 
 export default function ApplicantsPage() {
   return (
-    <DashboardLayout className="bg-white" contentClassName="px-2">
+    <DashboardLayout
+      contentClassName="bg-gradient-to-b from-sky-50/80 via-white to-emerald-50/30 px-2 py-1 sm:rounded-2xl"
+    >
       <div className="max-w-6xl mx-auto">
         <ApplicantsListView />
       </div>

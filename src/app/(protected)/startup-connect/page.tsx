@@ -19,12 +19,26 @@ export default function StartupConnectPage() {
 
  
   const finishRegistration = (data: any) => {
+    try {
+      const id = typeof data?.id === "string" ? data.id.trim() : "";
+      if (id) {
+        localStorage.setItem("companyId", id);
+      }
+    } catch {
+      /* ignore */
+    }
     setProfile({
       name: data?.name || '',
       industry: data?.industry || '',
       about: data?.about || '',
-      logo: data?.logo ?? null,
-      certificates: Array.isArray(data?.certificates) ? data.certificates : [],
+      // Prefer any direct logo field, otherwise use logo_url from the backend
+      logo: data?.logo ?? data?.logo_url ?? null,
+      // Support both array-style certificates and single certificate_url from the backend
+      certificates: Array.isArray(data?.certificates)
+        ? data.certificates
+        : data?.certificate_url
+        ? [data.certificate_url]
+        : [],
     });
     router.push('/startup-connect/dashboard'); 
   };

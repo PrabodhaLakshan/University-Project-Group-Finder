@@ -5,6 +5,7 @@ const cors = require("cors");
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
 app.get("/", (req, res) => {
     res.send("Socket server is running");
@@ -41,6 +42,30 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
     });
+});
+
+app.post("/internal/emit-group-message", (req, res) => {
+    try {
+        const { groupId, message } = req.body || {};
+
+        if (!groupId || !message) {
+            return res.status(400).json({
+                success: false,
+                message: "groupId and message are required",
+            });
+        }
+
+        const roomName = `group:${groupId}`;
+        io.to(roomName).emit("receive_message", message);
+
+        return res.json({ success: true });
+    } catch (error) {
+        console.error("Internal emit group message error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to emit group message",
+        });
+    }
 });
 
 const PORT = 4000;

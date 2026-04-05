@@ -1,15 +1,17 @@
-import { Home, User, LayoutGrid, Rocket, Star, CircleHelp, Users, Briefcase } from "lucide-react";
+import { Home, User, LayoutGrid, Rocket, Star, CircleHelp, Users, Briefcase, HeartHandshake } from "lucide-react";
 
 export const STARTUP_LANDING_LINKS = [
   { name: "Home", href: "/startup-connect", icon: Home },
   { name: "How it Works", href: "/startup-connect/about", icon: CircleHelp },
   { name: "Browse Gigs", href: "/startup-connect/browse-gigs", icon: Rocket },
+  { name: "Work & reviews", href: "/startup-connect/my-collaborations", icon: HeartHandshake },
 ];
 
 // Startup අයට අදාළ Links
 export const STARTUP_LINKS = [
   { name: "Dashboard", href: "/startup-connect", icon: Home },
   { name: "My Projects", href: "/startup-connect/my-projects", icon: LayoutGrid },
+  { name: "Work & reviews", href: "/startup-connect/my-collaborations", icon: HeartHandshake },
   { name: "Reviews", href: "/dashboard/startup", icon: Star },
 ];
 

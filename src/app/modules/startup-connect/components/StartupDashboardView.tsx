@@ -10,16 +10,19 @@ import { PostGigModal, type GigFormValues } from "./PostGigModal";
 import { AddProjectModal } from "./AddProjectModal";
 import { DashboardLayout } from "./DashboardLayout";
 import { StartupProfile } from "../context/StartupProfileContext";
+import { getToken } from "@/lib/auth";
+import { COMPANY_UUID_RE } from "@/lib/companyUuid";
 
 type TalentItem = {
   name: string;
   role: string;
-  match: string;
+  match: number;
   skills: string[];
+  rating?: string;
 };
 
 type RecentWorkItem = {
-  id: number;
+  id: string | number;
   title: string;
   description: string;
   github?: string;
@@ -29,7 +32,7 @@ type RecentWorkItem = {
 };
 
 type Gig = {
-  id: number;
+  id: string;
   title: string;
   budget: string;
   deadline: string;
@@ -37,10 +40,9 @@ type Gig = {
   skills: string[];
 };
 
-const TALENT_ITEMS: TalentItem[] = [
-  { name: "Pasindu Perera", role: "Full-Stack Dev", match: "98%", skills: ["React", "Node.js"] },
-  { name: "Ishani Silva", role: "UI/UX Designer", match: "95%", skills: ["Figma", "Tailwind"] },
-  { name: "Kavindu Gunawardena", role: "App Developer", match: "95%", skills: ["Flutter", "Firebase"] },
+// Fallback values (used only while API loads)
+const FALLBACK_TALENT_ITEMS: TalentItem[] = [
+  { name: "Loading...", role: "Student", match: 0, skills: [] },
 ];
 
 const INITIAL_RECENT_WORKS: RecentWorkItem[] = [
@@ -120,55 +122,205 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
   const [selectedGigForEdit, setSelectedGigForEdit] = useState<Gig | null>(null);
   
   const [startupProfile, setStartupProfile] = useState<StartupProfile>({
-    name: data?.name || "Startup",
-    industry: data?.industry || "Technology",
-    about: data?.about || "",
-    logo: data?.logo ?? null,
-    certificates: Array.isArray(data?.certificates) ? data.certificates : [],
+    name: "Startup",
+    industry: "Technology",
+    about: "",
+    logo: null,
+    certificates: [],
   });
 
   const [editForm, setEditForm] = useState<StartupProfile>(startupProfile);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
   const [recentWorks, setRecentWorks] = useState<RecentWorkItem[]>(INITIAL_RECENT_WORKS);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [topMatches, setTopMatches] = useState<TalentItem[]>(FALLBACK_TALENT_ITEMS);
+  const [pendingApplicantsCount, setPendingApplicantsCount] = useState(0);
 
   const handleContactTalent = (talentName: string) => {
     setNotificationMessage(`Notification sent to ${talentName} successfully!`);
     setTimeout(() => setNotificationMessage(null), 3000);
   };
 
+  // Live "New Applicants" counter (polling, no WebSocket).
   useEffect(() => {
-    const nextData = {
-      name: data?.name || "Startup",
-      industry: data?.industry || "Technology",
-      about: data?.about || "",
-      logo: data?.logo ?? null,
-      certificates: Array.isArray(data?.certificates) ? data.certificates : [],
+    const load = async () => {
+      const token = getToken();
+      if (!token) {
+        setPendingApplicantsCount(0);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/startup-connect/dashboard/applications-summary", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          success?: boolean;
+          data?: { pending?: unknown };
+        };
+
+        if (res.ok && json.success && json.data && typeof json.data.pending === "number") {
+          setPendingApplicantsCount(json.data.pending);
+        }
+      } catch {
+        // keep last known count
+      }
     };
-    setStartupProfile(nextData);
-    setEditForm(nextData);
-  }, [data]);
+
+    void load();
+    const id = setInterval(() => void load(), 25_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Fetch profile, gigs, and recent works from backend on load
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+
+        const token = getToken();
+        const res = await fetch("/api/startup-connect/dashboard", {
+          method: "GET",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!res.ok) {
+          throw new Error("Failed to load dashboard data");
+        }
+
+        const json = await res.json();
+        const payload = json.data ?? json;
+
+        const profileSource = payload.profile;
+
+        if (
+          !profileSource ||
+          typeof profileSource !== "object" ||
+          typeof (profileSource as { id?: unknown }).id !== "string" ||
+          !(profileSource as { id: string }).id
+        ) {
+          try {
+            const stored = localStorage.getItem("companyId");
+            if (stored && !COMPANY_UUID_RE.test(stored.trim())) {
+              localStorage.removeItem("companyId");
+            }
+          } catch {
+            /* ignore */
+          }
+          setStartupProfile({
+            name: "Startup",
+            industry: "Technology",
+            about: "",
+            logo: null,
+            certificates: [],
+          });
+          setEditForm({
+            name: "Startup",
+            industry: "Technology",
+            about: "",
+            logo: null,
+            certificates: [],
+          });
+          setGigs([]);
+          setRecentWorks([]);
+          return;
+        }
+
+        const nextProfile: StartupProfile = {
+          name: profileSource.name || "Startup",
+          industry: profileSource.industry || "Technology",
+          about: profileSource.about || "",
+          logo: profileSource.logoUrl ?? null,
+          certificates: Array.isArray(profileSource.certificateUrls)
+            ? profileSource.certificateUrls
+            : [],
+        };
+
+        setStartupProfile(nextProfile);
+        setEditForm(nextProfile);
+
+        const cid = profileSource.id;
+        if (typeof cid === "string" && cid && COMPANY_UUID_RE.test(cid)) {
+          localStorage.setItem("companyId", cid);
+        }
+
+        if (Array.isArray(payload.gigs)) {
+          setGigs(payload.gigs as Gig[]);
+        }
+
+        if (Array.isArray(payload.recentWorks)) {
+          setRecentWorks(payload.recentWorks as RecentWorkItem[]);
+        }
+      } catch (err: any) {
+        console.error("Error loading dashboard", err);
+        setLoadError(err.message || "Failed to load dashboard");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
 
   useEffect(() => {
+    const fetchTopMatches = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch("/api/startup-connect/dashboard/top-matches?minMatch=98", {
+          method: "GET",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        const payload = json.data ?? json;
+        if (Array.isArray(payload)) setTopMatches(payload as TalentItem[]);
+      } catch (err) {
+        console.error("Error loading top matches", err);
+      }
+    };
+
+    fetchTopMatches();
+  }, []);
+
+  useEffect(() => {
+    
     if (!startupProfile.logo) {
       setLogoPreviewUrl(null);
       return;
     }
-    const url = URL.createObjectURL(startupProfile.logo);
-    setLogoPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
+
+    // 2. Logo එක File object එකක් නම් (upload කරපු වෙලාවේ)
+    if (startupProfile.logo instanceof File) {
+      const url = URL.createObjectURL(startupProfile.logo);
+      setLogoPreviewUrl(url);
+
+      
+      return () => URL.revokeObjectURL(url);
+    }
+
+    // 3. Logo එක string URL එකක් නම් (DB එකෙන්)
+    if (typeof startupProfile.logo === "string") {
+      setLogoPreviewUrl(startupProfile.logo);
+    }
   }, [startupProfile.logo]);
 
   useEffect(() => {
-    const files = Array.isArray(startupProfile.certificates) ? startupProfile.certificates : [];
+    const items = Array.isArray(startupProfile.certificates) ? startupProfile.certificates : [];
 
     let objectUrl: string | null = null;
 
-    if (files.length > 0) {
-      const first = files[0];
+    if (items.length > 0) {
+      const first = items[0];
 
       if (first instanceof File && first.type && first.type.startsWith("image/")) {
         objectUrl = URL.createObjectURL(first);
         setCertificatePreviewUrl(objectUrl);
+        setCertificateImageFailed(false);
+        setCertificateSrcIndex(0);
+      } else if (typeof first === "string") {
+        
+        setCertificatePreviewUrl(first);
         setCertificateImageFailed(false);
         setCertificateSrcIndex(0);
       } else {
@@ -185,9 +337,57 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
     };
   }, [startupProfile.certificates]);
 
-  const handleSaveProfile = () => {
-    setStartupProfile(editForm);
-    setIsManageOpen(false);
+  const handleSaveProfile = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("name", editForm.name);
+      formData.append("industry", editForm.industry);
+      formData.append("about", editForm.about);
+
+      // If user selected a new logo file, send it; otherwise backend keeps existing URL
+      if (editForm.logo instanceof File) {
+        formData.append("logo", editForm.logo);
+      }
+
+      // Send only newly added certificate Files; existing URL strings are already in DB
+      editForm.certificates.forEach((item) => {
+        if (item instanceof File) {
+          formData.append("certificates", item);
+        }
+      });
+
+      const token = getToken();
+      const res = await fetch("/api/startup-connect/dashboard/profile", {
+        method: "PATCH",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error((errJson as { error?: string }).error || "Failed to save profile");
+      }
+
+      const json = await res.json();
+      const updated = (json.data ?? json).profile ?? {};
+
+      const nextProfile: StartupProfile = {
+        name: updated.name || editForm.name,
+        industry: updated.industry || editForm.industry,
+        about: updated.about || editForm.about,
+        logo: updated.logoUrl ?? editForm.logo ?? null,
+        certificates: Array.isArray(updated.certificateUrls)
+          ? updated.certificateUrls
+          : editForm.certificates,
+      };
+
+      setStartupProfile(nextProfile);
+      setEditForm(nextProfile);
+      setIsManageOpen(false);
+    } catch (err: any) {
+      console.error("Error saving profile", err);
+      alert(err.message || "Failed to save profile");
+    }
   };
 
   const handleCancelManage = () => {
@@ -205,46 +405,147 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
     setEditForm((prev) => ({ ...prev, certificates: files }));
   };
 
-  const handleAddRecentWork = (newWork: RecentWorkItem) => {
-    setRecentWorks((prev) => [newWork, ...prev]);
+  const handleAddRecentWork = async (newWork: any) => {
+    try {
+      const formData = new FormData();
+      formData.append("title", newWork.title);
+      formData.append("description", newWork.description);
+      formData.append("demo", newWork.demo || "");
+      formData.append("github", newWork.github || "");
+      if (Array.isArray(newWork.imageFiles)) {
+        newWork.imageFiles.forEach((file: File) => {
+          formData.append("images", file);
+        });
+      }
+
+      const token = getToken();
+      const res = await fetch("/api/startup-connect/dashboard/recent-works", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error((json as { error?: string }).error || "Failed to add recent work");
+      }
+
+      const created: RecentWorkItem = (json as { data?: RecentWorkItem }).data ?? (json as RecentWorkItem);
+      setRecentWorks((prev) => [created, ...prev]);
+    } catch (err: any) {
+      console.error("Error adding recent work", err);
+      alert(err.message || "Failed to add recent work");
+    }
+  };
+
+  const handleEditRecentWork = async (updatedWork: any) => {
+    try {
+      const formData = new FormData();
+      formData.append("title", updatedWork.title);
+      formData.append("description", updatedWork.description);
+      formData.append("demo", updatedWork.demo || "");
+      formData.append("github", updatedWork.github || "");
+      if (Array.isArray(updatedWork.imageFiles)) {
+        updatedWork.imageFiles.forEach((file: File) => {
+          formData.append("images", file);
+        });
+      }
+
+      const token = getToken();
+      const res = await fetch(`/api/startup-connect/dashboard/recent-works/${updatedWork.id}`, {
+        method: "PATCH",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error((json as { error?: string }).error || "Failed to update recent work");
+      }
+
+      const next: RecentWorkItem = (json as { data?: RecentWorkItem }).data ?? (json as RecentWorkItem);
+      setRecentWorks((prev) => prev.map((work) => (work.id === updatedWork.id ? next : work)));
+    } catch (err: any) {
+      console.error("Error updating recent work", err);
+      alert(err.message || "Failed to update recent work");
+      throw err;
+    }
+  };
+
+  const handleDeleteRecentWork = async (workId: string | number) => {
+    const confirmed = window.confirm("Are you sure you want to delete this project?");
+    if (!confirmed) return;
+    try {
+      const token = getToken();
+      const res = await fetch(`/api/startup-connect/dashboard/recent-works/${workId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error((errJson as { error?: string }).error || "Failed to delete recent work");
+      }
+      setRecentWorks((prev) => prev.filter((work) => work.id !== workId));
+    } catch (err: any) {
+      console.error("Error deleting recent work", err);
+      alert(err.message || "Failed to delete recent work");
+    }
   };
 
   const handleSaveGig = (gig: GigFormValues) => {
     setGigs((prev) => {
-      if (gig.id != null) {
-        return prev.map((existing) =>
-          existing.id === gig.id
-            ? {
-                id: gig.id!,
-                title: gig.title,
-                budget: gig.budget,
-                deadline: gig.deadline,
-                description: gig.description,
-                skills: gig.skills,
-              }
-            : existing
-        );
+      // If this gig has an ID and already exists in the list, update it
+      if (gig.id) {
+        const exists = prev.some((existing) => existing.id === gig.id);
+        if (exists) {
+          return prev.map((existing) =>
+            existing.id === gig.id
+              ? {
+                  id: gig.id!,
+                  title: gig.title,
+                  budget: gig.budget,
+                  deadline: gig.deadline,
+                  description: gig.description,
+                  skills: gig.skills,
+                }
+              : existing
+          );
+        }
       }
 
-      const nextId = prev.length ? Math.max(...prev.map((g) => g.id)) + 1 : 1;
-      return [
-        {
-          id: nextId,
-          title: gig.title,
-          budget: gig.budget,
-          deadline: gig.deadline,
-          description: gig.description,
-          skills: gig.skills,
-        },
-        ...prev,
-      ];
+      // Otherwise, treat as a new gig and prepend it
+      const newId = gig.id ?? Date.now().toString();
+      const newGig: Gig = {
+        id: newId,
+        title: gig.title,
+        budget: gig.budget,
+        deadline: gig.deadline,
+        description: gig.description,
+        skills: gig.skills,
+      };
+
+      return [newGig, ...prev];
     });
   };
 
-  const handleDeleteGig = (id: number) => {
+  const handleDeleteGig = async (id: string) => {
     const confirmed = window.confirm("Are you sure you want to delete this gig?");
     if (!confirmed) return;
-    setGigs((prev) => prev.filter((gig) => gig.id !== id));
+    const token = getToken();
+    try {
+      const res = await fetch(`/api/startup-connect/gigs/${id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        window.alert((json as { error?: string }).error || "Could not delete gig.");
+        return;
+      }
+      setGigs((prev) => prev.filter((gig) => gig.id !== id));
+    } catch {
+      window.alert("Could not delete gig.");
+    }
   };
 
   const certificates = Array.isArray(startupProfile.certificates) ? startupProfile.certificates : [];
@@ -252,7 +553,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
   const displayIndustry = startupProfile.industry || "Technology";
 
   return (
-    <DashboardLayout contentClassName="space-y-10 bg-[#f8fafc]/50">
+    <DashboardLayout contentClassName="space-y-10 bg-gradient-to-b from-sky-50/90 via-white to-emerald-50/35">
       <PostGigModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -263,7 +564,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
         onSubmitGig={handleSaveGig}
       />
 
-      <div className="max-w-7xl mx-auto space-y-10 px-4">
+      <div className="max-w-7xl mx-auto space-y-10 px-4 relative">
         {isManagingGigs ? (
           <>
             {/* --- MANAGE GIGS VIEW --- */}
@@ -293,7 +594,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
 
             <div className="mt-8 space-y-4">
               {gigs.length === 0 ? (
-                <Card className="p-8 rounded-[32px] bg-white border border-dashed border-slate-200 text-center">
+                <Card className="p-8 rounded-[32px] border border-dashed border-orange-200/80 bg-gradient-to-br from-orange-50/40 via-white to-sky-50/50 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)] ring-1 ring-orange-100/50">
                   <p className="text-sm font-black text-slate-700 uppercase tracking-[0.25em]">
                     No gigs yet
                   </p>
@@ -306,7 +607,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
                   {gigs.map((gig) => (
                     <Card
                       key={gig.id}
-                      className="p-6 rounded-[28px] border border-slate-100 bg-white shadow-md flex flex-col gap-4 hover:shadow-lg transition-shadow"
+                      className="p-6 rounded-[28px] border border-sky-200/60 bg-gradient-to-br from-white via-sky-50/40 to-orange-50/30 shadow-[0_12px_40px_-12px_rgba(59,130,246,0.22)] ring-1 ring-sky-100/70 flex flex-col gap-4 hover:shadow-[0_18px_48px_-10px_rgba(59,130,246,0.28)] hover:ring-blue-200/60 transition-shadow"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -340,7 +641,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
                         </div>
                       </div>
 
-                      <p className="text-sm font-semibold text-slate-500 line-clamp-3">
+                      <p className="text-[14px] font-normal font-semibold text-slate-600 line-clamp-3">
                         {gig.description}
                       </p>
 
@@ -351,7 +652,16 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
                         </div>
                         <div className="flex items-center gap-1">
                           <CalendarIcon size={14} className="text-orange-500" />
-                          <span>{gig.deadline}</span>
+                          <span>
+                            <span className="text-[10px] font-black uppercase text-slate-400 mr-1">
+                              Expected
+                            </span>
+                            {gig.deadline?.trim() ? (
+                              gig.deadline
+                            ) : (
+                              <span className="text-slate-400 font-semibold normal-case">Not set</span>
+                            )}
+                          </span>
                         </div>
                       </div>
                     </Card>
@@ -364,10 +674,11 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
           <>
 
         {/* --- WELCOME HEADER SECTION --- */}
-        <Card className="relative overflow-hidden p-8 md:p-12 border-none rounded-[40px] bg-white shadow-2xl shadow-blue-100/20">
+        <Card className="relative overflow-hidden p-8 md:p-12 border border-sky-200/50 rounded-[40px] bg-gradient-to-br from-white via-sky-50/60 to-orange-50/35 shadow-[0_24px_70px_-20px_rgba(37,99,235,0.22)] ring-1 ring-blue-100/40">
           {/* Decorative Background Blobs */}
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-60" />
-          <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-orange-50 rounded-full blur-3xl opacity-60" />
+          <div className="absolute -top-24 -right-24 w-72 h-72 bg-sky-300/35 rounded-full blur-3xl opacity-90" />
+          <div className="absolute -bottom-28 -left-20 w-72 h-72 bg-orange-300/30 rounded-full blur-3xl opacity-90" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-200/20 rounded-full blur-3xl opacity-70 pointer-events-none" />
 
           <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-8">
             <div className="flex items-center gap-6">
@@ -424,7 +735,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
 
         {/* --- EDIT PROFILE (MANAGE) SECTION --- */}
         {isManageOpen && (
-          <Card className="p-8 border-2 border-dashed border-blue-200 bg-blue-50/30 rounded-[35px] animate-in slide-in-from-top duration-500">
+          <Card className="p-8 border-2 border-dashed border-sky-300/70 bg-gradient-to-br from-sky-50/90 via-white to-emerald-50/40 rounded-[35px] animate-in slide-in-from-top duration-500 shadow-[0_16px_50px_-18px_rgba(14,165,233,0.2)] ring-1 ring-sky-100/50">
             <div className="flex items-center gap-3 mb-8">
                 <div className="w-2 h-8 bg-blue-700 rounded-full" />
                 <h3 className="text-lg font-black uppercase text-slate-800 tracking-tight">Refine Your Identity</h3>
@@ -496,27 +807,32 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
             icon={<Briefcase size={22} />}
             onClick={() => setIsManagingGigs(true)}
           />
-          <StatCard label="New Applicants" value="28" tone="orange" icon={<Users size={22} />} />
+          <StatCard
+            label="New Applicants"
+            value={String(pendingApplicantsCount).padStart(2, "0")}
+            tone="orange"
+            icon={<Users size={22} />}
+          />
           <StatCard label="Talent Reach" value="1.2k" tone="green" icon={<Zap size={22} />} />
         </div>
 
         {/* --- VISION & ASSETS GRID --- */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <Card className="p-10 border-none rounded-[35px] bg-white shadow-xl shadow-slate-200/50 lg:col-span-7 flex flex-col justify-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-700" />
+          <Card className="p-10 border border-sky-200/50 rounded-[35px] bg-gradient-to-br from-white via-blue-50/40 to-emerald-50/30 shadow-[0_18px_50px_-12px_rgba(37,99,235,0.18)] ring-1 ring-blue-100/50 lg:col-span-7 flex flex-col justify-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-blue-600 via-sky-500 to-emerald-500" />
             <h3 className="text-[11px] font-black uppercase text-blue-700 tracking-[0.3em] mb-6 flex items-center gap-2">
                 <span className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center"><div className="w-1.5 h-1.5 rounded-full bg-blue-700" /></span>
                 Company Vision
             </h3>
-            <p className="text-xl md:text-2xl font-bold text-slate-700 leading-relaxed">
+            <p className="text-[12px] font-normal text-slate-600 leading-relaxed">
               "{startupProfile.about || "Empowering the next generation of campus innovators through meaningful opportunities."}"
             </p>
           </Card>
 
-          <Card className="p-8 border-none rounded-[35px] bg-white shadow-xl shadow-slate-200/50 lg:col-span-5">
+          <Card className="p-8 border border-orange-100/60 rounded-[35px] bg-gradient-to-br from-orange-50/50 via-white to-amber-50/40 shadow-[0_18px_50px_-12px_rgba(234,88,12,0.15)] ring-1 ring-orange-100/40 lg:col-span-5">
             <h3 className="text-[11px] font-black uppercase text-orange-600 tracking-[0.3em] mb-6">Verification Assets</h3>
             <div className="space-y-6">
-              <div className="group relative rounded-3xl overflow-hidden bg-slate-50 border-2 border-slate-100 p-3 hover:border-orange-200 transition-colors">
+              <div className="group relative rounded-3xl overflow-hidden bg-gradient-to-br from-white to-orange-50/50 border-2 border-orange-100/80 p-3 hover:border-orange-300/80 hover:shadow-[0_12px_36px_-8px_rgba(234,88,12,0.2)] transition-all">
                 <div className="h-40 rounded-2xl overflow-hidden bg-white flex items-center justify-center">
                   {certificatePreviewUrl ? (
                     <img
@@ -552,11 +868,18 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
 
               {certificates.length > 0 && (
                 <div className="space-y-2">
-                  {certificates.map((file: File, idx) => (
-                    <div key={idx} className="flex items-center gap-3 text-xs font-bold text-slate-600 bg-slate-50 px-4 py-3 rounded-2xl border border-slate-100">
-                      <div className="w-2 h-2 rounded-full bg-blue-400" /> {file.name}
-                    </div>
-                  ))}
+                  {certificates.map((item, idx) => {
+                    const label = item instanceof File
+                      ? item.name
+                      : typeof item === "string"
+                      ? item.split("/").pop() || "Certificate"
+                      : "Certificate";
+                    return (
+                      <div key={idx} className="flex items-center gap-3 text-xs font-bold text-slate-600 bg-gradient-to-r from-sky-50 to-emerald-50/60 px-4 py-3 rounded-2xl border border-sky-100/80 shadow-sm">
+                        <div className="w-2 h-2 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 shadow-sm" /> {label}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -578,20 +901,46 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {recentWorks.map((work) => (
-              <Card key={work.id} className="group overflow-hidden rounded-[24px] border-none bg-white shadow-md shadow-slate-200/60 hover:shadow-xl hover:shadow-blue-200/40 transition-all duration-300 border-b-4 border-blue-700">
+              <Card key={work.id} className="group overflow-hidden rounded-[24px] border border-sky-100/70 bg-gradient-to-b from-white via-sky-50/25 to-emerald-50/15 shadow-[0_14px_40px_-12px_rgba(59,130,246,0.2)] hover:shadow-[0_20px_50px_-10px_rgba(16,185,129,0.18)] transition-all duration-300 border-b-4 border-b-orange-500 ring-1 ring-sky-100/50">
                 <div className="relative h-32 sm:h-36 overflow-hidden">
                   <img src={work.images[0]} alt={work.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                   <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-blue-700 shadow-sm uppercase">{work.date}</div>
                 </div>
                 <div className="p-4 sm:p-5">
                   <h3 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-tight line-clamp-2">{work.title}</h3>
-                  <p className="text-slate-500 font-bold text-xs mt-2 leading-relaxed line-clamp-3">{work.description}</p>
+                  <p className="text-[12px] font-normal text-slate-600 mt-2 leading-relaxed line-clamp-3">{work.description}</p>
                   <div className="flex gap-2 mt-4">
                     <Button variant="outline" className="flex-1 rounded-2xl border-slate-200 font-black text-[9px] uppercase h-9 hover:bg-slate-50" onClick={() => work.github && window.open(work.github, "_blank")}>
                       <Github size={16} className="mr-2" /> Repository
                     </Button>
                     <Button className="flex-1 bg-blue-700 hover:bg-blue-800 text-white rounded-2xl font-black text-[9px] uppercase h-9 shadow-md shadow-blue-100" onClick={() => work.demo && window.open(work.demo, "_blank")}>
                       View Project <ExternalLink size={16} className="ml-2" />
+                    </Button>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <AddProjectModal
+                      initialProject={work}
+                      onAddProject={handleEditRecentWork}
+                      submitLabel="Update Project"
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="flex-1 rounded-2xl border-blue-200 text-blue-700 font-black text-[9px] uppercase h-9 hover:bg-blue-50"
+                        >
+                          <Pen size={14} className="mr-2" />
+                          Edit
+                        </Button>
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 rounded-2xl border-red-200 text-red-600 font-black text-[9px] uppercase h-9 hover:bg-red-50"
+                      onClick={() => handleDeleteRecentWork(work.id)}
+                    >
+                      <Trash2 size={14} className="mr-2" />
+                      Delete
                     </Button>
                   </div>
                 </div>
@@ -620,15 +969,15 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {TALENT_ITEMS.map((student) => {
-              const matchPercentage = parseInt(student.match);
+            {(Array.isArray(topMatches) && topMatches.length > 0 ? topMatches : FALLBACK_TALENT_ITEMS).map((student) => {
+              const matchPercentage = Number(student.match) || 0;
               const circumference = 2 * Math.PI * 45;
               const strokeDashoffset = circumference - (matchPercentage / 100) * circumference;
               
               const matchColor = matchPercentage >= 95 ? "#10b981" : matchPercentage >= 90 ? "#3b82f6" : "#f59e0b";
 
               return (
-                <Card key={student.name} className="group p-8 border-none rounded-[35px] bg-white shadow-xl shadow-slate-200/40 hover:-translate-y-2 transition-all duration-300">
+                <Card key={student.name} className="group p-8 border border-emerald-100/60 rounded-[35px] bg-gradient-to-br from-white via-emerald-50/30 to-sky-50/40 shadow-[0_18px_50px_-14px_rgba(16,185,129,0.2)] ring-1 ring-emerald-100/50 hover:-translate-y-2 hover:shadow-[0_24px_60px_-12px_rgba(59,130,246,0.22)] transition-all duration-300">
                   <div className="flex flex-col items-center text-center mb-8">
                     <div className="relative w-32 h-32 mb-6">
                       <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -667,7 +1016,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
                     </div>
                   </div>
 
-                  <Button onClick={() => handleContactTalent(student.name)} className="w-full bg-slate-900 hover:bg-blue-700 text-white rounded-2xl py-7 font-black text-[11px] uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3">
+                  <Button onClick={() => handleContactTalent(student.name)} className="w-full bg-gradient-to-r from-blue-600 via-sky-600 to-emerald-600 hover:from-blue-700 hover:via-sky-700 hover:to-emerald-700 text-white rounded-2xl py-7 font-black text-[11px] uppercase tracking-widest transition-all shadow-[0_10px_30px_-6px_rgba(37,99,235,0.45)] flex items-center justify-center gap-3">
                     Inquire Now <ArrowUpRight size={18} />
                   </Button>
                 </Card>
@@ -679,7 +1028,7 @@ export const StartupDashboardView = ({ data }: { data: any }) => {
         {/* --- NOTIFICATION TOAST --- */}
         {notificationMessage && (
           <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-100 animate-in slide-in-from-bottom-10 duration-500">
-            <div className="bg-green-600 text-white px-10 py-5 rounded-4xl font-black text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3">
+            <div className="bg-gradient-to-r from-emerald-500 via-green-500 to-sky-500 text-white px-10 py-5 rounded-4xl font-black text-xs uppercase tracking-widest shadow-[0_12px_40px_-8px_rgba(16,185,129,0.5)] ring-2 ring-white/30 flex items-center gap-3">
               <ShieldCheck size={20} /> {notificationMessage}
             </div>
           </div>
@@ -707,19 +1056,19 @@ const StatCard = ({
   onClick?: () => void;
 }) => {
     const tones = {
-        blue: "bg-blue-50 border-blue-100 text-blue-700 shadow-blue-100/50",
-        orange: "bg-orange-50 border-orange-100 text-orange-700 shadow-orange-100/50",
-        green: "bg-green-50 border-green-100 text-green-700 shadow-green-100/50",
+        blue: "bg-gradient-to-br from-sky-50 via-white to-blue-100/50 border border-sky-200/70 text-blue-800 shadow-[0_14px_45px_-10px_rgba(37,99,235,0.28)] ring-1 ring-sky-200/50",
+        orange: "bg-gradient-to-br from-orange-50 via-white to-amber-100/40 border border-orange-200/70 text-orange-800 shadow-[0_14px_45px_-10px_rgba(234,88,12,0.22)] ring-1 ring-orange-200/50",
+        green: "bg-gradient-to-br from-emerald-50 via-white to-green-100/40 border border-emerald-200/70 text-emerald-800 shadow-[0_14px_45px_-10px_rgba(16,185,129,0.22)] ring-1 ring-emerald-200/50",
     };
 
     return (
         <Card
-          className={`p-8 border-none rounded-[35px] shadow-xl transition-transform hover:scale-[1.02] duration-300 flex items-center gap-6 ${tones[tone]} ${onClick ? "cursor-pointer" : ""}`}
+          className={`p-8 rounded-[35px] transition-transform hover:scale-[1.02] duration-300 flex items-center gap-6 ${tones[tone]} ${onClick ? "cursor-pointer hover:brightness-[1.02]" : ""}`}
           role={onClick ? "button" : undefined}
           tabIndex={onClick ? 0 : undefined}
           onClick={onClick}
         >
-          <div className="p-4 rounded-4xl bg-white shadow-sm">{icon}</div>
+          <div className="p-4 rounded-4xl bg-white/90 backdrop-blur-sm shadow-inner ring-1 ring-white/60">{icon}</div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">{label}</p>
             <p className="text-4xl font-black text-slate-900 tracking-tighter">{value}</p>

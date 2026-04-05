@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { getProductById, deleteProduct } from "../../services/product.service";
 import { startConversation } from "../../services/message.service";
 import { Product } from "../../types";
-import { ArrowLeft, Share2, Heart, Trash2, Edit2, MessageCircle, ShoppingCart, ArrowUpDown, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { ArrowLeft, Share2, Heart, Trash2, Edit2, MessageCircle, ShoppingCart, Package, ArrowUpDown, SlidersHorizontal, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { getToken } from "@/lib/auth";
 import { Oxanium, Inter } from "next/font/google";
@@ -82,6 +82,20 @@ export default function ProductDetailsPage() {
     { value: "2", label: "2 Star" },
     { value: "1", label: "1 Star" },
   ];
+
+  function formatPrice(value: number | string) {
+    const numericValue =
+      typeof value === "number"
+        ? value
+        : Number(String(value).replace(/[^0-9.-]/g, ""));
+
+    return Number.isFinite(numericValue)
+      ? `Rs. ${numericValue.toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`
+      : "Rs. 0.00";
+  }
 
   const selectedSortLabel = sortOptions.find((option) => option.value === reviewSort)?.label || "Sort";
   const selectedFilterLabel = filterOptions.find((option) => option.value === reviewFilterStar)?.label || "All Star";
@@ -438,48 +452,109 @@ export default function ProductDetailsPage() {
             </h1>
 
             <div className="mb-6 flex items-end justify-between gap-3">
-              <p className={`${oxanium.className} text-4xl font-bold text-blue-600`}>
-                Rs. {product.price.toLocaleString()}
+              <p className={`${oxanium.className} text-4xl font-bold text-orange-500`}>
+                {formatPrice(product.price)}
               </p>
               <span className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${productStatusClass}`}>
                 {productStatusLabel}
               </span>
             </div>
 
-            <div className="mb-6 flex flex-wrap gap-2">
+            <div className="mb-6">
               {!isOwner && (
-                <>
-                  <button
-                    onClick={() => {
-                      if (product.status === "AVAILABLE") {
-                        router.push(`/modules/uni-mart/checkout/${product.id}`);
-                      }
-                    }}
-                    disabled={product.status !== "AVAILABLE"}
-                    className={`flex-1 min-w-[160px] rounded-xl py-3 font-semibold shadow-sm transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 ${
-                      product.status !== "AVAILABLE"
-                        ? "bg-gray-400 text-white cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
-                  >
-                    <ShoppingCart size={20} />
-                    {product.status === "AVAILABLE"
-                      ? "Buy Now"
-                      : product.status === "RESERVED"
-                      ? "Reserved"
-                      : "Sold Out"}
-                  </button>
-                  <button
-                    onClick={handleChatWithSeller}
-                    disabled={isStartingChat}
-                    className="flex-1 min-w-[180px] rounded-xl border border-gray-200 bg-white py-3 font-semibold text-gray-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-gray-50 disabled:bg-gray-200 disabled:text-gray-500 flex items-center justify-center gap-2"
-                  >
-                    <MessageCircle size={20} />
-                    {isStartingChat ? "Opening Chat..." : "Chat with Seller"}
-                  </button>
-                </>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        if (product.status === "AVAILABLE") {
+                          router.push(`/modules/uni-mart/checkout/${product.id}`);
+                        }
+                      }}
+                      disabled={product.status !== "AVAILABLE"}
+                      className={`group flex items-stretch overflow-hidden rounded-xl border-2 shadow-sm transition-transform hover:-translate-y-0.5 ${
+                        product.status !== "AVAILABLE"
+                          ? "border-gray-400 bg-gray-400 cursor-not-allowed"
+                          : "border-violet-500 bg-violet-500 hover:border-violet-600 hover:bg-violet-600"
+                      }`}
+                    >
+                      <span className={`flex w-[45px] sm:w-[50px] shrink-0 items-center justify-center rounded-r-xl bg-white transition-colors ${
+                        product.status !== "AVAILABLE" ? "text-gray-400" : "text-violet-500 group-hover:text-violet-600"
+                      }`}>
+                        <ShoppingCart size={20} strokeWidth={2.5} />
+                      </span>
+                      <span className="flex flex-1 items-center justify-center px-1 sm:px-2 py-2.5 text-xs sm:text-sm font-extrabold uppercase tracking-wide text-white text-center">
+                        Add to Cart
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (product.status === "AVAILABLE") {
+                          router.push(`/modules/uni-mart/checkout/${product.id}`);
+                        }
+                      }}
+                      disabled={product.status !== "AVAILABLE"}
+                      className={`group flex items-stretch overflow-hidden rounded-xl border-2 shadow-sm transition-transform hover:-translate-y-0.5 ${
+                        product.status !== "AVAILABLE"
+                          ? "border-gray-400 bg-gray-400 cursor-not-allowed"
+                          : "border-pink-500 bg-pink-500 hover:border-pink-600 hover:bg-pink-600"
+                      }`}
+                    >
+                      <span className={`flex w-[45px] sm:w-[50px] shrink-0 items-center justify-center rounded-r-xl bg-white transition-colors ${
+                        product.status !== "AVAILABLE" ? "text-gray-400" : "text-pink-500 group-hover:text-pink-600"
+                      }`}>
+                        <Package size={20} strokeWidth={2.5} />
+                      </span>
+                      <span className="flex flex-1 items-center justify-center px-1 sm:px-2 py-2.5 text-xs sm:text-sm font-extrabold uppercase tracking-wide text-white text-center">
+                        Buy Now
+                      </span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-[minmax(0,1fr)_46px_46px] gap-3">
+                    <button
+                      onClick={handleChatWithSeller}
+                      disabled={isStartingChat}
+                      className={`group flex items-stretch overflow-hidden rounded-xl border-2 shadow-sm transition-transform hover:-translate-y-0.5 ${
+                        isStartingChat
+                          ? "border-gray-400 bg-gray-400 cursor-not-allowed"
+                          : "border-amber-500 bg-amber-500 hover:border-amber-600 hover:bg-amber-600"
+                      }`}
+                    >
+                      <span className={`flex w-[50px] shrink-0 items-center justify-center rounded-r-xl bg-white transition-colors ${
+                        isStartingChat ? "text-gray-400" : "text-amber-500 group-hover:text-amber-600"
+                      }`}>
+                        <MessageCircle size={20} strokeWidth={2.5} />
+                      </span>
+                      <span className="flex flex-1 items-center justify-center px-2 py-2.5 text-sm font-extrabold uppercase tracking-wide text-white">
+                        {isStartingChat ? "Opening..." : "Chat with Seller"}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsFavorite(!isFavorite)}
+                      aria-label="Toggle favorite"
+                      className={`h-[46px] w-[46px] rounded-xl border-2 transition-all hover:-translate-y-0.5 flex items-center justify-center ${
+                        isFavorite
+                          ? "border-red-500 bg-red-50 text-red-500"
+                          : "border-gray-300 bg-gray-100 text-gray-600 hover:border-gray-400"
+                      }`}
+                    >
+                      <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
+                    </button>
+
+                    <button
+                      aria-label="Share product"
+                      className="h-[46px] w-[46px] rounded-xl border-2 border-gray-300 bg-gray-100 text-gray-600 transition-all hover:-translate-y-0.5 hover:border-gray-400 flex items-center justify-center"
+                    >
+                      <Share2 size={20} />
+                    </button>
+                  </div>
+                </div>
               )}
+
               {isOwner && (
+                <div className="flex flex-wrap gap-2">
                 <>
                   {product.status === "AVAILABLE" && (
                     <>
@@ -514,20 +589,8 @@ export default function ProductDetailsPage() {
                     </div>
                   )}
                 </>
+                </div>
               )}
-              <button
-                onClick={() => setIsFavorite(!isFavorite)}
-                className={`rounded-xl border-2 px-4 py-3 transition-all hover:-translate-y-0.5 ${
-                  isFavorite
-                    ? "border-red-500 bg-red-50 text-red-500"
-                    : "border-gray-300 text-gray-600 hover:border-gray-400"
-                }`}
-              >
-                <Heart size={20} fill={isFavorite ? "currentColor" : "none"} />
-              </button>
-              <button className="rounded-xl border-2 border-gray-300 px-4 py-3 text-gray-600 transition-all hover:-translate-y-0.5 hover:border-gray-400">
-                <Share2 size={20} />
-              </button>
             </div>
 
             {/* Status Messages for Non-Owners */}
@@ -699,7 +762,9 @@ export default function ProductDetailsPage() {
                       <ArrowUpDown size={15} className="text-gray-500" />
                       <span className="font-medium text-gray-600">Sort</span>
                       <span className="font-semibold text-gray-900">{selectedSortLabel}</span>
+                      <span className="font-semibold text-gray-900">
                       <ChevronDown size={15} className={`text-gray-400 transition-transform ${isSortMenuOpen ? "rotate-180" : ""}`} />
+                      </span>
                     </button>
 
                     {isSortMenuOpen && (

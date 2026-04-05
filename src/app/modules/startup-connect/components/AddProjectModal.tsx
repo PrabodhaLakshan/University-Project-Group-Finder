@@ -11,7 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Rocket, ImagePlus, X } from "lucide-react";
 
 interface AddProjectModalProps {
-  onAddProject: (project: any) => void;
+  onAddProject: (project: any) => void | Promise<void>;
+  initialProject?: any | null;
+  trigger?: React.ReactNode;
+  submitLabel?: string;
 }
 
 type FormErrors = {
@@ -22,14 +25,37 @@ type FormErrors = {
   images?: string;
 };
 
-export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
+export const AddProjectModal = ({
+  onAddProject,
+  initialProject = null,
+  trigger,
+  submitLabel,
+}: AddProjectModalProps) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [github, setGithub] = useState("");
   const [demo, setDemo] = useState("");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
+  const isEditMode = Boolean(initialProject?.id);
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    if (initialProject) {
+      setTitle(initialProject.title || "");
+      setDesc(initialProject.description || "");
+      setGithub(initialProject.github || "");
+      setDemo(initialProject.demo || "");
+      setSelectedImages(Array.isArray(initialProject.images) ? initialProject.images : []);
+      setSelectedImageFiles([]);
+      setErrors({});
+    } else {
+      resetForm();
+    }
+  }, [open, initialProject]);
 
   const isValidHttpUrl = (value: string) => {
     try {
@@ -46,6 +72,7 @@ export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
     setGithub("");
     setDemo("");
     setSelectedImages([]);
+    setSelectedImageFiles([]);
     setErrors({});
   };
 
@@ -74,7 +101,7 @@ export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
       nextErrors.github = "Enter a valid GitHub URL (http/https)";
     }
 
-    if (selectedImages.length > 5) {
+    if (selectedImageFiles.length > 5) {
       nextErrors.images = "You can upload up to 5 screenshots";
     }
 
@@ -84,8 +111,10 @@ export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const filesArray = Array.from(e.target.files).map((file) => URL.createObjectURL(file));
-      setSelectedImages((prev) => prev.concat(filesArray).slice(0, 5));
+      const incomingFiles = Array.from(e.target.files);
+      const nextFiles = [...selectedImageFiles, ...incomingFiles].slice(0, 5);
+      setSelectedImageFiles(nextFiles);
+      setSelectedImages(nextFiles.map((file) => URL.createObjectURL(file)));
       setErrors((prev) => ({ ...prev, images: undefined }));
     }
   };
@@ -94,18 +123,24 @@ export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
     if (!validateForm()) return;
 
     const newProject = {
-      id: Date.now(),
+      id: initialProject?.id ?? Date.now(),
       title: title.trim(),
       description: desc.trim(),
       github: github.trim(),
       demo: demo.trim(),
       date: "Feb 2026",
-      images: selectedImages.length > 0 ? selectedImages : ["https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070"]
+      images: selectedImages.length > 0 ? selectedImages : ["https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070"],
+      imageFiles: selectedImageFiles,
     };
 
-    onAddProject(newProject);
-    setOpen(false);
-    resetForm();
+    Promise.resolve(onAddProject(newProject))
+      .then(() => {
+        setOpen(false);
+        resetForm();
+      })
+      .catch(() => {
+        // keep modal open so user can retry
+      });
   };
 
   return (
@@ -117,15 +152,17 @@ export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
       }}
     >
       <DialogTrigger asChild>
-        <Button className="bg-sky-600 hover:bg-sky-700 text-white rounded-2xl px-6 py-6 font-black shadow-lg shadow-sky-100 flex items-center gap-2">
-          <Plus className="w-5 h-5" /> NEW PROJECT
-        </Button>
+        {trigger ?? (
+          <Button className="bg-sky-600 hover:bg-sky-700 text-white rounded-2xl px-6 py-6 font-black shadow-lg shadow-sky-100 flex items-center gap-2">
+            <Plus className="w-5 h-5" /> NEW PROJECT
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="max-w-2xl bg-white rounded-[40px] border-none shadow-2xl p-8 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-3xl font-black text-slate-900 flex items-center gap-3">
-            <Rocket className="w-8 h-8 text-sky-600" /> ADD NEW PROJECT
+            <Rocket className="w-8 h-8 text-sky-600" /> {isEditMode ? "EDIT PROJECT" : "ADD NEW PROJECT"}
           </DialogTitle>
         </DialogHeader>
 
@@ -194,7 +231,11 @@ export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
                   <img src={img} className="w-full h-full object-cover" alt={`screenshot-${i + 1}`} />
                   <X
                     className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white rounded-full cursor-pointer"
-                    onClick={() => setSelectedImages(selectedImages.filter((_, idx) => idx !== i))}
+                    onClick={() => {
+                      const nextFiles = selectedImageFiles.filter((_, idx) => idx !== i);
+                      setSelectedImageFiles(nextFiles);
+                      setSelectedImages(nextFiles.map((file) => URL.createObjectURL(file)));
+                    }}
                   />
                 </div>
               ))}
@@ -212,7 +253,7 @@ export const AddProjectModal = ({ onAddProject }: AddProjectModalProps) => {
             onClick={handlePublish}
             className="bg-sky-600 hover:bg-sky-700 text-white rounded-xl w-full py-4 md:py-6 font-black text-sm md:text-base"
           >
-            Publish Project
+            {submitLabel ?? (isEditMode ? "Update Project" : "Publish Project")}
           </Button>
         </DialogFooter>
       </DialogContent>

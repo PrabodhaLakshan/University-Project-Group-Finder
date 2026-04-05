@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Rocket, ArrowRight, UploadCloud, Building2, Briefcase, FileCheck, ShieldCheck, Loader2 } from "lucide-react";
+import { getToken } from "@/lib/auth";
 
 export const StartupRegisterForm = ({
   onComplete,
@@ -23,6 +24,7 @@ export const StartupRegisterForm = ({
     logo: null as File | null,
     certificates: [] as File[],
   });
+
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     name?: string;
@@ -55,29 +57,21 @@ export const StartupRegisterForm = ({
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-
     if (!file) {
       setFormData((prev) => ({ ...prev, logo: null }));
       return;
     }
-
-    const isValidType =
-      file.type === "image/png" ||
-      file.type === "image/jpeg" ||
-      file.type === "image/jpg";
+    const isValidType = file.type === "image/png" || file.type === "image/jpeg" || file.type === "image/jpg";
     const isValidSize = file.size <= 2 * 1024 * 1024; // 2MB
 
     if (!isValidType || !isValidSize) {
       setFieldErrors((prev) => ({
         ...prev,
-        logo: !isValidType
-          ? "Logo must be PNG or JPG."
-          : "Logo must be smaller than 2MB.",
+        logo: !isValidType ? "Logo must be PNG or JPG." : "Logo must be smaller than 2MB.",
       }));
       setFormData((prev) => ({ ...prev, logo: null }));
       return;
     }
-
     setFormData((prev) => ({ ...prev, logo: file }));
     setFieldErrors((prev) => ({ ...prev, logo: undefined }));
   };
@@ -88,7 +82,6 @@ export const StartupRegisterForm = ({
       setFormData((prev) => ({ ...prev, certificates: [] }));
       return;
     }
-
     const files = Array.from(fileList);
     const validFiles: File[] = [];
     let hasInvalid = false;
@@ -104,60 +97,80 @@ export const StartupRegisterForm = ({
     });
 
     setFormData((prev) => ({ ...prev, certificates: validFiles }));
-
     setFieldErrors((prev) => ({
       ...prev,
-      certificates: hasInvalid
-        ? "Some files were ignored. Certificates must be images under 5MB."
-        : undefined,
+      certificates: hasInvalid ? "Some files were ignored. Certificates must be images under 5MB." : undefined,
     }));
   };
 
-  const handleSubmit = async () => {
-    const newErrors: {
-      name?: string;
-      industry?: string;
-      about?: string;
-      logo?: string;
-      certificates?: string;
-    } = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Startup name is required.";
-    }
-
-    if (formData.name.trim().length > MAX_NAME_LENGTH) {
-      newErrors.name = `Startup name must be under ${MAX_NAME_LENGTH} characters.`;
-    }
-
-    if (!formData.industry) {
-      newErrors.industry = "Please select an industry.";
-    }
-
-    if (!formData.about.trim()) {
-      newErrors.about = "Elevator pitch is required.";
-    } else if (formData.about.trim().length > MAX_ABOUT_LENGTH) {
-      newErrors.about = `Elevator pitch must be under ${MAX_ABOUT_LENGTH} characters.`;
-    }
-
-    if (!formData.logo) {
-      newErrors.logo = "Business logo is required.";
-    }
-
-    const hasErrors = Object.values(newErrors).some(Boolean);
-
-    if (hasErrors) {
-      setFieldErrors(newErrors);
-      setError("Please fix the highlighted fields.");
-      return;
-    }
-
-    setFieldErrors({});
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSubmitting(true);
     setError(null);
 
     try {
-      setIsSubmitting(true);
-      await Promise.resolve(onComplete(formData));
+      const token = getToken();
+      if (!token) {
+        setError('You must be logged in to register a startup.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('industry', formData.industry);
+      formDataToSend.append('about', formData.about);
+
+      if (formData.logo) {
+        formDataToSend.append('logo', formData.logo);
+      }
+      formData.certificates.forEach((file) => {
+        formDataToSend.append('certificates', file);
+      });
+
+      const response = await fetch('/api/startup-connect/Register', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formDataToSend,
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        // Determine a logo value that will survive refreshes:
+        // 1) Prefer backend logo_url
+        // 2) Otherwise fall back to a base64 data URL of the uploaded file (<=2MB)
+        let logoForClient: string | null = result.data.logo_url ?? null;
+        if (!logoForClient && formData.logo) {
+          try {
+            const readerResult = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(formData.logo as File);
+            });
+            logoForClient = readerResult;
+          } catch (e) {
+            console.error('Failed to read logo file for preview', e);
+          }
+        }
+
+        const companyForClient = {
+          ...result.data,
+          logo: logoForClient,
+          certificates: Array.isArray(result.data.certificates)
+            ? result.data.certificates
+            : result.data.certificate_url
+            ? [result.data.certificate_url]
+            : [],
+        };
+
+        alert("Registration Successful!");
+        onComplete(companyForClient);
+      } else {
+        setError(result.error || 'Registration failed');
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -165,19 +178,14 @@ export const StartupRegisterForm = ({
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50/50 p-4 md:p-10 font-sans">
-      {/* --- Main Large Card --- */}
       <Card className="max-w-5xl w-full border-none shadow-[0_30px_70px_-15px_rgba(0,0,0,0.12)] bg-white rounded-[2.5rem] overflow-hidden p-3 md:p-6">
-        
         <div className="flex flex-col md:flex-row gap-8">
           
-          {/* --- LEFT SIDE: Venture Profile (Details) --- */}
           <div className="flex-1 flex flex-col justify-between py-2 md:pl-4 order-2 md:order-1">
             <div className="space-y-6">
-              
-              {/* --- HEADER: Blue BG with Black Text --- */}
               <div className="bg-blue-100 rounded-3xl p-5 md:p-6 flex items-center justify-between shadow-sm border border-blue-200">
                 <div className="space-y-1">
-                   <h2 className="text-xl md:text-2xl font-black text-slate-900 uppercase italic tracking-tighter flex items-center gap-3">
+                  <h2 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
                     <div className="w-2 h-6 bg-blue-600 rounded-full" /> Venture Profile
                   </h2>
                   <p className="text-[9px] font-bold text-blue-700 uppercase tracking-[0.3em] ml-5">Primary Identity Details</p>
@@ -198,7 +206,7 @@ export const StartupRegisterForm = ({
                   </label>
                   <Input 
                     className={`rounded-2xl border-slate-100 bg-slate-50/50 h-12 font-bold focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all ${fieldErrors.name ? 'border-red-400 ring-red-100 focus:ring-red-200' : ''}`} 
-                    placeholder="Nexus Lab"
+                    placeholder="Enter your startup name"
                     value={formData.name}
                     onChange={handleNameChange}
                   />
@@ -216,9 +224,7 @@ export const StartupRegisterForm = ({
                     value={formData.industry}
                     onChange={handleIndustryChange}
                   >
-                    <option value="" disabled>
-                      Select industry
-                    </option>
+                    <option value="" disabled>Select industry</option>
                     <option value="AI">AI</option>
                     <option value="IT">IT</option>
                     <option value="DS">DS</option>
@@ -251,7 +257,6 @@ export const StartupRegisterForm = ({
               </div>
             </div>
 
-            {/* --- COMPACT BUTTONS --- */}
             <div className="flex items-center justify-start gap-4 mt-10">
               <Button 
                 onClick={handleSubmit}
@@ -269,7 +274,6 @@ export const StartupRegisterForm = ({
                   </>
                 )}
               </Button>
-              
               <Button
                 type="button"
                 onClick={onAlreadyHaveAccount}
@@ -281,7 +285,6 @@ export const StartupRegisterForm = ({
             </div>
           </div>
 
-          {/* --- RIGHT SIDE: Media Assets Sub-Card --- */}
           <div className="w-full md:w-1/3 bg-slate-50/80 rounded-[2rem] p-6 border border-slate-100 flex flex-col justify-center space-y-8 order-1 md:order-2">
             <div className="text-center space-y-1">
               <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-200">
@@ -291,7 +294,6 @@ export const StartupRegisterForm = ({
               <p className="text-[9px] font-bold text-slate-400">UPLOAD BRANDING & DOCUMENTS</p>
             </div>
 
-            {/* Logo Upload */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-blue-700/70 ml-1 flex items-center gap-2">
                 <UploadCloud size={12} /> Business Logo
@@ -310,12 +312,9 @@ export const StartupRegisterForm = ({
                   </div>
                 )}
               </label>
-              {fieldErrors.logo && (
-                <p className="text-[10px] font-bold text-red-500 ml-1 mt-1">{fieldErrors.logo}</p>
-              )}
+              {fieldErrors.logo && <p className="text-[10px] font-bold text-red-500 ml-1 mt-1">{fieldErrors.logo}</p>}
             </div>
 
-            {/* Verification Upload */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-blue-700/70 ml-1 flex items-center gap-2">
                 <ShieldCheck size={12} /> Certifications
@@ -324,8 +323,8 @@ export const StartupRegisterForm = ({
                 <input type="file" multiple accept="image/*" className="hidden" onChange={handleCertificatesChange} />
                 {formData.certificates.length > 0 ? (
                   <div className="text-center">
-                     <FileCheck className="text-orange-500 w-6 h-6 mx-auto mb-2" />
-                     <span className="text-[9px] font-bold text-slate-600">{formData.certificates.length} Files Attached</span>
+                    <FileCheck className="text-orange-500 w-6 h-6 mx-auto mb-2" />
+                    <span className="text-[9px] font-bold text-slate-600">{formData.certificates.length} Files Attached</span>
                   </div>
                 ) : (
                   <div className="text-center">
@@ -334,9 +333,7 @@ export const StartupRegisterForm = ({
                   </div>
                 )}
               </label>
-              {fieldErrors.certificates && (
-                <p className="text-[10px] font-bold text-red-500 ml-1 mt-1">{fieldErrors.certificates}</p>
-              )}
+              {fieldErrors.certificates && <p className="text-[10px] font-bold text-red-500 ml-1 mt-1">{fieldErrors.certificates}</p>}
             </div>
           </div>
 

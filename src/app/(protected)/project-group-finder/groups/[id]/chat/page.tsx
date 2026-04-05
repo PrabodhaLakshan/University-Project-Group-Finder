@@ -13,7 +13,7 @@ export default async function GroupChatPage({
     }
 
     return (
-        <main className="p-6">
+        <main className="mx-auto w-full max-w-[1500px] px-4 py-4 sm:px-6 lg:px-8">
             <ChatWindow groupId={id} />
         </main>
     );

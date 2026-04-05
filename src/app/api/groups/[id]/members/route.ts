@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prismaClient";
 import { requireUserFromRequest } from "@/lib/auth-server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { appendChatBotMentionMember } from "@/lib/chatBot";
 
 function toAvatarUrl(raw: string | null | undefined): string | null {
     if (!raw) return null;
@@ -64,7 +65,7 @@ export async function GET(
             avatar_path: toAvatarUrl(m.users.avatar_path),
         }));
 
-        return NextResponse.json({ success: true, members: result });
+        return NextResponse.json({ success: true, members: appendChatBotMentionMember(result) });
     } catch (error) {
         console.error("GET members error:", error);
 

@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { Star, X, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getToken } from '@/lib/auth';
 
-type NewReviewInput = {
+export type NewReviewInput = {
   studentName: string;
   role: string;
   comment: string;
@@ -13,16 +14,22 @@ type NewReviewInput = {
 export const AddReviewModal = ({
   onClose,
   onSubmit,
+  companyId,
+  onSuccess,
 }: {
   onClose: () => void;
-  onSubmit: (review: NewReviewInput) => void;
+  /** Legacy local-only submit (dashboard preview). Prefer companyId + API. */
+  onSubmit?: (review: NewReviewInput) => void;
+  companyId?: string;
+  onSuccess?: () => void;
 }) => {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmedComment = comment.trim();
 
     if (!rating) {
@@ -37,13 +44,49 @@ export const AddReviewModal = ({
 
     setError(null);
 
-    onSubmit({
-      studentName: 'You',
-      role: 'Student',
-      comment: trimmedComment,
-      rating,
-    });
-    onClose();
+    if (companyId) {
+      const token = getToken();
+      if (!token) {
+        setError('Please sign in to submit a review.');
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const res = await fetch('/api/startup-connect/reviews', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ companyId, rating, comment: trimmedComment }),
+        });
+        const json = (await res.json()) as { success?: boolean; error?: string };
+        if (!res.ok || !json.success) {
+          setError(json.error ?? 'Could not submit review.');
+          setSubmitting(false);
+          return;
+        }
+        onSuccess?.();
+        onClose();
+      } catch {
+        setError('Network error. Try again.');
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    if (onSubmit) {
+      onSubmit({
+        studentName: 'You',
+        role: 'Student',
+        comment: trimmedComment,
+        rating,
+      });
+      onClose();
+      return;
+    }
+
+    setError('Review form is not configured.');
   };
 
   return (
@@ -104,9 +147,20 @@ export const AddReviewModal = ({
 
         {/* Footer */}
         <div className="p-8 pt-0 flex gap-3">
-          <Button variant="ghost" onClick={onClose} className="flex-1 rounded-2xl py-6 font-black text-[10px] uppercase text-slate-400">Cancel</Button>
-          <Button onClick={handleSubmit} className="flex-2 bg-orange-500 hover:bg-slate-900 text-white rounded-2xl py-6 font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-orange-100">
-            <Send className="w-3 h-3 mr-2" /> Submit Review
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={submitting}
+            className="flex-1 rounded-2xl py-6 font-black text-[10px] uppercase text-slate-400"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void handleSubmit()}
+            disabled={submitting}
+            className="flex-2 bg-orange-500 hover:bg-slate-900 text-white rounded-2xl py-6 font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-orange-100 disabled:opacity-60"
+          >
+            <Send className="w-3 h-3 mr-2" /> {submitting ? 'Submitting…' : 'Submit Review'}
           </Button>
         </div>
       </div>

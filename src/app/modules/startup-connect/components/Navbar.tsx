@@ -99,13 +99,20 @@ export const Navbar = () => {
     pathname.startsWith('/startup-connect/dashboard') ||
     pathname.startsWith('/startup-connect/applicants') ||
     pathname.startsWith('/dashboard/startup');
-  const startupLandingNavbarRoutes = ['/startup-connect', '/startup-connect/about', '/startup-connect/browse-gigs', '/startup-connect/my-projects'];
+  const startupLandingNavbarRoutes = [
+    '/startup-connect',
+    '/startup-connect/about',
+    '/startup-connect/browse-gigs',
+    '/startup-connect/my-projects',
+    '/startup-connect/my-collaborations',
+  ];
   const startupStaticRoutes = new Set([
     'about',
     'applicants',
     'browse-gigs',
     'dashboard',
     'my-projects',
+    'my-collaborations',
     'notifications',
     'talent-pool',
   ]);

@@ -1,40 +1,77 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search, Filter, DollarSign, Clock, ArrowRight } from 'lucide-react';
+import { Search, Filter, DollarSign, Clock, ArrowRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApplyGigModal } from './ApplyGigModal';
-import { COMPANY_DETAILS } from '../constants/company-details';
 
-const MOCK_GIGS = [
-  { id: 1, title: "Next.js Developer Needed", startup: "TechFlow", startupId: "startup-techflow", category: "Development", budget: "LKR 15,000", type: "Remote", level: "Intermediate" },
-  { id: 2, title: "Social Media Graphics", startup: "CreativeX", startupId: "startup-creativex", category: "Design", budget: "LKR 5,000", type: "Remote", level: "Beginner" },
-  { id: 3, title: "Python Data Scripting", startup: "DataMind", startupId: "startup-datamind", category: "Data Science", budget: "LKR 20,000", type: "Remote", level: "Advanced" },
-  { id: 4, title: "Mobile App UI Revamp", startup: "CreativeX", startupId: "startup-creativex", category: "UI/UX", budget: "LKR 12,000", type: "Remote", level: "Intermediate" },
-  { id: 5, title: "Node.js API Integration", startup: "TechFlow", startupId: "startup-techflow", category: "Backend", budget: "LKR 18,000", type: "Remote", level: "Advanced" },
-  { id: 6, title: "Startup Promo Video Editing", startup: "CreativeX", startupId: "startup-creativex", category: "Multimedia", budget: "LKR 7,500", type: "Remote", level: "Beginner" },
-  { id: 7, title: "SQL Dashboard Automation", startup: "DataMind", startupId: "startup-datamind", category: "Analytics", budget: "LKR 16,000", type: "Remote", level: "Intermediate" },
-  { id: 8, title: "Campus Brand Ambassador Campaign", startup: "TechFlow", startupId: "startup-techflow", category: "Marketing", budget: "LKR 6,000", type: "Remote", level: "Beginner" },
-  { id: 9, title: "React Component Library Setup", startup: "TechFlow", startupId: "startup-techflow", category: "Frontend", budget: "LKR 14,500", type: "Remote", level: "Intermediate" },
-  { id: 10, title: "AI Chatbot Prompt Tuning", startup: "DataMind", startupId: "startup-datamind", category: "AI/ML", budget: "LKR 22,000", type: "Remote", level: "Advanced" },
-  { id: 11, title: "SEO Content Calendar Planning", startup: "CreativeX", startupId: "startup-creativex", category: "Content", budget: "LKR 8,500", type: "Remote", level: "Beginner" },
-  { id: 12, title: "QA Testing for Student Portal", startup: "TechFlow", startupId: "startup-techflow", category: "Quality Assurance", budget: "LKR 9,000", type: "Remote", level: "Intermediate" },
-  { id: 13, title: "Java Spring Boot API Development", startup: "TechFlow", startupId: "startup-techflow", category: "Backend", budget: "LKR 19,500", type: "Remote", level: "Advanced" },
-];
+export type BrowseGigCard = {
+  id: string;
+  title: string;
+  startup: string;
+  startupId: string;
+  category: string;
+  budget: string;
+  type: string;
+  level: string;
+  postedLabel: string;
+  logoUrl: string | null;
+  /** "Expected by" label derived safely (no deadline_at DB column). */
+  expectedDeadline?: string;
+  /** Short gig description used in cards */
+  description?: string;
+};
 
 export const BrowseGigsView = () => {
-  const [selectedGig, setSelectedGig] = useState<(typeof MOCK_GIGS)[number] | null>(null);
+  const [gigs, setGigs] = useState<BrowseGigCard[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [selectedGig, setSelectedGig] = useState<BrowseGigCard | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('All');
-  const categories = ['All', ...Array.from(new Set(MOCK_GIGS.map((gig) => gig.category)))];
-  const types = ['All', ...Array.from(new Set(MOCK_GIGS.map((gig) => gig.type)))];
-  const levels = ['All', ...Array.from(new Set(MOCK_GIGS.map((gig) => gig.level)))];
 
-  const filteredGigs = MOCK_GIGS.filter((gig) => {
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setLoadError(null);
+        const res = await fetch("/api/startup-connect/browse-gigs", { method: "GET" });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || "Failed to load gigs");
+        }
+        const list = Array.isArray(json.data) ? json.data : [];
+        setGigs(list as BrowseGigCard[]);
+      } catch (e) {
+        console.error(e);
+        setLoadError(e instanceof Error ? e.message : "Failed to load gigs");
+        setGigs([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const categories = useMemo(
+    () => ['All', ...Array.from(new Set(gigs.map((g) => g.category)))],
+    [gigs]
+  );
+  const types = useMemo(
+    () => ['All', ...Array.from(new Set(gigs.map((g) => g.type)))],
+    [gigs]
+  );
+  const levels = useMemo(
+    () => ['All', ...Array.from(new Set(gigs.map((g) => g.level)))],
+    [gigs]
+  );
+
+  const filteredGigs = gigs.filter((gig) => {
     const matchesSearch =
       gig.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       gig.startup.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -62,6 +99,12 @@ export const BrowseGigsView = () => {
             Find Your Next <span className="text-blue-700">Gig</span>
           </h1>
           <p className="text-slate-400 font-bold uppercase text-[10px] mt-2 tracking-widest italic">Browse projects from top campus startups</p>
+          <Link
+            href="/startup-connect/my-collaborations"
+            className="mt-4 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-orange-600 hover:text-orange-700"
+          >
+            Finished a gig? Rate the startup <ArrowRight size={12} />
+          </Link>
         </div>
 
         <div className="flex gap-2 w-full md:w-auto">
@@ -84,6 +127,12 @@ export const BrowseGigsView = () => {
           </Button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="mb-8 rounded-3xl border border-red-100 bg-red-50 px-6 py-4 text-center text-xs font-bold text-red-700">
+          {loadError}
+        </div>
+      )}
 
       {showFilters && (
         <div className="mb-8 p-5 rounded-3xl border border-slate-100 bg-slate-50/60">
@@ -130,6 +179,12 @@ export const BrowseGigsView = () => {
         </div>
       )}
 
+      {loading ? (
+        <div className="rounded-3xl border border-slate-100 bg-slate-50 px-6 py-16 text-center">
+          <p className="text-sm font-black text-slate-600 uppercase tracking-widest">Loading gigs…</p>
+        </div>
+      ) : (
+      <>
       {/* Gigs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         {filteredGigs.map((gig) => (
@@ -144,10 +199,15 @@ export const BrowseGigsView = () => {
               <span className="text-orange-500 font-black text-[10px] uppercase italic">{gig.type}</span>
             </div>
 
-            <h3 className="text-lg font-black text-slate-900 uppercase leading-tight mb-2 group-hover:text-blue-700 transition-colors">
+            <h3 className="text-lg font-black text-slate-900 uppercase leading-tight mb-1 group-hover:text-blue-700 transition-colors">
               {gig.title}
             </h3>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-6 flex items-center justify-between gap-3">
+            {gig.description && (
+              <p className="text-[11px] font-semibold text-slate-500 mb-3 line-clamp-3">
+                {gig.description}
+              </p>
+            )}
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-5 flex items-center justify-between gap-3">
               <p className="flex items-center gap-1">
                 Company:
                 <Link
@@ -158,9 +218,9 @@ export const BrowseGigsView = () => {
                 </Link>
               </p>
               <span className="w-10 h-10 rounded-2xl border border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
-                {COMPANY_DETAILS[gig.startupId]?.logoUrl ? (
+                {gig.logoUrl ? (
                   <img
-                    src={COMPANY_DETAILS[gig.startupId].logoUrl}
+                    src={gig.logoUrl}
                     alt={`${gig.startup} logo`}
                     className="w-7 h-7 object-contain"
                   />
@@ -171,11 +231,26 @@ export const BrowseGigsView = () => {
             </div>
 
             <div className="space-y-3 mb-8">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                <DollarSign size={14} className="text-blue-700" /> {gig.budget}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-emerald-100/80 bg-emerald-50/50 px-3 py-2.5 text-slate-800">
+                <DollarSign size={16} className="shrink-0 text-emerald-600" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700/90">Budget / price</p>
+                  <p className="text-sm font-black tracking-tight text-slate-900">{gig.budget}</p>
+                </div>
               </div>
+              {gig.expectedDeadline && (
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                  <Calendar size={14} className="text-blue-600 shrink-0" />
+                  <span>
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-tight mr-1">
+                      Expected by
+                    </span>
+                    {gig.expectedDeadline}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                <Clock size={14} className="text-orange-500" /> 3 days left
+                <Clock size={14} className="text-orange-500" /> {gig.postedLabel}
               </div>
             </div>
 
@@ -189,20 +264,27 @@ export const BrowseGigsView = () => {
         ))}
       </div>
 
-      {filteredGigs.length === 0 && (
+      {filteredGigs.length === 0 && !loading && (
         <div className="mt-8 rounded-3xl border border-slate-100 bg-slate-50 px-6 py-8 text-center">
           <p className="text-sm font-black text-slate-700 uppercase tracking-widest">No gigs found</p>
-          <p className="text-xs font-bold text-slate-400 mt-2">Try changing filters or search terms.</p>
+          <p className="text-xs font-bold text-slate-400 mt-2">
+            {gigs.length === 0
+              ? "No open gigs yet. Check back after startups post opportunities."
+              : "Try changing filters or search terms."}
+          </p>
         </div>
       )}
 
       {selectedGig && (
         <ApplyGigModal
+          gigId={selectedGig.id}
           gigTitle={selectedGig.title}
           startupName={selectedGig.startup}
           startupId={selectedGig.startupId}
           onClose={() => setSelectedGig(null)}
         />
+      )}
+      </>
       )}
     </div>
   );

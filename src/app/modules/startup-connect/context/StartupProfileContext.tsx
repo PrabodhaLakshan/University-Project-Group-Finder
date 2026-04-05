@@ -6,8 +6,10 @@ export type StartupProfile = {
   name: string;
   industry: string;
   about: string;
-  logo: File | null;
-  certificates: File[];
+  // logo can be an uploaded File (client-side) or a stored URL string
+  logo: File | string | null;
+  // certificates can also be Files or URL strings
+  certificates: (File | string)[];
 };
 
 type StartupProfileContextValue = {

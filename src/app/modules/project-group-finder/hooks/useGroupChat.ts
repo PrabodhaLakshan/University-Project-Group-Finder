@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import type { GroupMessage } from "@/app/modules/project-group-finder/types/chat";
 
@@ -12,6 +12,18 @@ type SendAttachment = {
 export function useGroupChat(groupId: string, currentUserId: string) {
     const [messages, setMessages] = useState<GroupMessage[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const appendMessage = useCallback((nextMessage: GroupMessage | null | undefined) => {
+        if (!nextMessage) return;
+
+        setMessages((prev) => {
+            if (prev.some((message) => message.id === nextMessage.id)) {
+                return prev;
+            }
+
+            return [...prev, nextMessage];
+        });
+    }, []);
 
     useEffect(() => {
         async function loadHistory() {
@@ -36,7 +48,7 @@ export function useGroupChat(groupId: string, currentUserId: string) {
         if (groupId) {
             loadHistory();
         }
-    }, [groupId]);
+    }, [appendMessage, groupId]);
 
     useEffect(() => {
         if (!groupId) return;
@@ -46,7 +58,7 @@ export function useGroupChat(groupId: string, currentUserId: string) {
         socket.emit("join_group", groupId);
 
         const handleReceiveMessage = (message: GroupMessage) => {
-            setMessages((prev) => [...prev, message]);
+            appendMessage(message);
         };
 
         const handleMessageDeleted = ({ messageId }: { messageId?: string }) => {
@@ -137,13 +149,8 @@ export function useGroupChat(groupId: string, currentUserId: string) {
                 return;
             }
 
-            const savedMessage: GroupMessage = data.message;
-
-            const socket = getSocket();
-            socket.emit("send_message", {
-                groupId,
-                message: savedMessage,
-            });
+            appendMessage(data.message as GroupMessage);
+            appendMessage((data.bot_message || null) as GroupMessage | null);
         } catch (error) {
             console.error("Send message error:", error);
         }
