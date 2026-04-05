@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prismaClient";
 import { requireUserFromRequest } from "@/lib/auth-server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { appendChatBotGroupMember } from "@/lib/chatBot";
 
 type Params = {
     params: Promise<{ id: string }>;
@@ -133,7 +134,7 @@ export async function GET(req: Request, { params }: Params) {
                 status: group.status,
                 max_members: group.max_members,
                 created_at: group.created_at,
-                members: group.project_group_members.map((member: any) => {
+                members: appendChatBotGroupMember(group.project_group_members.map((member: any) => {
                     let avatarUrl = undefined;
                     if (member.users.avatar_path) {
                         const { data } = supabaseAdmin.storage
@@ -152,7 +153,7 @@ export async function GET(req: Request, { params }: Params) {
                             avatarUrl,
                         },
                     };
-                }),
+                }), group.id.toString()),
             },
         });
     } catch (error) {

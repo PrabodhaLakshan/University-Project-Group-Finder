@@ -3,6 +3,14 @@ import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prismaClient";
 import { requireUserFromRequest } from "@/lib/auth-server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import {
+    CHAT_BOT_AVATAR,
+    CHAT_BOT_NAME,
+    CHAT_BOT_USER_ID,
+} from "@/lib/chatBot";
+import { isBotMentioned, stripBotMention } from "@/lib/chatMentions";
+import { getUniNexusReply } from "@/lib/uninexusBot";
+import { emitGroupMessage } from "@/lib/socketServer";
 
 type StoredAttachmentPayload = {
     text?: string;
@@ -27,6 +35,11 @@ type GroupMessageRecord = {
     created_at: Date;
 };
 
+type RecentBotContextMessage = {
+    sender_name: string | null;
+    message: string;
+};
+
 function toAvatarUrl(raw: string | null | undefined) {
     if (!raw) return null;
     const value = raw.trim();
@@ -49,6 +62,11 @@ function parseStoredPayload(rawMessage: string): StoredAttachmentPayload | null 
     } catch {
         return null;
     }
+}
+
+function getMessageTextForBot(rawMessage: string) {
+    const payload = parseStoredPayload(rawMessage);
+    return payload?.text?.trim() || rawMessage.trim();
 }
 
 async function resolveReplyPreview(replyToId: string | null | undefined): Promise<{
@@ -327,9 +345,65 @@ export async function POST(
 
         const hydrated = await hydrateMessage(newMessage as unknown as GroupMessageRecord);
 
+        await emitGroupMessage(groupId, hydrated);
+
+        if (!isBotMentioned(trimmedText)) {
+            return NextResponse.json({
+                success: true,
+                message: hydrated,
+            });
+        }
+
+        const recentMessages = await prisma.group_messages.findMany({
+            where: {
+                group_id: groupId,
+            },
+            orderBy: {
+                created_at: "desc",
+            },
+            take: 8,
+            select: {
+                sender_name: true,
+                message: true,
+            },
+        });
+
+        const group = await prisma.project_group.findUnique({
+            where: { id: BigInt(groupId) },
+            select: { name: true },
+        });
+
+        const cleanedQuestion = stripBotMention(trimmedText);
+        const botReplyText = await getUniNexusReply({
+            userQuestion: cleanedQuestion || trimmedText,
+            groupName: group?.name || null,
+            recentMessages: recentMessages
+                .reverse()
+                .map((message) => ({
+                    sender_name: message.sender_name,
+                    message: getMessageTextForBot(message.message),
+                })) satisfies RecentBotContextMessage[],
+        });
+
+        const botMessage = await prisma.group_messages.create({
+            data: {
+                id: randomUUID(),
+                group_id: groupId,
+                sender_id: CHAT_BOT_USER_ID,
+                sender_name: CHAT_BOT_NAME,
+                sender_image: CHAT_BOT_AVATAR,
+                message: botReplyText,
+                reply_to_id: newMessage.reply_to_id,
+            },
+        });
+
+        const hydratedBotMessage = await hydrateMessage(botMessage as unknown as GroupMessageRecord);
+        await emitGroupMessage(groupId, hydratedBotMessage);
+
         return NextResponse.json({
             success: true,
             message: hydrated,
+            bot_message: hydratedBotMessage,
         });
     } catch (error) {
         console.error("POST message error:", error);

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Mic, Plus, SendHorizontal, Square, Video, Image as ImageIcon, X, Reply } from "lucide-react";
 import type { GroupMessage, GroupMember } from "../../types/chat";
@@ -10,6 +11,62 @@ type PendingAttachment = {
     file: File;
     previewUrl?: string;
 };
+
+function findMentionSegmentLength(text: string, startIndex: number, members: GroupMember[]) {
+    if (text[startIndex] !== "@") return 0;
+
+    const remainingText = text.slice(startIndex);
+    const sortedMembers = [...members].sort((a, b) => b.name.length - a.name.length);
+
+    for (const member of sortedMembers) {
+        const candidate = `@${member.name}`;
+        if (
+            remainingText.toLowerCase().startsWith(candidate.toLowerCase()) &&
+            (remainingText.length === candidate.length || /\s/.test(remainingText[candidate.length] || ""))
+        ) {
+            return candidate.length;
+        }
+    }
+
+    const partialMatch = remainingText.match(/^@[^\s]+(?:\s+[^\s]+)*/);
+    return partialMatch?.[0]?.length || 0;
+}
+
+function renderHighlightedInput(text: string, members: GroupMember[]) {
+    if (!text) return null;
+
+    const parts: ReactNode[] = [];
+    let cursor = 0;
+
+    while (cursor < text.length) {
+        const mentionLength = findMentionSegmentLength(text, cursor, members);
+
+        if (mentionLength > 0) {
+            const mentionText = text.slice(cursor, cursor + mentionLength);
+            parts.push(
+                <span
+                    key={`${cursor}-${mentionText}`}
+                    className="rounded-lg bg-blue-100 px-1.5 py-0.5 font-semibold text-blue-700"
+                >
+                    {mentionText}
+                </span>
+            );
+            cursor += mentionLength;
+            continue;
+        }
+
+        const nextMentionIndex = text.indexOf("@", cursor + 1);
+        const end = nextMentionIndex === -1 ? text.length : nextMentionIndex;
+        parts.push(
+            <span key={`${cursor}-text`} className="text-slate-800">
+                {text.slice(cursor, end)}
+            </span>
+        );
+        cursor = end;
+    }
+
+    return parts;
+}
 
 export default function MessageInput({
     onSend,
@@ -240,7 +297,7 @@ export default function MessageInput({
                     />
                 )}
                 
-                <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-2 shadow-sm transition focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-400">
+                <div className="flex items-center gap-2 rounded-[28px] border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-400">
                     <div className="flex items-center gap-1">
                         <button
                             type="button"
@@ -260,42 +317,53 @@ export default function MessageInput({
                         </button>
                     </div>
 
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        placeholder="Type a message... (Use @ for mentions)"
-                        className="flex-1 bg-transparent px-3 py-2.5 text-[15px] font-medium text-slate-800 outline-none placeholder:text-slate-400 placeholder:font-normal"
-                        onKeyDown={(e) => {
-                            if (mentionQuery !== null && filteredMembers.length > 0) {
-                                if (e.key === "ArrowDown") {
-                                    e.preventDefault();
-                                    setMentionIndex(i => (i + 1) % filteredMembers.length);
-                                    return;
-                                }
-                                if (e.key === "ArrowUp") {
-                                    e.preventDefault();
-                                    setMentionIndex(i => (i - 1 + filteredMembers.length) % filteredMembers.length);
-                                    return;
-                                }
-                                if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    handleMentionSelect(filteredMembers[mentionIndex]);
-                                    return;
-                                }
-                                if (e.key === "Escape") {
-                                    setMentionQuery(null);
-                                    return;
-                                }
-                            }
+                    <div className="relative flex-1">
+                        {text ? (
+                            <div
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-0 overflow-hidden px-3 py-2.5 text-[15px] font-medium leading-6 whitespace-pre"
+                            >
+                                {renderHighlightedInput(text, members)}
+                            </div>
+                        ) : null}
 
-                            if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSend();
-                            }
-                        }}
-                    />
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="Type a message... (Use @ for mentions)"
+                            className={`relative z-10 w-full bg-transparent px-3 py-2.5 text-[15px] font-medium outline-none placeholder:text-slate-400 placeholder:font-normal ${text ? "text-transparent caret-slate-800" : "text-slate-800"}`}
+                            onKeyDown={(e) => {
+                                if (mentionQuery !== null && filteredMembers.length > 0) {
+                                    if (e.key === "ArrowDown") {
+                                        e.preventDefault();
+                                        setMentionIndex(i => (i + 1) % filteredMembers.length);
+                                        return;
+                                    }
+                                    if (e.key === "ArrowUp") {
+                                        e.preventDefault();
+                                        setMentionIndex(i => (i - 1 + filteredMembers.length) % filteredMembers.length);
+                                        return;
+                                    }
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        handleMentionSelect(filteredMembers[mentionIndex]);
+                                        return;
+                                    }
+                                    if (e.key === "Escape") {
+                                        setMentionQuery(null);
+                                        return;
+                                    }
+                                }
+
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend();
+                                }
+                            }}
+                        />
+                    </div>
 
                     {text.trim() || attachment ? (
                         <button

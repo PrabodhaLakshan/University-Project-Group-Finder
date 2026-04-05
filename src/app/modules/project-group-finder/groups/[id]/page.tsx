@@ -440,6 +440,7 @@ export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDas
     const isCurrentUserMember = group.members.some((member) => member.user_id === currentUserId);
     const currentUserRole = group.members.find(m => m.user_id === currentUserId)?.role;
     const isLeader = currentUserRole === "leader";
+    const humanMembers = group.members.filter((member) => member.role !== "bot");
 
     return (
         <div className="mx-auto max-w-5xl px-4 py-8">
@@ -680,14 +681,21 @@ export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDas
                         <div className="mb-4 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-slate-900">Members</h3>
                             <span className="text-sm font-medium text-slate-500">
-                                {group.members.length} / {group.max_members}
+                                {humanMembers.length} / {group.max_members}
                             </span>
                         </div>
 
                         <ul className="space-y-4">
                             {group.members.map((member) => (
                                 <li key={member.id} className="flex items-center gap-3">
-                                    <div className="relative h-10 w-10 shrink-0 cursor-pointer rounded-full border border-slate-200 bg-slate-100 overflow-hidden" onClick={() => openProfile(member)}>
+                                    <div
+                                        className={`relative h-10 w-10 shrink-0 rounded-full border border-slate-200 bg-slate-100 overflow-hidden ${member.role === "bot" ? "" : "cursor-pointer"}`}
+                                        onClick={() => {
+                                            if (member.role !== "bot") {
+                                                openProfile(member);
+                                            }
+                                        }}
+                                    >
                                         {member.user.avatarUrl ? (
                                             <Image
                                                 src={member.user.avatarUrl}
@@ -701,7 +709,14 @@ export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDas
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => openProfile(member)}>
+                                    <div
+                                        className={`flex-1 min-w-0 ${member.role === "bot" ? "" : "cursor-pointer"}`}
+                                        onClick={() => {
+                                            if (member.role !== "bot") {
+                                                openProfile(member);
+                                            }
+                                        }}
+                                    >
                                         <p className="truncate text-sm font-semibold text-slate-900 hover:text-blue-600 transition">
                                             {member.user.name}
                                             {member.user_id === currentUserId && <span className="ml-1 text-slate-400 font-normal">(You)</span>}
@@ -711,7 +726,11 @@ export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDas
                                         </p>
                                     </div>
                                     <div className="shrink-0 text-right flex items-center gap-2">
-                                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${member.role === "leader" ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
+                                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${member.role === "leader"
+                                            ? "bg-purple-100 text-purple-700"
+                                            : member.role === "bot"
+                                                ? "bg-emerald-100 text-emerald-700"
+                                                : "bg-slate-100 text-slate-600"
                                             }`}>
                                             {member.role}
                                         </span>
@@ -720,7 +739,7 @@ export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDas
                             ))}
                         </ul>
 
-                        {group.members.length < group.max_members && (
+                        {humanMembers.length < group.max_members && (
                             <button
                                 onClick={() => router.push("/project-group-finder/search")}
                                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50 py-3 text-sm font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
@@ -765,7 +784,7 @@ export default function GroupDashboardPage({ groupId, onLeaveSuccess }: GroupDas
                                 <div className="border-t border-slate-100 pt-4">
                                     <label className="text-sm font-semibold text-slate-800 mb-3 block">Manage Roles</label>
                                     <ul className="space-y-3">
-                                        {group.members.map((member) => (
+                                        {humanMembers.map((member) => (
                                             <li key={member.id} className="flex items-center justify-between">
                                                 <span className="text-sm text-slate-700 truncate mr-2">{member.user.name}</span>
                                                 {member.user_id !== currentUserId ? (
