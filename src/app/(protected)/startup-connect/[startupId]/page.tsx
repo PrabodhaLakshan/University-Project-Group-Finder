@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { COMPANY_DETAILS } from '@/app/modules/startup-connect/constants/company-details';
 import { CompanyProfileReviewCta } from '@/app/modules/startup-connect/components/CompanyProfileReviewCta';
+import { StartupRecentWorksSection } from '@/app/modules/startup-connect/components/StartupRecentWorksSection';
 import { COMPANY_UUID_RE } from '@/app/api/startup-connect/_shared';
 import { prisma } from '@/lib/prismaClient';
 
@@ -106,7 +107,7 @@ export default async function StartupDetailsPage({ params }: StartupDetailsPageP
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-32 top-20 h-72 w-72 rounded-full bg-blue-400/15 blur-3xl" />
         <div className="absolute -right-24 top-40 h-96 w-96 rounded-full bg-orange-400/10 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-64 w-[120%] -translate-x-1/2 bg-gradient-to-t from-slate-50 to-transparent" />
+        <div className="absolute bottom-0 left-1/2 h-64 w-[120%] -translate-x-1/2 bg-linear-to-t from-slate-50 to-transparent" />
       </div>
 
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
@@ -119,7 +120,7 @@ export default async function StartupDetailsPage({ params }: StartupDetailsPageP
 
         {/* Hero card */}
         <div className="relative overflow-hidden rounded-[2rem] border border-white/60 bg-white/90 shadow-[0_32px_80px_-24px_rgba(30,64,175,0.25)] backdrop-blur-sm sm:rounded-[2.5rem]">
-          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700" />
+          <div className="absolute inset-x-0 top-0 h-32 bg-linear-to-br from-blue-600 via-blue-600 to-indigo-700" />
           <div className="absolute right-6 top-6 hidden sm:block">
             <span className="rounded-full bg-white/15 px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] text-white/90">
               Startup profile
@@ -130,7 +131,7 @@ export default async function StartupDetailsPage({ params }: StartupDetailsPageP
             <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-end">
                 <div className="relative">
-                  <div className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-orange-400/40 to-blue-500/30 blur-sm" />
+                  <div className="absolute -inset-1 rounded-3xl bg-linear-to-br from-orange-400/40 to-blue-500/30 blur-sm" />
                   <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-[1.35rem] border-4 border-white bg-white shadow-xl shadow-slate-200/80 sm:h-28 sm:w-28">
                     {company.logoUrl ? (
                       <img
@@ -179,9 +180,9 @@ export default async function StartupDetailsPage({ params }: StartupDetailsPageP
                     </div>
                   </div>
                 )}
-                <Link href="/startup-connect/my-projects" className="w-full sm:w-auto">
-                  <Button className="h-12 w-full rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 font-black text-[10px] uppercase tracking-widest text-white shadow-lg shadow-orange-200/50 hover:from-orange-600 hover:to-orange-700 sm:w-auto sm:px-8">
-                    Portfolio &amp; work
+                <Link href="#recent-works" className="w-full sm:w-auto">
+                  <Button className="h-12 w-full rounded-2xl bg-linear-to-r from-orange-500 to-orange-600 font-black text-[10px] uppercase tracking-widest text-white shadow-lg shadow-orange-200/50 hover:from-orange-600 hover:to-orange-700 sm:w-auto sm:px-8">
+                    Recent works
                     <ExternalLink size={14} className="ml-2" />
                   </Button>
                 </Link>
@@ -227,6 +228,9 @@ export default async function StartupDetailsPage({ params }: StartupDetailsPageP
           </div>
         </div>
 
+        {/* Recent works (public portfolio) */}
+        <StartupRecentWorksSection companyId={company.id} />
+
         {/* Reviews */}
         <div className="mt-10">
           <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -247,7 +251,7 @@ export default async function StartupDetailsPage({ params }: StartupDetailsPageP
           </div>
 
           {company.reviews.length === 0 ? (
-            <div className="rounded-[1.75rem] border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-8 text-center sm:p-10">
+            <div className="rounded-[1.75rem] border border-slate-100 bg-linear-to-br from-slate-50 to-white p-8 text-center sm:p-10">
               <p className="text-sm font-black text-slate-700">No public reviews yet</p>
               <p className="mx-auto mt-2 max-w-sm text-xs font-medium text-slate-500">
                 Completed collaborations can leave feedback here — check back soon.
@@ -262,7 +266,7 @@ export default async function StartupDetailsPage({ params }: StartupDetailsPageP
                 >
                   <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-orange-50 opacity-0 transition-opacity group-hover:opacity-100" />
                   <div className="relative flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 text-sm font-black text-slate-600 ring-1 ring-slate-100">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-slate-100 to-slate-50 text-sm font-black text-slate-600 ring-1 ring-slate-100">
                       {review.customer.charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">

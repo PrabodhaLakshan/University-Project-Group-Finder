@@ -87,7 +87,7 @@ export async function GET(req: Request) {
 
     try {
       gigs = await prisma.gigs.findMany({
-        where: { company_id: companyId },
+        where: { company_id: companyId, NOT: { status: "CLOSED" } },
         orderBy: { created_at: "desc" },
         select: {
           id: true,
@@ -103,7 +103,7 @@ export async function GET(req: Request) {
       console.error("STARTUP_DASHBOARD_GIGS_ERROR:", gigsErr);
       try {
         const rows = await prisma.gigs.findMany({
-          where: { company_id: companyId },
+          where: { company_id: companyId, NOT: { status: "CLOSED" } },
           select: {
             id: true,
             title: true,

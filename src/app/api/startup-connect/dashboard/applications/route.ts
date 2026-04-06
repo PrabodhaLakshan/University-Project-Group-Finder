@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     let gigs: any[] = [];
     try {
       gigs = await prisma.gigs.findMany({
-        where: { company_id: companyId },
+        where: { company_id: companyId, NOT: { status: "CLOSED" } },
         orderBy: { created_at: "desc" },
         select: {
           id: true,
@@ -58,7 +58,7 @@ export async function GET(req: Request) {
 
       // Fallback for older databases that might be missing newer columns
       const fallback = await prisma.gigs.findMany({
-        where: { company_id: companyId },
+        where: { company_id: companyId, NOT: { status: "CLOSED" } },
         orderBy: { created_at: "desc" },
         select: {
           id: true,
