@@ -22,10 +22,7 @@ export async function GET(req: Request) {
       where: {
         tutor_student_id: decoded.student_id,
       },
-      orderBy: [
-        { slot_date: "asc" },
-        { slot_time: "asc" },
-      ],
+      orderBy: [{ slot_date: "asc" }, { slot_time: "asc" }],
       include: {
         tutor_bookings: true,
       },
@@ -48,7 +45,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { date, time, subject } = body;
+    const { date, time, subject, location } = body;
 
     if (!date || !time || !subject?.trim()) {
       return new Response("Date, time, and subject are required", { status: 400 });
@@ -65,7 +62,9 @@ export async function POST(req: Request) {
     }
 
     if (date > maxDateStr) {
-      return new Response("Please select a date within one month from today", { status: 400 });
+      return new Response("Please select a date within one month from today", {
+        status: 400,
+      });
     }
 
     const existingTutor = await prisma.tutors.findUnique({
@@ -84,6 +83,7 @@ export async function POST(req: Request) {
         slot_date: new Date(date),
         slot_time: new Date(`1970-01-01T${time}:00`),
         subject: subject.trim(),
+        location: location?.trim() || null,
         is_booked: false,
       },
     });

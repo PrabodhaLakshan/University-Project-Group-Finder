@@ -14,16 +14,32 @@ export async function GET(_: Request, context: Context) {
       where: {
         id: tutorId,
       },
-      include: {
-        users: true,
-        tutor_slots: {
-          where: {
-            is_booked: false,
+      select: {
+        id: true,
+        student_id: true,
+        bio: true,
+        subjects: true,
+        language: true,
+        expertise: true,
+        ratings: true,
+        reviews_count: true,
+        users: {
+          select: {
+            name: true,
+            year: true,
+            semester: true,
           },
-          orderBy: [
-            { slot_date: "asc" },
-            { slot_time: "asc" },
-          ],
+        },
+        tutor_slots: {
+          orderBy: [{ slot_date: "asc" }, { slot_time: "asc" }],
+          select: {
+            id: true,
+            subject: true,
+            slot_date: true,
+            slot_time: true,
+            is_booked: true,
+            location: true,
+          },
         },
       },
     });
@@ -32,22 +48,16 @@ export async function GET(_: Request, context: Context) {
       return new Response("Tutor not found", { status: 404 });
     }
 
-    const user = tutor.users as any;
+    const user = tutor.users;
 
     const formattedTutor = {
       id: tutor.id,
       student_id: tutor.student_id,
-      name:
-        user?.full_name ||
-        user?.name ||
-        user?.student_name ||
-        user?.first_name ||
-        tutor.student_id,
+      name: user?.name || tutor.student_id,
       yearAndSem:
-        user?.yearAndSem ||
-        user?.year_sem ||
-        user?.academic_level ||
-        "University Student",
+        user?.year && user?.semester
+          ? `Year ${user.year} - Semester ${user.semester}`
+          : "University Student",
       bio: tutor.bio,
       subjects: tutor.subjects ?? [],
       language: tutor.language ?? [],
@@ -60,6 +70,7 @@ export async function GET(_: Request, context: Context) {
         slot_date: slot.slot_date,
         slot_time: slot.slot_time,
         is_booked: slot.is_booked,
+        location: slot.location,
       })),
     };
 

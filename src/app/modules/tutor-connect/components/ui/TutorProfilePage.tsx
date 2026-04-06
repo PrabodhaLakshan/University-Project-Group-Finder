@@ -15,6 +15,7 @@ import {
   Send,
   X,
   CheckCircle2,
+  MapPin,
 } from "lucide-react";
 import { getToken } from "@/lib/auth";
 
@@ -24,6 +25,7 @@ type TutorSlot = {
   slot_date: string;
   slot_time: string;
   is_booked: boolean | null;
+  location: string | null;
 };
 
 type TutorProfile = {
@@ -40,13 +42,22 @@ type TutorProfile = {
   slots: TutorSlot[];
 };
 
+type EligibleFeedbackBooking = {
+  booking_id: string;
+  status: string | null;
+  subject: string;
+  slot_date: string;
+  slot_time: string;
+  created_at?: string | null;
+};
+
 type Props = {
   tutorId: string;
 };
 
 type FeedbackErrors = {
   rating?: string;
-  subject?: string;
+  booking?: string;
   comment?: string;
 };
 
@@ -66,14 +77,20 @@ export default function TutorProfilePage({ tutorId }: Props) {
   const [bookingError, setBookingError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState("");
   const [bookingSlotId, setBookingSlotId] = useState<string | null>(null);
+  const [waitlistSlotId, setWaitlistSlotId] = useState<string | null>(null);
+
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [feedbackSubject, setFeedbackSubject] = useState("");
+  const [selectedFeedbackBookingId, setSelectedFeedbackBookingId] = useState("");
   const [feedbackComment, setFeedbackComment] = useState("");
   const [feedbackSuccess, setFeedbackSuccess] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [feedbackErrors, setFeedbackErrors] = useState<FeedbackErrors>({});
+  const [eligibleFeedbackBookings, setEligibleFeedbackBookings] = useState<
+    EligibleFeedbackBooking[]
+  >([]);
+  const [loadingEligibleFeedbacks, setLoadingEligibleFeedbacks] = useState(false);
 
   useEffect(() => {
     const loadTutor = async () => {
@@ -106,10 +123,61 @@ export default function TutorProfilePage({ tutorId }: Props) {
     loadTutor();
   }, [tutorId]);
 
+  const loadEligibleFeedbackBookings = async () => {
+    try {
+      setLoadingEligibleFeedbacks(true);
+      setFeedbackErrors({});
+
+      const token = getToken();
+
+      if (!token) {
+        setFeedbackErrors({
+          comment: "You must be logged in to give feedback.",
+        });
+        return;
+      }
+
+      if (!tutor?.student_id) return;
+
+      const res = await fetch(
+        `/api/tutor-connect/feedback/eligible/${tutor.student_id}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) {
+        const message = await res.text();
+        setFeedbackErrors({
+          comment: message || "Failed to load eligible sessions.",
+        });
+        return;
+      }
+
+      const data: EligibleFeedbackBooking[] = await res.json();
+      setEligibleFeedbackBookings(data);
+
+      if (data.length > 0) {
+        setSelectedFeedbackBookingId(data[0].booking_id);
+      } else {
+        setSelectedFeedbackBookingId("");
+      }
+    } catch (err) {
+      console.error("Load eligible feedback bookings error:", err);
+      setFeedbackErrors({
+        comment: "Something went wrong while loading eligible sessions.",
+      });
+    } finally {
+      setLoadingEligibleFeedbacks(false);
+    }
+  };
+
   const gradient = useMemo(() => {
-    const code = tutorId
-      .split("")
-      .reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+    const code = tutorId.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
     return gradientClasses[code % gradientClasses.length];
   }, [tutorId]);
 
@@ -162,13 +230,15 @@ export default function TutorProfilePage({ tutorId }: Props) {
         return;
       }
 
-      setBookingSuccess("Booking created successfully.");
+      setBookingSuccess("Booking created successfully. Waiting for tutor approval.");
 
       setTutor((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
-          slots: prev.slots.filter((slot) => slot.id !== slotId),
+          slots: prev.slots.map((slot) =>
+            slot.id === slotId ? { ...slot, is_booked: true } : slot
+          ),
         };
       });
     } catch (err) {
@@ -179,19 +249,61 @@ export default function TutorProfilePage({ tutorId }: Props) {
     }
   };
 
+  const handleJoinWaitlist = async (slotId: string) => {
+    try {
+      setBookingError("");
+      setBookingSuccess("");
+      setWaitlistSlotId(slotId);
+
+      const token = getToken();
+
+      if (!token) {
+        setBookingError("You must be logged in to join the waitlist.");
+        setWaitlistSlotId(null);
+        return;
+      }
+
+      const res = await fetch("/api/tutor-connect/waitlist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          slot_id: slotId,
+        }),
+      });
+
+      if (!res.ok) {
+        const message = await res.text();
+        setBookingError(message || "Failed to join waitlist");
+        setWaitlistSlotId(null);
+        return;
+      }
+
+      setBookingSuccess("You have joined the waitlist successfully.");
+    } catch (err) {
+      console.error("Join waitlist error:", err);
+      setBookingError("Something went wrong while joining the waitlist.");
+    } finally {
+      setWaitlistSlotId(null);
+    }
+  };
+
   const resetFeedbackForm = () => {
     setFeedbackRating(0);
     setHoveredRating(0);
-    setFeedbackSubject("");
+    setSelectedFeedbackBookingId("");
     setFeedbackComment("");
     setFeedbackErrors({});
+    setFeedbackSuccess("");
     setIsSubmittingFeedback(false);
+    setEligibleFeedbackBookings([]);
   };
 
   const closeFeedbackForm = () => {
     if (isSubmittingFeedback) return;
     setShowFeedbackForm(false);
-    setFeedbackSuccess("");
     resetFeedbackForm();
   };
 
@@ -202,8 +314,8 @@ export default function TutorProfilePage({ tutorId }: Props) {
       errors.rating = "Please select a rating.";
     }
 
-    if (!feedbackSubject.trim()) {
-      errors.subject = "Please choose a subject.";
+    if (!selectedFeedbackBookingId) {
+      errors.booking = "Please choose a completed or confirmed session.";
     }
 
     const trimmedComment = feedbackComment.trim();
@@ -233,21 +345,52 @@ export default function TutorProfilePage({ tutorId }: Props) {
     setIsSubmittingFeedback(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const token = getToken();
+
+      if (!token) {
+        setFeedbackErrors({
+          comment: "You must be logged in to submit feedback.",
+        });
+        return;
+      }
+
+      const res = await fetch("/api/tutor-connect/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          booking_id: selectedFeedbackBookingId,
+          comment: feedbackComment.trim(),
+          rating: feedbackRating,
+        }),
+      });
+
+      if (!res.ok) {
+        const message = await res.text();
+        setFeedbackErrors({
+          comment: message || "Failed to submit feedback.",
+        });
+        return;
+      }
 
       setFeedbackRating(0);
       setHoveredRating(0);
-      setFeedbackSubject("");
+      setSelectedFeedbackBookingId("");
       setFeedbackComment("");
       setFeedbackErrors({});
       setFeedbackSuccess("Your feedback has been recorded successfully.");
 
       setTimeout(() => {
         setShowFeedbackForm(false);
-        setFeedbackSuccess("");
+        resetFeedbackForm();
       }, 1800);
     } catch (err) {
       console.error("Feedback submit error:", err);
+      setFeedbackErrors({
+        comment: "Something went wrong while submitting feedback.",
+      });
     } finally {
       setIsSubmittingFeedback(false);
     }
@@ -304,10 +447,11 @@ export default function TutorProfilePage({ tutorId }: Props) {
 
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         setFeedbackSuccess("");
                         setFeedbackErrors({});
                         setShowFeedbackForm(true);
+                        await loadEligibleFeedbackBookings();
                       }}
                       className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/15 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/20"
                     >
@@ -421,7 +565,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
                       </div>
                       <div className="flex items-center gap-2 text-slate-700">
                         <Clock className="w-4 h-4 text-blue-500" />
-                        <span>{tutor.slots.length} available slot(s)</span>
+                        <span>{tutor.slots.length} total slot(s)</span>
                       </div>
                     </div>
                   </div>
@@ -445,10 +589,10 @@ export default function TutorProfilePage({ tutorId }: Props) {
               <div className="flex items-center justify-between gap-4 mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-800">
-                    Available Slots
+                    Tutor Slots
                   </h2>
                   <p className="text-slate-500 text-sm mt-1">
-                    Choose a suitable time and create your booking.
+                    Available slots can be booked. Booked slots support waitlist joining.
                   </p>
                 </div>
 
@@ -460,10 +604,10 @@ export default function TutorProfilePage({ tutorId }: Props) {
               {tutor.slots.length === 0 ? (
                 <div className="bg-slate-50 rounded-[20px] border border-slate-100 p-10 text-center">
                   <h3 className="text-lg font-semibold text-slate-800 mb-2">
-                    No available slots
+                    No slots found
                   </h3>
                   <p className="text-slate-500">
-                    This tutor has no open sessions right now.
+                    This tutor has not created any sessions yet.
                   </p>
                 </div>
               ) : (
@@ -474,7 +618,7 @@ export default function TutorProfilePage({ tutorId }: Props) {
                       className="group bg-slate-50 border border-slate-100 rounded-[20px] p-5 hover:bg-white hover:shadow-sm transition-all"
                     >
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
                           <div className="flex items-center p-3 rounded-[14px] bg-white border border-slate-100">
                             <BookOpen className="w-4 h-4 text-blue-500 mr-2.5" />
                             <div>
@@ -510,22 +654,48 @@ export default function TutorProfilePage({ tutorId }: Props) {
                               </p>
                             </div>
                           </div>
+
+                          <div className="flex items-center p-3 rounded-[14px] bg-white border border-slate-100">
+                            <MapPin className="w-4 h-4 text-blue-500 mr-2.5" />
+                            <div>
+                              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                                Location
+                              </p>
+                              <p className="text-sm font-semibold text-slate-700">
+                                {slot.location?.trim() || "Not specified"}
+                              </p>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row justify-end gap-3">
-                          <button
-                            type="button"
-                            className="min-w-[150px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-5 py-3 rounded-xl text-sm font-bold transition-all border border-blue-200 shadow-sm"
+                        <div className="flex flex-col items-start sm:items-end gap-3">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                              slot.is_booked
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            }`}
                           >
-                            Join Waitlist
-                          </button>
-                          <button
-                            onClick={() => handleBookNow(slot.id)}
-                            disabled={bookingSlotId === slot.id}
-                            className="min-w-[150px] bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow-md disabled:opacity-60"
-                          >
-                            {bookingSlotId === slot.id ? "Booking..." : "Book Now"}
-                          </button>
+                            {slot.is_booked ? "Booked" : "Available"}
+                          </span>
+
+                          {slot.is_booked ? (
+                            <button
+                              onClick={() => handleJoinWaitlist(slot.id)}
+                              disabled={waitlistSlotId === slot.id}
+                              className="min-w-[170px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-5 py-3 rounded-xl text-sm font-bold transition-all border border-blue-200 shadow-sm disabled:opacity-60"
+                            >
+                              {waitlistSlotId === slot.id ? "Joining..." : "Join Waitlist"}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleBookNow(slot.id)}
+                              disabled={bookingSlotId === slot.id}
+                              className="min-w-[170px] bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow-md disabled:opacity-60"
+                            >
+                              {bookingSlotId === slot.id ? "Booking..." : "Book Now"}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -633,56 +803,65 @@ export default function TutorProfilePage({ tutorId }: Props) {
                       )}
                     </div>
 
-                    <div className="rounded-[20px] border border-blue-100 bg-gradient-to-br from-blue-50 to-sky-50 p-4">
-                      <p className="text-sm font-bold text-slate-700">Quick notes</p>
-                      <div className="mt-3 space-y-2.5 text-sm text-slate-600">
-                        <div className="rounded-xl border border-white/70 bg-white/70 px-3.5 py-2.5">
-                          Clear explanations
-                        </div>
-                        <div className="rounded-xl border border-white/70 bg-white/70 px-3.5 py-2.5">
-                          Helpful examples
-                        </div>
-                        <div className="rounded-xl border border-white/70 bg-white/70 px-3.5 py-2.5">
-                          Friendly and engaging session
-                        </div>
+                    <div className="rounded-[24px] border border-blue-100 bg-gradient-to-br from-blue-50 to-sky-50 p-5">
+                      <p className="text-sm font-bold text-slate-700">Eligible sessions</p>
+                      <div className="mt-4 space-y-3 text-sm text-slate-600">
+                        {loadingEligibleFeedbacks ? (
+                          <div className="rounded-2xl border border-white/70 bg-white/70 px-4 py-3">
+                            Loading sessions...
+                          </div>
+                        ) : eligibleFeedbackBookings.length > 0 ? (
+                          eligibleFeedbackBookings.slice(0, 3).map((item) => (
+                            <div
+                              key={item.booking_id}
+                              className="rounded-2xl border border-white/70 bg-white/70 px-4 py-3"
+                            >
+                              {item.subject} • {formatDate(item.slot_date)} • {formatTime(item.slot_time)}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="rounded-2xl border border-white/70 bg-white/70 px-4 py-3">
+                            No eligible sessions yet
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <label
-                      htmlFor="feedback-subject"
+                      htmlFor="feedback-booking"
                       className="text-sm font-semibold text-slate-700"
                     >
-                      Subject
+                      Session
                     </label>
                     <select
-                      id="feedback-subject"
-                      value={feedbackSubject}
+                      id="feedback-booking"
+                      value={selectedFeedbackBookingId}
                       onChange={(e) => {
-                        setFeedbackSubject(e.target.value);
+                        setSelectedFeedbackBookingId(e.target.value);
                         setFeedbackErrors((prev) => ({
                           ...prev,
-                          subject: undefined,
+                          booking: undefined,
                         }));
                       }}
-                      className={`w-full rounded-[16px] px-4 py-2.5 text-sm font-medium outline-none transition-all focus:bg-white focus:ring-4 ${
-                        feedbackErrors.subject
+                      className={`w-full rounded-[18px] px-4 py-3 text-sm font-medium outline-none transition-all focus:bg-white focus:ring-4 ${
+                        feedbackErrors.booking
                           ? "border border-red-300 bg-red-50 text-slate-700 focus:border-red-400 focus:ring-red-500/10"
                           : "border border-slate-200 bg-slate-50 text-slate-700 focus:border-blue-400 focus:ring-blue-500/10"
                       }`}
                     >
-                      <option value="">Choose a subject</option>
-                      {tutor.subjects.map((subject) => (
-                        <option key={subject} value={subject}>
-                          {subject}
+                      <option value="">Choose a session</option>
+                      {eligibleFeedbackBookings.map((item) => (
+                        <option key={item.booking_id} value={item.booking_id}>
+                          {item.subject} - {formatDate(item.slot_date)} - {formatTime(item.slot_time)}
                         </option>
                       ))}
                     </select>
 
-                    {feedbackErrors.subject && (
+                    {feedbackErrors.booking && (
                       <p className="text-sm font-medium text-red-500">
-                        {feedbackErrors.subject}
+                        {feedbackErrors.booking}
                       </p>
                     )}
                   </div>
@@ -748,9 +927,15 @@ export default function TutorProfilePage({ tutorId }: Props) {
                       </button>
                       <button
                         type="submit"
-                        disabled={isSubmittingFeedback}
-                        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-all ${
-                          isSubmittingFeedback
+                        disabled={
+                          isSubmittingFeedback ||
+                          loadingEligibleFeedbacks ||
+                          eligibleFeedbackBookings.length === 0
+                        }
+                        className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition-all ${
+                          isSubmittingFeedback ||
+                          loadingEligibleFeedbacks ||
+                          eligibleFeedbackBookings.length === 0
                             ? "cursor-not-allowed bg-blue-300"
                             : "bg-blue-600 shadow-lg shadow-blue-200 hover:bg-blue-700"
                         }`}
