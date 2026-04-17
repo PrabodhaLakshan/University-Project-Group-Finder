@@ -98,11 +98,13 @@ export const Navbar = () => {
     pathname.startsWith('/startup-connect/talent-pool') ||
     pathname.startsWith('/startup-connect/dashboard') ||
     pathname.startsWith('/startup-connect/applicants') ||
+    pathname.startsWith('/startup-connect/gig-status') ||
     pathname.startsWith('/dashboard/startup');
   const startupLandingNavbarRoutes = [
     '/startup-connect',
     '/startup-connect/about',
     '/startup-connect/browse-gigs',
+    '/startup-connect/saved-gigs',
     '/startup-connect/my-projects',
     '/startup-connect/my-collaborations',
   ];
@@ -110,9 +112,11 @@ export const Navbar = () => {
     'about',
     'applicants',
     'browse-gigs',
+    'saved-gigs',
     'dashboard',
     'my-projects',
     'my-collaborations',
+    'gig-status',
     'notifications',
     'talent-pool',
   ]);

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prismaClient";
 import { formatDate, normalizeString, resolveCompanyId } from "../_shared";
+import { verifyToken } from "@/lib/auth";
+import { notifyBookmarkedUsersAboutGig } from "../_bookmarkAlerts";
 
 export const runtime = "nodejs";
 
@@ -60,6 +62,8 @@ export async function POST(req: Request) {
         ? body.budget
         : parseFloat(normalizeString(body.budget).replace(/[^0-9.]/g, ""));
     const budget = Number.isFinite(budgetValue) && budgetValue > 0 ? budgetValue : null;
+    const authHeader = req.headers.get("authorization") || undefined;
+    const payload = verifyToken(authHeader);
 
     if (!title || !companyId) {
       return NextResponse.json(
@@ -67,6 +71,12 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const company = await prisma.companies.findUnique({
+      where: { id: companyId },
+      select: { name: true },
+    });
+    const companyName = company?.name?.trim() || "A startup";
 
     let created: {
       id: string;
@@ -129,6 +139,16 @@ export async function POST(req: Request) {
         throw err;
       }
     }
+
+    await notifyBookmarkedUsersAboutGig({
+      gigId: created.id,
+      title: created.title,
+      description: created.description,
+      companyId: created.company_id,
+      companyName,
+      skills,
+      senderUserId: payload?.userId,
+    });
 
     return NextResponse.json({
       success: true,

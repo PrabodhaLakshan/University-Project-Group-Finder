@@ -7,6 +7,7 @@ import {
   resolveCompanyIdForReviews,
   resolveOwnedCompanyForReviews,
 } from "../_shared";
+import { hasGigCompletionApproval } from "../_completion";
 
 export const runtime = "nodejs";
 
@@ -177,6 +178,20 @@ export async function POST(req: Request) {
     }
     if (company.owner_id === payload.userId) {
       return NextResponse.json({ success: false, error: "You cannot review your own company." }, { status: 403 });
+    }
+
+    // Student can submit a review only after the founder marks the collaboration as completed.
+    const completionApproved = await hasGigCompletionApproval(payload.userId, company.id);
+
+    if (!completionApproved) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "You can review this startup only after the founder marks your collaboration as completed.",
+        },
+        { status: 403 }
+      );
     }
 
     const comment = normalizeString(body.comment);

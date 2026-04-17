@@ -12,7 +12,7 @@ type MatchTalent = {
   rating: string;
   skills: string[];
 };
-
+//make all words simple in skills
 function normalizeSkill(skill: string) {
   return skill.trim().toLowerCase();
 }

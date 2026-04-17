@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prismaClient";
 import { verifyToken } from "@/lib/auth";
 import { normalizeString, resolveCompanyId } from "../../_shared";
 import { recordStartupCollaboration } from "../../_collaborations";
+import { getGigCompletionApproval, recordGigCompletionApproval } from "../../_completion";
 
 export const runtime = "nodejs";
 
@@ -62,6 +63,7 @@ export async function PATCH(req: Request, context: RouteContext) {
     const prevUpper = existing.status.toUpperCase();
     const wasAlreadyAccepted = prevUpper === "ACCEPTED";
     const wasAlreadyRejected = prevUpper === "REJECTED";
+    const wasAlreadyReviewed = await getGigCompletionApproval(applicationId);
 
     let updated;
     if (status === "REJECTED") {
@@ -69,6 +71,22 @@ export async function PATCH(req: Request, context: RouteContext) {
         where: { id: applicationId },
       });
       updated = null;
+    } else if (status === "REVIEWED") {
+      if (prevUpper !== "ACCEPTED") {
+        return NextResponse.json(
+          { success: false, error: "Only accepted applications can be marked as done." },
+          { status: 400 }
+        );
+      }
+
+      await recordGigCompletionApproval({
+        applicationId,
+        userId: existing.user_id,
+        companyId: existing.gigs.company_id,
+        gigId: existing.gig_id,
+      });
+
+      updated = existing;
     } else {
       updated = await prisma.gig_applications.update({
         where: { id: applicationId },
@@ -135,7 +153,35 @@ export async function PATCH(req: Request, context: RouteContext) {
       }
     }
 
-    return NextResponse.json({ success: true, data: updated });
+    if (status === "REVIEWED" && !wasAlreadyReviewed) {
+      const message = `${companyName} marked your work for "${gigTitle}" as completed. You can now submit your startup review.`;
+      try {
+        await prisma.app_notifications.create({
+          data: {
+            id: randomUUID(),
+            receiver_id: existing.user_id,
+            sender_id: founder?.userId ?? null,
+            type: "collaboration_completed",
+            title: "Work marked as completed",
+            message: message.slice(0, 500),
+            meta: {
+              applicationId,
+              gigId: existing.gig_id,
+              gigTitle,
+              companyName,
+            },
+          },
+        });
+      } catch (notifyErr) {
+        console.error("APPLICATION_REVIEWED_NOTIFY_ERROR:", notifyErr);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: updated,
+      isCompletionApproved: status === "REVIEWED" ? true : wasAlreadyReviewed,
+    });
   } catch (error) {
     console.error("STARTUP_APPLICATION_PATCH_ERROR:", error);
     const message = error instanceof Error ? error.message : "Failed to update application";

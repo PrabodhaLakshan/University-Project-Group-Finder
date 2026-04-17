@@ -1,10 +1,11 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search, Filter, DollarSign, Clock, ArrowRight, Calendar } from 'lucide-react';
+import { Search, Filter, DollarSign, Clock, ArrowRight, Calendar, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApplyGigModal } from './ApplyGigModal';
+import { getToken } from '@/lib/auth';
 
 export type BrowseGigCard = {
   id: string;
@@ -27,6 +28,9 @@ export const BrowseGigsView = () => {
   const [gigs, setGigs] = useState<BrowseGigCard[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [bookmarkBusyId, setBookmarkBusyId] = useState<string | null>(null);
+  const [bookmarkError, setBookmarkError] = useState<string | null>(null);
 
   const [selectedGig, setSelectedGig] = useState<BrowseGigCard | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,6 +61,75 @@ export const BrowseGigsView = () => {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    const loadBookmarks = async () => {
+      const token = getToken();
+      if (!token) {
+        setBookmarkedIds(new Set());
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/startup-connect/bookmarks', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) return;
+
+        const gigIds = Array.isArray(json.gigIds) ? json.gigIds : [];
+        setBookmarkedIds(new Set(gigIds.filter((id): id is string => typeof id === 'string')));
+      } catch {
+        // Keep browsing usable even when bookmarks fail to load.
+      }
+    };
+
+    loadBookmarks();
+  }, []);
+
+  const toggleBookmark = async (gigId: string) => {
+    const token = getToken();
+    if (!token) {
+      setBookmarkError('Please login to save gigs.');
+      return;
+    }
+
+    const isSaved = bookmarkedIds.has(gigId);
+    setBookmarkBusyId(gigId);
+    setBookmarkError(null);
+
+    try {
+      const res = await fetch('/api/startup-connect/bookmarks', {
+        method: isSaved ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ gigId }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to update bookmark');
+      }
+
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (isSaved) {
+          next.delete(gigId);
+        } else {
+          next.add(gigId);
+        }
+        return next;
+      });
+    } catch (e) {
+      setBookmarkError(e instanceof Error ? e.message : 'Bookmark update failed');
+    } finally {
+      setBookmarkBusyId(null);
+    }
+  };
 
   const categories = useMemo(
     () => ['All', ...Array.from(new Set(gigs.map((g) => g.category)))],
@@ -134,6 +207,12 @@ export const BrowseGigsView = () => {
         </div>
       )}
 
+      {bookmarkError && (
+        <div className="mb-8 rounded-3xl border border-orange-100 bg-orange-50 px-6 py-4 text-center text-xs font-bold text-orange-700">
+          {bookmarkError}
+        </div>
+      )}
+
       {showFilters && (
         <div className="mb-8 p-5 rounded-3xl border border-slate-100 bg-slate-50/60">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -196,7 +275,22 @@ export const BrowseGigsView = () => {
               <div className="bg-blue-50 text-blue-700 text-[9px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider">
                 {gig.category}
               </div>
-              <span className="text-orange-500 font-black text-[10px] uppercase italic">{gig.type}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void toggleBookmark(gig.id)}
+                  disabled={bookmarkBusyId === gig.id}
+                  className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-[9px] font-black uppercase tracking-wider transition-colors ${
+                    bookmarkedIds.has(gig.id)
+                      ? 'border-amber-300 bg-amber-100 text-amber-700'
+                      : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700'
+                  } disabled:opacity-60`}
+                >
+                  <Bookmark size={12} className={bookmarkedIds.has(gig.id) ? 'fill-current' : ''} />
+                  {bookmarkedIds.has(gig.id) ? 'Saved' : 'Save'}
+                </button>
+                <span className="text-orange-500 font-black text-[10px] uppercase italic">{gig.type}</span>
+              </div>
             </div>
 
             <h3 className="text-lg font-black text-slate-900 uppercase leading-tight mb-1 group-hover:text-blue-700 transition-colors">

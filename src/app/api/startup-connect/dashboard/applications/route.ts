@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prismaClient";
 import { formatDate, resolveCompanyId } from "../../_shared";
+import { getGigCompletionApproval } from "../../_completion";
 
 export const runtime = "nodejs";
 
 function humanizeStatus(status: string) {
   const u = status.trim().toUpperCase();
   if (u === "PENDING") return "Pending";
-  if (u === "REVIEWED") return "Reviewed";
+  if (u === "REVIEWED") return "Completed";
   if (u === "ACCEPTED") return "Accepted";
   if (u === "REJECTED") return "Rejected";
   return status;
@@ -109,6 +110,7 @@ export async function GET(req: Request) {
         const u = app.users;
         const name = u?.name?.trim() || "Applicant";
         const initial = name.charAt(0).toUpperCase() || "?";
+        const rawStatus = app.status?.trim().toUpperCase() || "PENDING";
         const ratingNum =
           u?.rating != null && u.rating !== undefined ? Number(u.rating.toString()) : null;
 
@@ -116,8 +118,9 @@ export async function GET(req: Request) {
           id: app.id,
           name,
           date: formatDate(app.created_at),
-          status: humanizeStatus(app.status),
-          rawStatus: app.status,
+          status: humanizeStatus(rawStatus),
+          rawStatus,
+          isCompletionApproved: false,
           image: initial,
           skills: u?.skills ?? [],
           experience: (u?.bio || u?.specialization || "—").trim() || "—",
@@ -130,6 +133,12 @@ export async function GET(req: Request) {
         };
       }),
     }));
+
+    for (const gig of data) {
+      for (const applicant of gig.applicants as Array<{ id: string; isCompletionApproved: boolean }>) {
+        applicant.isCompletionApproved = await getGigCompletionApproval(applicant.id);
+      }
+    }
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

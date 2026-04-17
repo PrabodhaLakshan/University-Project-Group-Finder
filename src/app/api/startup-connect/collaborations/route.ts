@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prismaClient";
 import { verifyToken } from "@/lib/auth";
+import { hasGigCompletionApproval } from "../_completion";
 
 export const runtime = "nodejs";
 
@@ -30,16 +31,34 @@ export async function GET(req: Request) {
     });
     const reviewedCompanies = new Set(reviews.map((r) => r.company_id));
 
+    const rowsWithApproval = await Promise.all(
+      rows.map(async (row) => {
+        const approved = await hasGigCompletionApproval(payload.userId, row.company_id);
+
+        const hasReview = reviewedCompanies.has(row.company_id);
+        const isCompletionApproved = Boolean(approved);
+
+        return {
+          row,
+          hasReview,
+          isCompletionApproved,
+          canReview: isCompletionApproved && !hasReview,
+        };
+      })
+    );
+
     return NextResponse.json({
       success: true,
-      data: rows.map((r) => ({
-        id: r.id,
-        companyId: r.company_id,
-        companyName: r.companies.name,
-        logoUrl: r.companies.logo_url,
-        gigTitle: r.gig_title,
-        hasReview: reviewedCompanies.has(r.company_id),
-        collaboratedAt: r.created_at,
+      data: rowsWithApproval.map(({ row, hasReview, isCompletionApproved, canReview }) => ({
+        id: row.id,
+        companyId: row.company_id,
+        companyName: row.companies.name,
+        logoUrl: row.companies.logo_url,
+        gigTitle: row.gig_title,
+        hasReview,
+        isCompletionApproved,
+        canReview,
+        collaboratedAt: row.created_at,
       })),
     });
   } catch (error) {

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prismaClient";
 import { verifyToken } from "@/lib/auth";
 import { normalizeString, resolveCompanyId } from "../../../_shared";
 import { saveUploadedFile } from "../../../_upload";
+import { getGigCompletionApproval } from "../../../_completion";
 
 export const runtime = "nodejs";
 
@@ -66,15 +67,15 @@ export async function GET(req: Request, context: RouteContext) {
       orderBy: { created_at: "desc" },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: applications.map((app) => ({
+    const data = await Promise.all(
+      applications.map(async (app) => ({
         id: app.id,
         gigId: app.gig_id,
         userId: app.user_id,
         motivation: app.motivation,
         resumeUrl: app.resume_url,
         status: app.status,
+        isCompletionApproved: await getGigCompletionApproval(app.id),
         appliedAt: app.created_at,
         applicant: app.users
           ? {
@@ -86,7 +87,12 @@ export async function GET(req: Request, context: RouteContext) {
               avatar: app.users.avatar_path,
             }
           : null,
-      })),
+      }))
+    );
+
+    return NextResponse.json({
+      success: true,
+      data,
     });
   } catch (error) {
     console.error("STARTUP_GIG_APPLICATIONS_GET_ERROR:", error);
