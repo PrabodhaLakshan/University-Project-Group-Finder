@@ -79,19 +79,15 @@ export default function ChatWindow({
 
     if (loading) {
         return (
-            <div className="flex h-[78vh] min-h-[720px] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm p-4 items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
+            <div className="flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[28px] border border-slate-200 bg-white/80 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-sm">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-amber-500"></div>
                 <p className="mt-4 text-sm font-medium text-slate-500">Loading chat...</p>
             </div>
         );
     }
 
     return (
-        <div className="flex h-[78vh] min-h-[720px] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_50px_rgba(15,23,42,0.08)] transition-all duration-300">
-            <div className="border-b border-slate-200 px-5 py-4 bg-white/95 backdrop-blur z-10">
-                <h2 className="text-xl font-bold tracking-tight text-slate-800">Group Chat</h2>
-            </div>
-
+        <div className="flex h-full w-full flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300">
             <div 
                 className="flex-1 space-y-5 overflow-y-auto px-5 py-5 bg-cover bg-center bg-no-repeat scroll-smooth"
                 style={{

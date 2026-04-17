@@ -738,7 +738,7 @@ export default function MessagesHubPage() {
           <div className="relative z-10 min-h-0 flex-1 overflow-hidden p-4 md:p-5">
             {activeModule === "group-finder" ? (
               selectedGroupFinder ? (
-                <div className={`h-full min-h-0 rounded-2xl border bg-white/85 p-2 shadow-sm ${activeTheme.accentSoftBorder}`}>
+                <div className="flex h-full min-h-0 flex-col gap-4">
                   <ChatWindow groupId={selectedGroupFinder.id} />
                 </div>
               ) : (
