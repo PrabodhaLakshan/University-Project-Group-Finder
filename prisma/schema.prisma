@@ -542,3 +542,12 @@ model gig_completion_approvals {
   @@index([gig_id], map: "idx_gig_completion_approvals_gig_id")
   @@index([user_id, company_id], map: "idx_gig_completion_approvals_user_company")
 }
+
+model tutor_notifications {
+  id         String    @id @db.Uuid
+  student_id String?   @db.VarChar(50)
+  title      String?
+  message    String?
+  is_read    Boolean?  @default(false)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
