@@ -11,6 +11,7 @@ import {
   X,
   ClipboardList,
   Sparkles,
+  MapPin,
 } from "lucide-react";
 import { getToken } from "@/lib/auth";
 
@@ -21,6 +22,7 @@ type WaitlistRequest = {
   subject: string;
   requestedDate: string;
   requestedTime: string;
+  location: string;
   priority: "High" | "Medium" | "Low";
   requestDate: string;
   slot_id: string;
@@ -69,6 +71,7 @@ export default function WaitlistPage() {
           subject: item.subject,
           requestedDate: formatDate(item.requestedDate),
           requestedTime: formatTime(item.requestedTime),
+          location: item.location?.trim() || "Not specified",
           priority: item.priority,
           requestDate: formatDate(item.requestDate),
           slot_id: item.slot_id,
@@ -231,7 +234,7 @@ export default function WaitlistPage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 text-[14px] sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 text-[14px] sm:grid-cols-2 lg:grid-cols-4">
                       <div className="flex items-center rounded-[16px] border border-slate-100 bg-slate-50/90 p-3.5">
                         <div className="mr-3.5 rounded-xl border border-slate-100/70 bg-white p-2 shadow-sm">
                           <Calendar className="h-4 w-4 text-blue-500" />
@@ -256,6 +259,23 @@ export default function WaitlistPage() {
                           </div>
                           <div className="font-semibold text-slate-700">
                             {request.requestedTime}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center rounded-[16px] border border-slate-100 bg-slate-50/90 p-3.5">
+                        <div className="mr-3.5 rounded-xl border border-slate-100/70 bg-white p-2 shadow-sm">
+                          <MapPin className="h-4 w-4 text-emerald-500" />
+                        </div>
+                        <div>
+                          <div className="mb-0.5 text-[12px] font-bold uppercase tracking-widest text-slate-400">
+                            Location
+                          </div>
+                          <div
+                            className="font-semibold text-slate-700 truncate max-w-[150px]"
+                            title={request.location}
+                          >
+                            {request.location}
                           </div>
                         </div>
                       </div>

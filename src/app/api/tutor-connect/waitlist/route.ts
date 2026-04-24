@@ -32,6 +32,7 @@ export async function GET(req: Request) {
             subject: true,
             slot_date: true,
             slot_time: true,
+            location: true,
             tutor_student_id: true,
           },
         },
@@ -45,6 +46,7 @@ export async function GET(req: Request) {
       subject: entry.tutor_slots.subject,
       requestedDate: entry.tutor_slots.slot_date,
       requestedTime: entry.tutor_slots.slot_time,
+      location: entry.tutor_slots.location,
       requestDate: entry.created_at,
       priority:
         index === 0 ? "High" : index === 1 ? "Medium" : "Low",

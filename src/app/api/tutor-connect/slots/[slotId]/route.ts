@@ -7,7 +7,7 @@ type Context = {
   }>;
 };
 
-// --- PATCH: Slot එක update කිරීම ---
+ 
 export async function PATCH(req: Request, context: Context) {
   try {
     const authHeader = req.headers.get("authorization") || undefined;
@@ -45,7 +45,7 @@ export async function PATCH(req: Request, context: Context) {
   }
 }
 
-// --- DELETE: පවතින function එක ---
+ 
 export async function DELETE(req: Request, context: Context) {
   try {
     const authHeader = req.headers.get("authorization") || undefined;

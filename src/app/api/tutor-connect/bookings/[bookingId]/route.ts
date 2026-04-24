@@ -15,6 +15,16 @@ async function assignFirstWaitlistedStudent(slotId: string) {
     orderBy: {
       created_at: "asc",
     },
+    select: {
+      id: true,
+      student_id: true,
+      slot_id: true,
+      tutor_slots: {
+        select: {
+          subject: true,
+        },
+      },
+    },
   });
 
   if (!firstWaitlisted) {
@@ -44,6 +54,15 @@ async function assignFirstWaitlistedStudent(slotId: string) {
     },
     data: {
       is_booked: true,
+    },
+  });
+
+  await prisma.tutor_notifications.create({
+    data: {
+      id: crypto.randomUUID(),
+      student_id: firstWaitlisted.student_id,
+      title: "Waitlist Approved",
+      message: `A slot is now available and your waitlist request for ${firstWaitlisted.tutor_slots.subject} has been approved.`,
     },
   });
 
@@ -84,6 +103,10 @@ export async function PATCH(req: Request, context: Context) {
         tutor_slots: {
           select: {
             tutor_student_id: true,
+            subject: true,
+            slot_date: true,
+            slot_time: true,
+            location: true,
           },
         },
       },
@@ -130,6 +153,21 @@ export async function PATCH(req: Request, context: Context) {
         },
         data: {
           is_booked: true,
+        },
+      });
+
+      const formattedDate = new Date(booking.tutor_slots.slot_date).toLocaleDateString();
+      const formattedTime = new Date(booking.tutor_slots.slot_time).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      await prisma.tutor_notifications.create({
+        data: {
+          id: crypto.randomUUID(),
+          student_id: booking.student_id,
+          title: "Booking Confirmed",
+          message: `Your ${booking.tutor_slots.subject} tutoring session has been confirmed for ${formattedDate} at ${formattedTime}${booking.tutor_slots.location ? `, at ${booking.tutor_slots.location}` : ""}. Please be on time and be ready for your session.`,
         },
       });
     }

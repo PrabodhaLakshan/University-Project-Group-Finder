@@ -88,6 +88,20 @@ model companies {
   company_reviews          company_reviews[]
   gig_completion_approvals gig_completion_approvals[]
   gigs                     gigs[]
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id                 String                     @db.Uuid
+  name                     String                     @unique @db.VarChar(150)
+  industry                 String                     @db.VarChar(120)
+  about                    String
+  logo_url                 String?
+  certificate_url          String?
+  location                 String?                    @default("Remote") @db.VarChar(150)
+  created_at               DateTime?                  @default(now()) @db.Timestamptz(6)
+  users                    users                      @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_companies_owner")
+  company_recent_works     company_recent_works[]
+  company_reviews          company_reviews[]
+  gig_completion_approvals gig_completion_approvals[]
+  gigs                     gigs[]
 
   @@index([owner_id], map: "idx_companies_owner_id")
 }
@@ -122,6 +136,16 @@ model company_reviews {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model gig_applications {
+  id                       String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gig_id                   String                    @db.Uuid
+  user_id                  String                    @db.Uuid
+  motivation               String
+  resume_url               String
+  status                   String                    @default("PENDING") @db.VarChar(20)
+  created_at               DateTime?                 @default(now()) @db.Timestamptz(6)
+  gigs                     gigs                      @relation(fields: [gig_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_gig_applications_gig")
+  users                    users                     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_gig_applications_user")
+  gig_completion_approvals gig_completion_approvals?
   id                       String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   gig_id                   String                    @db.Uuid
   user_id                  String                    @db.Uuid
@@ -169,6 +193,18 @@ model gig_completion_approvals {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model gigs {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id               String                     @db.Uuid
+  title                    String                     @db.VarChar(150)
+  description              String
+  requirements             String[]                   @default([])
+  budget                   Decimal?                   @db.Decimal(10, 2)
+  status                   String                     @default("OPEN") @db.VarChar(20)
+  created_at               DateTime?                  @default(now()) @db.Timestamptz(6)
+  gig_applications         gig_applications[]
+  gig_bookmarks            gig_bookmarks[]
+  gig_completion_approvals gig_completion_approvals[]
+  companies                companies                  @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_gigs_company")
   id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   company_id               String                     @db.Uuid
   title                    String                     @db.VarChar(150)

@@ -1,13 +1,11 @@
 import { prisma } from "@/lib/prismaClient";
 import { verifyToken } from "@/lib/auth";
+import { NextRequest } from "next/server";
 
-type Context = {
-  params: Promise<{
-    waitlistId: string;
-  }>;
-};
-
-export async function PATCH(req: Request, context: Context) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ waitlistId: string }> }
+) {
   try {
     const authHeader = req.headers.get("authorization") || undefined;
     const decoded = verifyToken(authHeader) as { student_id: string } | null;
@@ -16,7 +14,7 @@ export async function PATCH(req: Request, context: Context) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    const { waitlistId } = await context.params;
+    const { waitlistId } = await params;
     const body = await req.json();
     const action = String(body?.action || "").trim();
 
@@ -37,6 +35,7 @@ export async function PATCH(req: Request, context: Context) {
             id: true,
             tutor_student_id: true,
             is_booked: true,
+            subject: true,
           },
         },
       },
@@ -88,6 +87,15 @@ export async function PATCH(req: Request, context: Context) {
       },
       data: {
         is_booked: true,
+      },
+    });
+
+    await prisma.tutor_notifications.create({
+      data: {
+        id: crypto.randomUUID(),
+        student_id: waitlistEntry.student_id,
+        title: "Waitlist Approved",
+        message: `Your waitlist request for ${waitlistEntry.tutor_slots.subject} has been approved.`,
       },
     });
 
