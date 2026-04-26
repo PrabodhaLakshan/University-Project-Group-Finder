@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         where,
         orderBy: { createdAt: "desc" },
         include: {
-          seller: {
+          users: {
             select: { id: true, name: true, email: true },
           },
         },
@@ -75,9 +75,9 @@ export async function GET(request: NextRequest) {
 
       const items = products.map((p: any) => ({
         ...p,
-        sellerName: p.seller?.name || "Unknown Seller",
-        sellerEmail: p.seller?.email || "",
-        sellerId: p.seller?.id || p.sellerId,
+        sellerName: p.users?.name || "Unknown Seller",
+        sellerEmail: p.users?.email || "",
+        sellerId: p.users?.id || p.sellerId,
       }));
 
       return NextResponse.json({
@@ -165,9 +165,10 @@ export async function POST(request: NextRequest) {
           location: location || null,
           images,
           sellerId: payload.userId,
+          updatedAt: new Date(),
         },
         include: {
-          seller: {
+          users: {
             select: { id: true, name: true, email: true },
           },
         },
@@ -199,8 +200,8 @@ export async function POST(request: NextRequest) {
     console.log("Product created successfully:", product.id);
     
     // Handle case where seller relation is null (due to RLS policies)
-    let sellerName = product.seller?.name;
-    let sellerEmail = product.seller?.email;
+    let sellerName = product.users?.name;
+    let sellerEmail = product.users?.email;
     
     if (!sellerName || !sellerEmail) {
       console.log("Seller relation was null, fetching user data separately for userId:", payload.userId);

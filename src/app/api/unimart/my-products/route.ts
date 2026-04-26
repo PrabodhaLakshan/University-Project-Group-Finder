@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: { createdAt: "desc" },
       include: {
-        seller: {
+        users: {
           select: { id: true, name: true, email: true },
         },
       },
@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
 
     const items = products.map((p: any) => ({
       ...p,
-      sellerName: p.seller?.name || "Unknown Seller",
-      sellerEmail: p.seller?.email || "",
+      sellerName: p.users?.name || "Unknown Seller",
+      sellerEmail: p.users?.email || "",
     }));
 
     return NextResponse.json(items);

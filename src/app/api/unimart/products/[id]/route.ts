@@ -14,7 +14,7 @@ export async function GET(
     const product = await prismaDelegates.uniMartProducts.findUnique({
       where: { id },
       include: {
-        seller: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -37,14 +37,14 @@ export async function GET(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const sellerName = product.seller?.name || "Unknown Seller";
-    const sellerEmail = product.seller?.email || "";
-    const sellerBankDetails = product.seller?.bank_details
+    const sellerName = product.users?.name || "Unknown Seller";
+    const sellerEmail = product.users?.email || "";
+    const sellerBankDetails = product.users?.bank_details
       ? {
-          bankName: product.seller.bank_details.bank_name,
-          accountHolderName: product.seller.bank_details.account_holder_name,
-          accountNumber: product.seller.bank_details.account_number,
-          branch: product.seller.bank_details.branch,
+          bankName: product.users.bank_details.bank_name,
+          accountHolderName: product.users.bank_details.account_holder_name,
+          accountNumber: product.users.bank_details.account_number,
+          branch: product.users.bank_details.branch,
         }
       : null;
 
@@ -107,16 +107,17 @@ export async function PUT(
         ...(condition && { condition }),
         location: location || null,
         ...(images && { images }),
+        updatedAt: new Date(),
       },
       include: {
-        seller: {
+        users: {
           select: { id: true, name: true, email: true },
         },
       },
     });
 
-    const sellerName = updated.seller?.name || "Unknown Seller";
-    const sellerEmail = updated.seller?.email || "";
+    const sellerName = updated.users?.name || "Unknown Seller";
+    const sellerEmail = updated.users?.email || "";
 
     return NextResponse.json({
       ...updated,

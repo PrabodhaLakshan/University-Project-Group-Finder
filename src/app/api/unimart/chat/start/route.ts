@@ -103,13 +103,13 @@ export async function POST(request: NextRequest) {
           },
         },
         include: {
-          product: {
+          uniMartProducts: {
             select: { id: true, title: true },
           },
-          buyer: {
+          users_Conversation_buyerIdTousers: {
             select: { id: true, name: true },
           },
-          seller: {
+          users_Conversation_sellerIdTousers: {
             select: { id: true, name: true },
           },
         },
@@ -124,13 +124,13 @@ export async function POST(request: NextRequest) {
             ...(orderId ? { orderId } : {}),
           },
           include: {
-            product: {
+            uniMartProducts: {
               select: { id: true, title: true },
             },
-            buyer: {
+            users_Conversation_buyerIdTousers: {
               select: { id: true, name: true },
             },
-            seller: {
+            users_Conversation_sellerIdTousers: {
               select: { id: true, name: true },
             },
           },
@@ -140,13 +140,13 @@ export async function POST(request: NextRequest) {
           where: { id: conversation.id },
           data: { orderId },
           include: {
-            product: {
+            uniMartProducts: {
               select: { id: true, title: true },
             },
-            buyer: {
+            users_Conversation_buyerIdTousers: {
               select: { id: true, name: true },
             },
-            seller: {
+            users_Conversation_sellerIdTousers: {
               select: { id: true, name: true },
             },
           },
@@ -156,11 +156,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         id: conversation.id,
         productId: conversation.productId,
-        productTitle: conversation.product?.title || "",
+        productTitle: conversation.uniMartProducts?.title || "",
         buyerId: conversation.buyerId,
-        buyerName: conversation.buyer?.name || "",
+        buyerName: conversation.users_Conversation_buyerIdTousers?.name || "",
         sellerId: conversation.sellerId,
-        sellerName: conversation.seller?.name || "",
+        sellerName: conversation.users_Conversation_sellerIdTousers?.name || "",
         orderId: conversation.orderId || null,
         createdAt: conversation.createdAt,
       });

@@ -50,20 +50,20 @@ export async function GET(request: NextRequest) {
           OR: [{ buyerId: userId }, { sellerId: userId }],
         },
         include: {
-          product: {
+          uniMartProducts: {
             select: {
               id: true,
               title: true,
               images: true,
             },
           },
-          buyer: {
+          users_Conversation_buyerIdTousers: {
             select: { id: true, name: true },
           },
-          seller: {
+          users_Conversation_sellerIdTousers: {
             select: { id: true, name: true },
           },
-          messages: {
+          Message: {
             take: 1,
             orderBy: { createdAt: "desc" },
             select: {
@@ -77,8 +77,10 @@ export async function GET(request: NextRequest) {
 
       const formattedConversations = await Promise.all(
         conversations.map(async (conv: any) => {
-          const participant = conv.buyerId === userId ? conv.seller : conv.buyer;
-          const unreadCount = await prismaDelegates.message.count({
+          const participant = conv.buyerId === userId
+            ? conv.users_Conversation_sellerIdTousers
+            : conv.users_Conversation_buyerIdTousers;
+          const unreadCount = await prismaDelegates.Message.count({
             where: {
               conversationId: conv.id,
               read: false,
@@ -91,12 +93,12 @@ export async function GET(request: NextRequest) {
             participantId: participant?.id || "",
             participantName: participant?.name || "Unknown",
             viewerRole: conv.buyerId === userId ? "buyer" : "seller",
-            lastMessage: conv.messages[0]?.text || "",
-            lastMessageTime: conv.messages[0]?.createdAt || conv.createdAt,
+            lastMessage: conv.Message[0]?.text || "",
+            lastMessageTime: conv.Message[0]?.createdAt || conv.createdAt,
             unreadCount,
             productId: conv.productId,
-            productTitle: conv.product?.title || "",
-            productImage: conv.product?.images?.[0] || null,
+            productTitle: conv.uniMartProducts?.title || "",
+            productImage: conv.uniMartProducts?.images?.[0] || null,
             orderId: conv.orderId || null,
           };
         })
@@ -111,8 +113,8 @@ export async function GET(request: NextRequest) {
           OR: [{ senderId: userId }, { receiverId: userId }],
         },
         include: {
-          sender: { select: { id: true, name: true } },
-          receiver: { select: { id: true, name: true } },
+          users_uniMartMessage_senderIdTousers: { select: { id: true, name: true } },
+          users_uniMartMessage_receiverIdTousers: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: "desc" },
       });
@@ -120,7 +122,9 @@ export async function GET(request: NextRequest) {
       const grouped = new Map<string, any>();
 
       for (const item of legacyMessages) {
-        const participant = item.senderId === userId ? item.receiver : item.sender;
+        const participant = item.senderId === userId
+          ? item.users_uniMartMessage_receiverIdTousers
+          : item.users_uniMartMessage_senderIdTousers;
         const participantId = participant?.id;
         if (!participantId) continue;
 
@@ -196,7 +200,7 @@ export async function POST(request: NextRequest) {
               : legacyMeta.productId,
         },
         include: {
-          sender: {
+          users_uniMartMessage_senderIdTousers: {
             select: { id: true, name: true },
           },
         },
@@ -214,7 +218,7 @@ export async function POST(request: NextRequest) {
         id: legacyMessage.id,
         conversationId,
         senderId: legacyMessage.senderId,
-        senderName: legacyMessage.sender?.name || "Unknown",
+        senderName: legacyMessage.users_uniMartMessage_senderIdTousers?.name || "Unknown",
         text: legacyMessage.content,
         read: legacyMessage.read,
         createdAt: legacyMessage.createdAt,
@@ -252,7 +256,7 @@ export async function POST(request: NextRequest) {
         text,
       },
       include: {
-        sender: {
+        users: {
           select: { id: true, name: true },
         },
       },
@@ -275,7 +279,7 @@ export async function POST(request: NextRequest) {
       id: message.id,
       conversationId: message.conversationId,
       senderId: message.senderId,
-      senderName: message.sender?.name || "Unknown",
+      senderName: message.users?.name || "Unknown",
       text: message.text,
       read: message.read,
       createdAt: message.createdAt,

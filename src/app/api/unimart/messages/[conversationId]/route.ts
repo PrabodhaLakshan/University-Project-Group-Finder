@@ -63,7 +63,7 @@ export async function GET(
             : { productId: legacyMeta.productId }),
         },
         include: {
-          sender: {
+          users_uniMartMessage_senderIdTousers: {
             select: { id: true, name: true },
           },
         },
@@ -86,7 +86,7 @@ export async function GET(
           id: message.id,
           conversationId,
           senderId: message.senderId,
-          senderName: message.sender?.name || "Unknown",
+          senderName: message.users_uniMartMessage_senderIdTousers?.name || "Unknown",
           text: message.content,
           read: message.read,
           createdAt: message.createdAt,
@@ -97,13 +97,13 @@ export async function GET(
     const conversation = await prismaDelegates.conversation.findUnique({
       where: { id: conversationId },
       include: {
-        product: {
+        uniMartProducts: {
           select: { id: true, title: true },
         },
-        buyer: {
+        users_Conversation_buyerIdTousers: {
           select: { id: true, name: true },
         },
-        seller: {
+        users_Conversation_sellerIdTousers: {
           select: { id: true, name: true },
         },
       },
@@ -120,17 +120,19 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const messages = await prismaDelegates.message.findMany({
+    const messages = await prismaDelegates.Message.findMany({
       where: { conversationId },
       include: {
-        sender: {
+        users: {
           select: { id: true, name: true },
         },
       },
       orderBy: { createdAt: "asc" },
     });
 
-    const participant = conversation.buyerId === userId ? conversation.seller : conversation.buyer;
+    const participant = conversation.buyerId === userId
+      ? conversation.users_Conversation_sellerIdTousers
+      : conversation.users_Conversation_buyerIdTousers;
 
     return NextResponse.json({
       conversation: {
@@ -138,14 +140,14 @@ export async function GET(
         participantId: participant?.id || "",
         participantName: participant?.name || "Unknown",
         productId: conversation.productId,
-        productTitle: conversation.product?.title || "",
+        productTitle: conversation.uniMartProducts?.title || "",
         orderId: conversation.orderId || null,
       },
       messages: messages.map((message: any) => ({
         id: message.id,
         conversationId: message.conversationId,
         senderId: message.senderId,
-        senderName: message.sender?.name || "Unknown",
+        senderName: message.users?.name || "Unknown",
         text: message.text,
         read: message.read,
         createdAt: message.createdAt,
